@@ -290,3 +290,9 @@ Issue / PR 都欢迎。改完代码请跑 `npm test` 和 `node scripts/check-syn
 ## 许可
 
 [MIT](LICENSE) · 随便用，随便改，商用也行；只保留版权声明。
+
+## 它长这样
+
+左侧一条 280px 常驻侧栏，就是全部操作入口——右边仍是你的真实桌面：
+
+![FDE 智能体 控制台：左侧常驻侧栏 + 项目桌面](docs/panel.png)
