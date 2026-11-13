@@ -1,0 +1,15 @@
+{
+  "nodes": [
+    { "type": "project", "title": "盯盘 · {{symbol}}", "note": "本项目桌面：交易软件与行情页都在这里，切走后自动静默" },
+    { "type": "note", "title": "盘前计划（开盘前必须写完）", "note": "1) 今天只做 {{symbol}} 的哪一种形态？\n2) 关键价位：支撑 / 阻力 / 止损\n3) 单笔风险上限 {{risk}}%，超过就不做\n4) 今天不做的事（追高 / 逆势加仓 / 情绪单）" },
+    { "type": "url", "title": "开盘前看公告", "note": "交易所公告、夜盘外盘、库存数据", "ref": { "url": "http://www.dce.com.cn/" } },
+    { "type": "script", "title": "交易复盘", "note": "统计今日笔数、盈亏比、是否违反纪律", "ref": { "path": "scripts/daily-review.ps1" } },
+    { "type": "ai", "title": "复盘上下文", "note": "汇总今日交易记录与纪律执行情况，生成复盘提示词" }
+  ],
+  "edges": [
+    { "from": 0, "to": 1, "label": "开盘前" },
+    { "from": 1, "to": 2, "label": "看消息" },
+    { "from": 2, "to": 3, "label": "收盘" },
+    { "from": 3, "to": 4, "label": "复盘" }
+  ]
+}

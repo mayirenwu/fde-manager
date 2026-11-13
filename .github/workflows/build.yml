@@ -1,0 +1,62 @@
+name: Build FDE Manager（三平台安装包）
+
+# 每次推 tag（如 v7.26.0）或手动触发时，在三个系统上各出一份安装包。
+# 产物在 Actions 页面的 Artifacts 里下载：
+#   Windows : FDE-Manager-<版本>-setup-x64.exe / portable
+#   macOS   : dmg + zip（Intel x64 与 Apple M 系列 arm64）
+#   Linux   : AppImage + deb
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-13, macos-14, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # macos-13 = Intel，macos-14 = Apple Silicon；都装 20 的 Node 即可
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 图标已随仓库提交（build/icon.* 与 build/icons/），CI 无需再生成
+      - name: 安装依赖
+        run: npm ci --no-audit --no-fund
+
+      # Intel 机器上补打一份 x64 的 mac 包；arm64 机器本来就出 arm64
+      # 国内网络/CI 偶发下载慢：走 npmmirror（国际 CI 也能访问）
+      - name: 打包
+        env:
+          ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+        run: |
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            # Intel 机器出 x64 包，M 系列机器出 arm64 包：两台各打各的，省一半时间
+            if [ "${{ matrix.os }}" = "macos-13" ]; then
+              npx electron-builder --mac dmg zip --x64
+            else
+              npx electron-builder --mac dmg zip --arm64
+            fi
+          elif [ "${{ runner.os }}" = "Linux" ]; then
+            npx electron-builder --linux AppImage deb --x64
+          else
+            npx electron-builder --win nsis portable --x64
+          fi
+
+      - name: 上传安装包
+        uses: actions/upload-artifact@v4
+        with:
+          name: FDE-Manager-${{ matrix.os }}
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.zip
+            release/*.AppImage
+            release/*.deb
+          if-no-files-found: error

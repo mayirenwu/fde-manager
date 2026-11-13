@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>应用功能 · FDE</title>
+<style>
+  .mltab { font-size:11px; padding:4px 10px; }
+  .mltab.on { background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0b0f17;
+    --panel: #11161f;
+    --panel2: #161c27;
+    --line: #1e2635;
+    --line2: #2a3444;
+    --tx: #e6ebf4;
+    --tx2: #9aa6b8;
+    --tx3: #6b7789;
+    --acc: #4f8cff;
+    --ok: #22c55e;
+    --warn: #f59e0b;
+    --err: #ef4444;
+  }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--tx);
+    font: 13px/1.6 -apple-system, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .hd {
+    -webkit-app-region: drag;
+    height: 54px; flex: 0 0 54px; display: flex; align-items: center; gap: 10px;
+    padding: 0 14px; border-bottom: 1px solid var(--line); background: #0d121b;
+  }
+  .hd .logo {
+    width: 26px; height: 26px; border-radius: 8px; flex: 0 0 26px;
+    background: linear-gradient(135deg, #4f8cff, #a855f7);
+    display: flex; align-items: center; justify-content: center; font-size: 13px;
+  }
+  .hd h1 { font-size: 14px; font-weight: 600; letter-spacing: .3px; }
+  .hd .sub { color: var(--tx3); font-size: 11.5px; }
+  .hd .grow { flex: 1; }
+  .hd input.search {
+    -webkit-app-region: no-drag;
+    width: 200px; height: 30px; border-radius: 8px; border: 1px solid var(--line2);
+    background: #0a0e16; color: var(--tx); padding: 0 10px; font-size: 12px; outline: none;
+  }
+  .hd input.search:focus { border-color: var(--acc); }
+  .hbtn {
+    -webkit-app-region: no-drag;
+    height: 30px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line2);
+    background: #131a25; color: var(--tx2); font-size: 12px; cursor: pointer; white-space: nowrap;
+  }
+  .hbtn:hover { color: #fff; border-color: #3a4658; background: #18202d; }
+  .hbtn.pri { background: var(--acc); border-color: var(--acc); color: #fff; }
+  .hbtn.pri:hover { background: #3d7df2; }
+  .hbtn.ghost { background: transparent; }
+
+  .body { flex: 1; display: flex; min-height: 0; }
+
+  /* 左侧：分类 / 来源 / 回收站 */
+  .rail {
+    flex: 0 0 186px; border-right: 1px solid var(--line); background: #0d121b;
+    padding: 12px 10px; overflow-y: auto;
+  }
+  .rlabel { font-size: 10.5px; color: var(--tx3); letter-spacing: .6px; padding: 6px 8px; text-transform: uppercase; }
+  .rrow {
+    display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 9px;
+    border-radius: 7px; color: var(--tx2); cursor: pointer; font-size: 12.5px; border: 1px solid transparent;
+  }
+  .rrow:hover { background: #131a25; color: var(--tx); }
+  .rrow.on { background: rgba(79,140,255,.13); border-color: rgba(79,140,255,.4); color: #cfe0ff; }
+  .rrow .ic { width: 16px; text-align: center; }
+  .rrow .n { margin-left: auto; font-size: 11px; color: var(--tx3); }
+  .rrow.on .n { color: #9dc0ff; }
+  .rsep { height: 1px; background: var(--line); margin: 10px 6px; }
+
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .bar {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 8px;
+    padding: 11px 16px 8px; border-bottom: 1px solid rgba(30,38,53,.7);
+  }
+  .bar .t { font-size: 13px; font-weight: 600; }
+  .bar .d { color: var(--tx3); font-size: 11.5px; }
+  .bar .grow { flex: 1; }
+  .chip {
+    height: 24px; padding: 0 9px; border-radius: 20px; border: 1px solid var(--line2);
+    background: transparent; color: var(--tx2); font-size: 11px; cursor: pointer;
+  }
+  .chip:hover { color: var(--tx); border-color: #3a4658; }
+  .chip.on { background: rgba(79,140,255,.14); border-color: rgba(79,140,255,.5); color: #cfe0ff; }
+
+  .grid {
+    flex: 1; overflow-y: auto; padding: 14px 16px 22px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; align-content: start;
+  }
+  .card {
+    border: 1px solid var(--line); border-radius: 12px; background: var(--panel);
+    padding: 13px 13px 10px; display: flex; flex-direction: column; gap: 7px;
+    position: relative; transition: border-color .14s, transform .14s; min-height: 150px;
+  }
+  .card:hover { border-color: var(--line2); transform: translateY(-1px); }
+  .card .top { display: flex; align-items: flex-start; gap: 9px; }
+  .card .ic {
+    width: 30px; height: 30px; flex: 0 0 30px; border-radius: 8px; display: flex;
+    align-items: center; justify-content: center; font-size: 15px; background: #1b2331;
+  }
+  .card .nm { font-size: 13px; font-weight: 600; line-height: 1.35; word-break: break-word; }
+  .card .tg { font-size: 11.5px; color: var(--tx2); line-height: 1.55; max-height: 3.1em; overflow: hidden; }
+  .card .tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .card .tag { font-size: 10px; color: #8fa2bd; background: #182130; border-radius: 4px; padding: 1px 5px; }
+  .card .meta { margin-top: auto; display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--tx3); }
+  .card .src { padding: 1px 6px; border-radius: 4px; background: #182130; color: #8fa2bd; }
+  .card .src.self { background: rgba(79,140,255,.16); color: #9dc0ff; }
+  .card .src.workbuddy { background: rgba(168,85,247,.16); color: #d3b4ff; }
+  .card .src.codex { background: rgba(34,197,94,.14); color: #a8e8bf; }
+  .card .src.claude { background: rgba(245,158,11,.14); color: #f2d19b; }
+  .card .acts { display: flex; gap: 4px; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .card .acts button {
+    height: 25px; padding: 0 9px; border-radius: 6px; border: 1px solid var(--line2);
+    background: #131a25; color: var(--tx2); font-size: 11px; cursor: pointer;
+  }
+  .card .acts button:hover { color: #fff; border-color: #3a4658; }
+  .card .acts .go { background: rgba(79,140,255,.16); border-color: rgba(79,140,255,.45); color: #cfe0ff; }
+  .card .acts .go:hover { background: rgba(79,140,255,.28); }
+  .card .acts .sp { flex: 1; }
+
+  .empty {
+    grid-column: 1 / -1; text-align: center; color: var(--tx3); font-size: 12.5px; padding: 54px 20px; line-height: 2;
+  }
+  .empty b { color: var(--tx2); display: block; font-size: 13.5px; margin-bottom: 4px; }
+
+  /* 右侧编辑器 */
+  .drawer {
+    position: absolute; top: 54px; right: 0; bottom: 0; width: 430px; background: #0e131c;
+    border-left: 1px solid var(--line2); transform: translateX(102%); transition: transform .18s ease;
+    display: flex; flex-direction: column; z-index: 20; box-shadow: -18px 0 40px rgba(0,0,0,.35);
+  }
+  .drawer.on { transform: none; }
+  .dh { display: flex; align-items: center; gap: 8px; padding: 13px 15px; border-bottom: 1px solid var(--line); }
+  .dh .t { font-size: 13.5px; font-weight: 600; }
+  .dh .x { margin-left: auto; background: none; border: none; color: var(--tx3); font-size: 16px; cursor: pointer; }
+  .dh .x:hover { color: #fff; }
+  .dc { flex: 1; overflow-y: auto; padding: 14px 15px; display: flex; flex-direction: column; gap: 12px; }
+  .fld label { display: block; font-size: 11px; color: var(--tx3); margin-bottom: 5px; }
+  .fld input[type=text], .fld textarea, .fld select {
+    width: 100%; border-radius: 7px; border: 1px solid var(--line2); background: #0a0e16;
+    color: var(--tx); padding: 7px 9px; font-size: 12.5px; outline: none; font-family: inherit;
+  }
+  .fld input:focus, .fld textarea:focus, .fld select:focus { border-color: var(--acc); }
+  .fld textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+  .fld textarea.big { min-height: 210px; font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; }
+  .fld .hint { font-size: 10.5px; color: var(--tx3); margin-top: 4px; line-height: 1.5; }
+  .row2 { display: flex; gap: 10px; }
+  .row2 > * { flex: 1; min-width: 0; }
+  .kinds { display: flex; gap: 6px; flex-wrap: wrap; }
+  .kinds button {
+    flex: 1; min-width: 74px; height: 40px; border-radius: 8px; border: 1px solid var(--line2);
+    background: #101725; color: var(--tx2); font-size: 11.5px; cursor: pointer; line-height: 1.25;
+  }
+  .kinds button .e { display: block; font-size: 14px; }
+  .kinds button.on { border-color: var(--acc); background: rgba(79,140,255,.13); color: #cfe0ff; }
+  .kinds button:disabled { opacity: .5; cursor: default; }
+  .df { display: flex; gap: 8px; padding: 12px 15px; border-top: 1px solid var(--line); }
+  .df .grow { flex: 1; }
+  .df button {
+    height: 32px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line2);
+    background: #131a25; color: var(--tx2); font-size: 12px; cursor: pointer;
+  }
+  .df button:hover { color: #fff; border-color: #3a4658; }
+  .df button.pri { background: var(--acc); border-color: var(--acc); color: #fff; }
+  .df button.pri:hover { background: #3d7df2; }
+  .df button.del { color: #ffb4b4; border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.08); }
+
+  /* 弹层 */
+  .mask {
+    position: fixed; inset: 0; background: rgba(0,0,0,.62); display: none;
+    align-items: center; justify-content: center; z-index: 60; padding: 20px;
+  }
+  .mask.on { display: flex; }
+  .modal {
+    width: 720px; max-width: 100%; max-height: 84vh; background: #0f141d;
+    border: 1px solid var(--line2); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;
+  }
+  .mh { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .mh .t { font-size: 14px; font-weight: 600; }
+  .mh .d { font-size: 11.5px; color: var(--tx3); }
+  .mh .x { margin-left: auto; background: none; border: none; color: var(--tx3); font-size: 16px; cursor: pointer; }
+  .mh .x:hover { color: #fff; }
+  .msub { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .msub input {
+    flex: 1; min-width: 160px; height: 30px; border-radius: 8px; border: 1px solid var(--line2);
+    background: #0a0e16; color: var(--tx); padding: 0 10px; font-size: 12px; outline: none;
+  }
+  .msub input:focus { border-color: var(--acc); }
+  .mlist { flex: 1; overflow-y: auto; padding: 6px 8px 10px; min-height: 260px; }
+  .mgroup {
+    font-size: 10.5px; color: var(--tx3); letter-spacing: .5px; padding: 9px 8px 5px;
+    position: sticky; top: 0; background: #0f141d;
+  }
+  .mrow {
+    display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 8px; cursor: pointer;
+  }
+  .mrow:hover { background: #151d29; }
+  .mrow input { flex: 0 0 auto; accent-color: var(--acc); }
+  .mrow .nm { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px; }
+  .mrow .ds { flex: 1; min-width: 0; font-size: 10.5px; color: var(--tx3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mrow .ig { font-size: 10px; color: #7fd6a0; border: 1px solid rgba(34,197,94,.35); border-radius: 4px; padding: 0 5px; }
+  .mrow .kc { font-size: 10px; color: #9dc0ff; border: 1px solid rgba(79,140,255,.35); border-radius: 4px; padding: 0 5px; }
+  .mf { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--line); }
+  .mf .grow { flex: 1; color: var(--tx3); font-size: 11.5px; }
+  .mf button {
+    height: 32px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line2);
+    background: #131a25; color: var(--tx2); font-size: 12px; cursor: pointer;
+  }
+  .mf button.pri { background: var(--acc); border-color: var(--acc); color: #fff; }
+  .mf button:disabled { opacity: .45; cursor: default; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 20px); opacity: 0;
+    background: #131b28; border: 1px solid var(--line2); color: var(--tx);
+    padding: 9px 16px; border-radius: 8px; font-size: 12.5px; pointer-events: none;
+    transition: all .2s; z-index: 90; max-width: 78vw;
+  }
+  .toast.on { opacity: 1; transform: translate(-50%, 0); }
+  .toast.ok { border-color: rgba(34,197,94,.5); color: #d5ffe2; }
+  .toast.err { border-color: rgba(239,68,68,.55); color: #ffd4d4; }
+
+  /* 「用」的小菜单 */
+  .pop {
+    position: fixed; z-index: 70; background: #131b28; border: 1px solid var(--line2);
+    border-radius: 9px; padding: 5px; box-shadow: 0 12px 30px rgba(0,0,0,.45); display: none; min-width: 168px;
+  }
+  .pop.on { display: block; }
+  .pop button {
+    display: flex; align-items: center; gap: 8px; width: 100%; height: 30px; padding: 0 9px;
+    background: none; border: none; color: var(--tx2); font-size: 12px; cursor: pointer; border-radius: 6px; text-align: left;
+  }
+  .pop button:hover { background: #1b2434; color: #fff; }
+
+  .aipill {
+    display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 8px;
+    border-radius: 20px; font-size: 10.5px; border: 1px solid var(--line2); color: var(--tx3);
+    background: #101725; margin-left: 7px; vertical-align: middle;
+  }
+  .aipill.on { color: #b7f0c9; border-color: rgba(34,197,94,.45); background: rgba(34,197,94,.1); }
+  .aipill.half { color: #f2d19b; border-color: rgba(245,158,11,.45); background: rgba(245,158,11,.1); }
+  .aipill .dt { width: 6px; height: 6px; border-radius: 50%; background: #55607a; }
+  .aipill.on .dt { background: #22c55e; }
+  .aipill.half .dt { background: #f59e0b; }
+  .steps { counter-reset: st; display: flex; flex-direction: column; gap: 8px; }
+  .step { display: flex; gap: 9px; font-size: 12px; color: var(--tx2); line-height: 1.6; }
+  .step .no {
+    flex: 0 0 18px; height: 18px; border-radius: 50%; background: #1b2434; color: #9dc0ff;
+    font-size: 10.5px; display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .step b { color: var(--tx); font-weight: 600; }
+  .kv { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--tx3); }
+  .kv .v { color: var(--tx2); }
+  .kv .ok { color: #7fd6a0; }
+  .kv .no { color: #f2d19b; }
+  .linkrow { display: flex; gap: 8px; flex-wrap: wrap; }
+  .linkrow button {
+    height: 28px; padding: 0 11px; border-radius: 7px; border: 1px solid var(--line2);
+    background: #131a25; color: var(--tx2); font-size: 11.5px; cursor: pointer;
+  }
+  .linkrow button:hover { color: #fff; border-color: #3a4658; }
+  .keyrow { display: flex; gap: 7px; }
+  /* 密钥框：只允许 * 显示，且不弹系统/浏览器的大小写提示与历史建议 */
+  .keyrow input[type=password] { -webkit-text-security: disc; }
+  .keyrow button.danger { color: #e8846f; border-color: #3a2a28; }
+  .keyrow button.danger:hover { color: #fff; background: #5a2b24; border-color: #7a3a30; }
+  .keylink { font-size: 10.5px; color: var(--tx3); margin-top: 5px; }
+  .keylink a { color: #7db3e8; text-decoration: none; }
+  .keylink a:hover { text-decoration: underline; }
+  .keyrow input { flex: 1; min-width: 0; }
+  .keyrow input[type=text], .keyrow input[type=password] {
+    height: 32px; border-radius: 7px; border: 1px solid var(--line2);
+    background: #0a0e16; color: var(--tx); padding: 0 9px; font-size: 12.5px; outline: none;
+  }
+  .keyrow input:focus { border-color: var(--acc); }
+  .keyrow button {
+    flex: 0 0 auto; height: 32px; padding: 0 10px; border-radius: 7px; border: 1px solid var(--line2);
+    background: #131a25; color: var(--tx2); font-size: 11.5px; cursor: pointer; white-space: nowrap;
+  }
+  .keyrow button:hover { color: #fff; border-color: #3a4658; }
+  .aiMsg { font-size: 11.5px; line-height: 1.6; padding: 8px 10px; border-radius: 7px; display: none; }
+  .aiMsg.on { display: block; }
+  .aiMsg.ok { background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.35); color: #b7f0c9; }
+  .aiMsg.err { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.35); color: #ffc9c9; }
+  .aiMsg.busy { background: rgba(79,140,255,.1); border: 1px solid rgba(79,140,255,.35); color: #cfe0ff; }
+
+  /* 顶部两档：能力 / 知识库 */
+  .seg { display: flex; gap: 2px; background: #0f151f; border: 1px solid var(--line); border-radius: 9px; padding: 2px; }
+  .seg button {
+    -webkit-app-region: no-drag;
+    font: inherit; font-size: 12.5px; color: #9aa6b8; background: transparent;
+    border: 0; border-radius: 7px; padding: 5px 13px; cursor: pointer;
+  }
+  .seg button:hover { color: #dbe4f0; }
+  .seg button.on { background: #1d4ed8; color: #fff; }
+  .rrow.kbent { background: #0f1b2a; border: 1px solid #1e3450; border-radius: 8px; margin-bottom: 10px; }
+  #aiRow { margin-bottom: 6px; }   /* 模型设置：最上面一行，和知识库之间留点呼吸 */
+  .rrow.kbent:hover { border-color: #2f6f9e; }
+  .kbpane { flex: 1; min-height: 0; display: none; background: #0b0f17; }
+  .kbpane.on { display: flex; }
+  .kbpane iframe { flex: 1; width: 100%; height: 100%; border: 0; display: block; background: #0b0f17; }
+  body.kbOn .search, body.kbOn #newBtn, body.kbOn #importBtn, body.kbOn #dlBtn { display: none; }
+
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-thumb { background: #263140; border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: #33404f; }
+</style>
+</head>
+<body>
+  <div class="hd">
+    <div class="logo">🧰</div>
+    <div>
+      <h1>应用功能 <span class="aipill" id="aiPill"><span class="dt"></span><span id="aiPillText">未接算力</span></span></h1>
+      <div class="sub" id="stat">正在读取…</div>
+    </div>
+    <div class="grow"></div>
+    <div class="seg" id="seg">
+      <button data-tab="apps" class="on" title="专家 / 技能 / 连接器 / 资料库条目：下载、新建、改、导入">🧰 能力</button>
+      <button data-tab="kb" title="按用途建库，把现有文件夹整个导进来（可一目录一库）">📚 知识库</button>
+    </div>
+    <input class="search" id="q" placeholder="搜名字、说明、标签…" />
+    <button class="hbtn pri" id="newBtn">＋ 新建</button>
+    <button class="hbtn" id="importBtn" title="从文件夹 / .md / .json / .zip 导入">⬆ 导入</button>
+    <button class="hbtn" id="dlBtn" title="从 WorkBuddy / Codex 下载现成的能力">⬇ 下载</button>
+    <button class="hbtn ghost" id="refreshBtn" title="重新读取">↻</button>
+    <button class="hbtn" id="closeBtn">✕</button>
+  </div>
+
+  <div class="body" id="appsBody">
+    <div class="rail" id="rail"></div>
+    <div class="main">
+      <div class="bar">
+        <span class="t" id="barTitle">全部</span>
+        <span class="d" id="barDesc"></span>
+        <span class="grow"></span>
+        <button class="chip on" data-sort="updated">最近改过</button>
+        <button class="chip" data-sort="name">按名字</button>
+      </div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </div>
+
+  <!-- 知识库：同一套界面，嵌进来用，不用另开窗口 -->
+  <div class="kbpane" id="kbPane"><iframe id="kbFrame" title="知识库"></iframe></div>
+
+  <!-- 编辑器 -->
+  <div class="drawer" id="drawer">
+    <div class="dh">
+      <span class="t" id="dTitle">新建</span>
+      <button class="x" id="dX">✕</button>
+    </div>
+    <div class="dc">
+      <div class="fld">
+        <label>类型</label>
+        <div class="kinds" id="kinds"></div>
+        <div class="hint" id="kindHint"></div>
+      </div>
+      <div class="row2">
+        <div class="fld" style="flex:0 0 82px;">
+          <label>图标</label>
+          <input type="text" id="fIcon" maxlength="4" placeholder="🧭" />
+        </div>
+        <div class="fld">
+          <label>名字</label>
+          <input type="text" id="fName" maxlength="60" placeholder="比如：跨境合规专家" />
+        </div>
+      </div>
+      <div class="fld">
+        <label>一句话（列表里显示的副标题）</label>
+        <input type="text" id="fTagline" maxlength="120" placeholder="比如：看出口合规、报关单据、退税风险" />
+      </div>
+      <div class="fld">
+        <label>说明</label>
+        <textarea id="fDesc" rows="3" placeholder="它是干什么的、什么时候用、要注意什么"></textarea>
+      </div>
+      <div class="fld">
+        <label>标签（逗号分隔，最多 8 个）</label>
+        <input type="text" id="fTags" placeholder="跨境, 合规, 单据" />
+      </div>
+
+      <div class="fld" id="bodyFld">
+        <label id="bodyLabel">正文 / 提示词</label>
+        <textarea id="fBody" class="big" placeholder="把角色、判断标准、步骤、产出格式写清楚，画布和 AI 都会直接用它"></textarea>
+        <div class="hint">这段会在画布上变成 AI 节点的上下文，也能一键复制给任意 AI。</div>
+      </div>
+
+      <div id="connFld" style="display:none; flex-direction:column; gap:12px;">
+        <div class="row2">
+          <div class="fld">
+            <label>连接方式</label>
+            <select id="fConnType">
+              <option value="mcp">MCP 服务</option>
+              <option value="http">HTTP 接口</option>
+              <option value="cli">命令行</option>
+              <option value="db">数据库</option>
+            </select>
+          </div>
+          <div class="fld">
+            <label>地址 / 命令</label>
+            <input type="text" id="fConnUrl" placeholder="https://… 或 npx xxx" />
+          </div>
+        </div>
+        <div class="fld">
+          <label>配置（JSON，原样粘进去即可）</label>
+          <textarea id="fConnCfg" class="big" style="min-height:150px;" placeholder='{"command":"npx","args":["-y","xxx"]}'></textarea>
+        </div>
+      </div>
+
+      <div id="libFld" style="display:none; flex-direction:column; gap:12px;">
+        <div class="fld">
+          <label>位置（文件或文件夹的完整路径）</label>
+          <input type="text" id="fLibPath" placeholder="D:\资料\客户模板" />
+        </div>
+        <div class="fld">
+          <label>包含的条目（一行一个，可留空）</label>
+          <textarea id="fLibItems" rows="4" placeholder="报价单模板.xlsx&#10;验收清单.pdf"></textarea>
+        </div>
+      </div>
+
+      <div class="fld" id="srcFld" style="display:none;">
+        <label>来源</label>
+        <div class="hint" id="srcText"></div>
+      </div>
+    </div>
+    <div class="df">
+      <button class="del" id="fDel" style="display:none;">删除</button>
+      <span class="grow"></span>
+      <button id="fCopy" style="display:none;">复制给 AI</button>
+      <button id="fCancel">取消</button>
+      <button class="pri" id="fSave">保存</button>
+    </div>
+  </div>
+
+  <!-- 模型设置（原 AI 算力） -->
+  <div class="mask" id="aiMask">
+    <div class="modal" style="width:620px;">
+      <div class="mh">
+        <span class="t">⚡ 模型设置</span>
+        <span class="d" id="aiState">正在读取…</span>
+        <button class="x" id="aiX">✕</button>
+      </div>
+      <div class="dc" style="padding:16px; gap:14px; overflow-y:auto; flex:1;">
+        <div class="steps">
+          <div class="step"><span class="no">1</span><span><b>拿密钥</b>：打开平台的 API 控制台，复制你的 <code>sk-</code> 密钥（每个 FDE 用自己的一把）。</span></div>
+          <div class="step"><span class="no">2</span><span><b>填进来</b>：密钥贴在下面，点「自动找接口」，软件会自己试出能用的地址并列出模型。</span></div>
+          <div class="step"><span class="no">3</span><span><b>开始用</b>：回到工作流画布，AI 节点点「▶ 运行」就直接用这个模型跑，结果写回节点。</span></div>
+        </div>
+
+        <div class="fld">
+          <label>平台地址（OpenAI 兼容，填到 /v1 为止）</label>
+          <div class="keyrow">
+            <input type="text" id="aiBase" placeholder="https://api.lk888.ai/v1" />
+            <button id="aiDetect">自动找接口</button>
+          </div>
+          <div class="hint">不确定就留默认，点「自动找接口」。先试 OpenAI 兼容路径（v1 / api/v1…），都不通会自动改走网站自己的「统一入口」协议（画布同款）。</div>
+        </div>
+
+        <div class="fld">
+          <label>密钥 <span style="font-weight:400;color:#7b849c;">（每台电脑各填自己的；输入框只显示 *，别人看不到、也带不走）</span></label>
+          <div class="keyrow">
+            <input type="password" id="aiKey" placeholder="sk-…（留空＝不动已保存的密钥）" autocomplete="off" spellcheck="false" />
+            <button id="aiPaste" title="从剪贴板粘贴">粘贴</button>
+            <button id="aiClearKey" class="danger" style="display:none;" title="删掉本机保存的密钥（换人用、交接前点这个）">清空</button>
+            <button id="aiOpenKey" title="打开蚂蚁任务 AI 的 API 网站，登录后新建/复制自己的密钥">打开网站 ↗</button>
+          </div>
+          <div class="keylink">
+            🔗 拿密钥 / 看用量：<a href="#" id="aiOpenKeyLink">https://ai.my10086.cn/api/console/keys</a>
+          </div>
+          <div class="hint" id="aiKeyHint">密钥只存在这台电脑的数据目录（ai.json），不进快照、不进便携包、也不进交付包。<b>点「清空」就彻底删掉。</b></div>
+        </div>
+
+        <div class="fld">
+          <label>聊天模型（画布「＋聊天」节点、搭台、写脚本都用它）</label>
+          <div class="keyrow">
+            <select id="aiModel" style="flex:1;"><option value="auto">🪄 自动（按任务挑模型）</option></select>
+            <button id="aiRefresh">拉模型</button>
+          </div>
+          <label class="chkrow" style="margin-top:6px;display:flex;align-items:center;gap:7px;">
+            <input type="checkbox" id="aiAutoSwitch" checked />
+            <span>模型不稳时自动换下一个（报错 / 空回复 / 429 / 超时都会换，最多试 4 个）</span>
+          </label>
+          <div class="hint">选「🪄 自动」后：带图 → 自动挑能看图的；搭台/写脚本 → 自动挑推理强的；闲聊/测试 → 自动挑快的。列不出来时也可以手填模型名（点这里切手动 <a href="#" id="aiManual" style="color:#7db3e8">手动填</a>）。</div>
+        </div>
+
+        <div class="fld">
+          <label>模型库 <span id="mlCounts" style="font-weight:400;color:#7b849c;">· 读取中…</span></label>
+          <input id="mlSearch" placeholder="搜模型：kling / suno / deepseek / 豆包 / 图…（跨全部类别）" style="width:100%;box-sizing:border-box;height:30px;border-radius:7px;border:1px solid #232d40;background:#0f141f;color:#dfe4ee;padding:0 10px;font-size:12px;outline:none;margin-bottom:8px;" />
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;" id="mlTabs">
+            <button data-ml="chat" class="mltab on">💬 聊天</button>
+            <button data-ml="image" class="mltab">🖼 图片</button>
+            <button data-ml="video" class="mltab">🎬 视频</button>
+            <button data-ml="audio" class="mltab">🎵 音乐 / 语音</button>
+            <button id="mlReload" title="重新拉一次平台模型目录">↻</button>
+          </div>
+          <div class="hint" id="mlHint">从平台读四类模型：聊天（对话 / 写作 / 分析）、图片（文生图）、视频（文生视频）、音乐/语音。画布里的「＋聊天 / ＋图片 / ＋视频 / ＋音乐」就是按这里来的。</div>
+          <div id="mlList" style="max-height:220px;overflow-y:auto;margin-top:6px;"></div>
+        </div>
+
+        <div class="fld" id="aiManualFld" style="display:none;">
+          <label>模型名（手填）</label>
+          <input type="text" id="aiModelText" placeholder="例如 deepseek-chat / gpt-4o-mini" />
+        </div>
+
+        <div class="aiMsg" id="aiMsg"></div>
+
+        <div class="fld" id="aiUsageFld" style="display:none;">
+          <label>算力用量 <span id="aiDelivered" style="display:none;font-weight:600;color:#8fd6a8;">· 渠道预置，开箱即用</span></label>
+          <div class="hint" id="aiUsageText" style="font-size:12px;color:#cfd6e4;line-height:1.8;"></div>
+          <div class="linkrow" style="margin-top:8px;">
+            <button id="aiOpenBilling">💰 费用 / 余额（已使用 ⚡）</button>
+            <button id="aiOpenLines">🔀 线路选择</button>
+          </div>
+          <div class="hint">费用、已使用额度和限额在控制台「API 密钥」页看；线路（综合最优 / 价格优先 / 速度优先 / 成功率优先）在「接口管理」里选，点上面按钮直达。</div>
+        </div>
+
+        <div class="fld">
+          <label>自定义 / 本地模型</label>
+          <div class="pvrow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+            <button id="pvOllama" title="本机 Ollama：先 ollama serve">🦙 Ollama</button>
+            <button id="pvLmstudio" title="LM Studio 本地服务">💻 LM Studio</button>
+            <button id="pvVllm" title="vLLM 本地服务">⚡ vLLM</button>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:6px;">
+            <input type="text" id="pvName" placeholder="名称（如：本机 Qwen）" style="width:110px;" />
+            <input type="text" id="pvBase" placeholder="http://127.0.0.1:11434/v1" style="flex:1;" />
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:6px;">
+            <input type="password" id="pvKey" placeholder="密钥（本地一般留空）" style="flex:1;" autocomplete="off" />
+            <button id="pvPull">拉模型</button>
+            <button id="pvSaveBtn" style="background:#1d4ed8;color:#fff;border:none;">保存</button>
+          </div>
+          <div class="hint" id="pvMsg" style="margin-bottom:6px;">本地模型：先启动 Ollama / LM Studio，点预设自动填地址 → 拉模型 → 保存。之后一键「启用」就切过去跑。</div>
+          <div id="pvList"></div>
+        </div>
+
+        <div class="fld">
+          <label>用法与说明</label>
+          <div class="linkrow">
+            <button id="aiOpenHome">打开智能体首页</button>
+            <button id="aiOpenConsole">API 控制台</button>
+            <button id="aiOpenSkill">技能对接说明</button>
+          </div>
+          <div class="hint">平台的「技能」页就是对接文档；照着填地址和密钥即可，不需要改软件。</div>
+        </div>
+      </div>
+      <div class="mf">
+        <span class="grow" id="aiBottom">密钥和模型都填好后点「测试连接」</span>
+        <button id="aiCancel">关闭</button>
+        <button id="aiSaveBtn">保存</button>
+        <button class="pri" id="aiTest">测试连接</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 下载 -->
+  <div class="mask" id="dlMask">
+    <div class="modal">
+      <div class="mh">
+        <span class="t">从本机下载能力</span>
+        <span class="d" id="dlStat">正在扫描 WorkBuddy / Codex …</span>
+        <button class="x" id="dlX">✕</button>
+      </div>
+      <div class="msub">
+        <input id="dlQ" placeholder="搜名字或说明…" />
+        <button class="chip on" data-dlk="all">全部</button>
+        <button class="chip" data-dlk="expert">专家</button>
+        <button class="chip" data-dlk="skill">技能</button>
+        <button class="chip" data-dlk="connector">连接器</button>
+      </div>
+      <div class="mlist" id="dlList"></div>
+      <div class="mf">
+        <span class="grow" id="dlHint">勾上要的，点「下载」放进 FDE</span>
+        <button id="dlCancel">关闭</button>
+        <button class="pri" id="dlGo">下载选中</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 回收站 -->
+  <div class="mask" id="trMask">
+    <div class="modal" style="width:560px;">
+      <div class="mh">
+        <span class="t">回收站</span>
+        <span class="d">删掉的东西先放这里，可恢复</span>
+        <button class="x" id="trX">✕</button>
+      </div>
+      <div class="mlist" id="trList" style="min-height:180px;"></div>
+      <div class="mf">
+        <span class="grow"></span>
+        <button id="trClose">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pop" id="pop"></div>
+  <div class="toast" id="toast"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const KIND_ORDER = ['expert', 'skill', 'connector', 'library'];
+const KIND_ICON = { expert: '🧭', skill: '🧠', connector: '🔌', library: '📚' };
+const SRC_LABEL = { self: '自建', import: '导入', workbuddy: 'WorkBuddy', codex: 'Codex', claude: 'Claude', pack: '场景包', copy: '复制' };
+
+let S = { items: [], trash: [], kinds: {}, stats: {} };
+let V = { kind: 'all', source: 'all', q: '', sort: 'updated' };
+let EDIT = null;       // 正在编辑的项（null = 新建）
+let EDIT_KIND = 'expert';
+let SCAN = null;       // 下载候选缓存
+let AI = { hasKey: false, model: '', baseUrl: '', models: [], status: { level: 'off', text: '' } };
+let DLK = 'all';
+let DLQ = '';
+const PICK = new Set();
+
+function toast(msg, kind) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.className = 'toast on' + (kind ? ' ' + kind : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = 'toast' + (kind ? ' ' + kind : ''); }, 2800);
+}
+
+function kindLabel(k) { return (S.kinds && S.kinds[k] && S.kinds[k].label) || k; }
+function kindIcon(k) { return (S.kinds && S.kinds[k] && S.kinds[k].icon) || KIND_ICON[k] || '•'; }
+
+function fmtTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  const same = d.toDateString() === now.toDateString();
+  if (same) return '今天 ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+  return (d.getMonth() + 1) + '/' + d.getDate();
+}
+
+async function load() {
+  S = await window.fde.appsGet();
+  renderAll();
+}
+
+function renderAll() {
+  renderStat(); renderRail(); renderBar(); renderGrid();
+}
+
+function setPane(tab) {
+  const kb = tab === 'kb';
+  document.body.classList.toggle('kbOn', kb);
+  document.querySelectorAll('#seg button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  document.getElementById('appsBody').style.display = kb ? 'none' : 'flex';
+  document.getElementById('kbPane').classList.toggle('on', kb);
+  if (kb) {
+    const f = document.getElementById('kbFrame');
+    if (!f.getAttribute('src')) f.setAttribute('src', 'kb.html?embed=1');
+  }
+}
+
+function renderStat() {
+  const st = S.stats || { total: 0 };
+  const parts = KIND_ORDER.map(k => kindLabel(k) + ' ' + (st[k] || 0)).join(' · ');
+  $('#stat').textContent = (st.total || 0) + ' 项 · ' + parts;
+}
+
+function renderRail() {
+  const st = S.stats || {};
+  const srcCount = {};
+  for (const it of S.items) {
+    const t = (it.source && it.source.type) || 'self';
+    srcCount[t] = (srcCount[t] || 0) + 1;
+  }
+  let h = '';
+  // 最上面一行：模型设置（接算力 / 选模型，全局配置，先配这个再干活）
+  h += '<div class="rrow" id="aiRow" title="模型设置：填一把密钥，画布里的 AI 节点、搭台、写脚本就直接用这里选的模型"><span class="ic">⚡</span><span>模型设置</span>' +
+    '<span class="n" style="color:' + (AI && AI.hasKey ? '#7fd6a0' : '#6b7789') + '">' + (AI && AI.hasKey ? '已接' : '未接') + '</span></div>';
+  // 第二行是知识库本体（顶部那档），点它直接进，避免和"资料库条目"混淆
+  h += '<div class="rrow kbent" id="kbEntRow" title="我的资料库：按用途建库，现有文件夹整批导入">' +
+    '<span class="ic">📚</span><span>知识库</span><span class="n">本地</span></div>';
+  h += '<div class="rlabel">能力类型</div>';
+  h += row('kind', 'all', '🗂', '全部能力', S.items.length);
+  for (const k of KIND_ORDER) {
+    // 资料库这一类是"目录里的一条记录"，和真知识库不是一回事，名字上必须分开
+    const lab = k === 'library' ? '资料库条目' : kindLabel(k);
+    h += row('kind', k, kindIcon(k), lab, st[k] || 0);
+  }
+  h += '<div class="rsep"></div><div class="rlabel">来源</div>';
+  h += row('source', 'all', '◌', '全部来源', S.items.length);
+  for (const t of ['self', 'workbuddy', 'codex', 'claude', 'import']) {
+    if (!srcCount[t]) continue;
+    h += row('source', t, t === 'self' ? '✎' : '↓', SRC_LABEL[t], srcCount[t]);
+  }
+  h += '<div class="rsep"></div>';
+  h += '<div class="rrow" id="trashRow"><span class="ic">🗑</span><span>回收站</span><span class="n">' + S.trash.length + '</span></div>';
+  $('#rail').innerHTML = h;
+  $('#rail').querySelectorAll('.rrow[data-t]').forEach(el => {
+    el.onclick = () => {
+      const t = el.dataset.t, v = el.dataset.v;
+      V[t] = v;
+      renderRail(); renderBar(); renderGrid();
+    };
+  });
+  const kbEnt = $('#kbEntRow');
+  if (kbEnt) kbEnt.onclick = () => setPane('kb');
+  const tr = $('#trashRow');
+  if (tr) tr.onclick = openTrash;
+  const ai = $('#aiRow');
+  if (ai) ai.onclick = openAi;
+}
+
+function row(type, val, icon, label, count) {
+  const on = V[type] === val ? ' on' : '';
+  return '<div class="rrow' + on + '" data-t="' + type + '" data-v="' + val + '">' +
+    '<span class="ic">' + icon + '</span><span>' + esc(label) + '</span>' +
+    '<span class="n">' + count + '</span></div>';
+}
+
+function renderBar() {
+  const t = V.kind === 'all' ? '全部能力' : kindLabel(V.kind);
+  $('#barTitle').textContent = t;
+  const hint = V.kind === 'all'
+    ? '专家会判断、技能会做事、连接器接系统、资料库放材料'
+    : (S.kinds[V.kind] && S.kinds[V.kind].hint) || '';
+  $('#barDesc').textContent = hint;
+  document.querySelectorAll('.bar .chip').forEach(b => b.classList.toggle('on', b.dataset.sort === V.sort));
+}
+
+function visible() {
+  const q = V.q.trim().toLowerCase();
+  let list = S.items.filter(it => {
+    if (V.kind !== 'all' && it.kind !== V.kind) return false;
+    if (V.source !== 'all' && ((it.source && it.source.type) || 'self') !== V.source) return false;
+    if (!q) return true;
+    const hay = [it.name, it.tagline, it.desc, (it.tags || []).join(' ')].join(' ').toLowerCase();
+    return hay.indexOf(q) >= 0;
+  });
+  if (V.sort === 'name') list.sort((a, b) => String(a.name).localeCompare(String(b.name), 'zh'));
+  return list;
+}
+
+function renderGrid() {
+  const list = visible();
+  const box = $('#grid');
+  if (!list.length) {
+    const isAll = !V.q && V.kind === 'all' && V.source === 'all';
+    box.innerHTML = '<div class="empty"><b>' + (isAll ? '还没有任何能力' : '这类里没有匹配的') + '</b>' +
+      (isAll
+        ? '点右上角「⬇ 下载」把 WorkBuddy / Codex 里现成的专家、技能、连接器拿过来，<br>或者「＋ 新建」自己写一个。'
+        : '换个筛选，或者点「＋ 新建」加一个。') + '</div>';
+    return;
+  }
+  box.innerHTML = list.map(it => {
+    const src = (it.source && it.source.type) || 'self';
+    const tags = (it.tags || []).slice(0, 4).map(t => '<span class="tag">' + esc(t) + '</span>').join('');
+    return '<div class="card" data-id="' + esc(it.id) + '">' +
+      '<div class="top"><div class="ic">' + esc(it.icon || kindIcon(it.kind)) + '</div>' +
+      '<div style="min-width:0;flex:1"><div class="nm">' + esc(it.name) + '</div>' +
+      '<div class="tg">' + esc(it.tagline || it.desc || '') + '</div></div></div>' +
+      (tags ? '<div class="tags">' + tags + '</div>' : '') +
+      '<div class="meta"><span class="src ' + esc(src) + '">' + esc(SRC_LABEL[src] || src) + '</span>' +
+      '<span>' + esc(kindLabel(it.kind)) + '</span><span style="margin-left:auto">' + fmtTime(it.updatedAt) + '</span></div>' +
+      '<div class="acts"><button class="go" data-act="use">用</button>' +
+      '<button data-act="edit">编辑</button><span class="sp"></span>' +
+      '<button data-act="dir" title="打开所在文件夹">📂</button>' +
+      '<button data-act="del" title="删除（进回收站）">🗑</button></div>' +
+      '</div>';
+  }).join('');
+
+  box.querySelectorAll('.card').forEach(card => {
+    const id = card.dataset.id;
+    card.querySelectorAll('button[data-act]').forEach(b => {
+      b.onclick = (ev) => {
+        ev.stopPropagation();
+        const a = b.dataset.act;
+        if (a === 'edit') openEditor(S.items.find(x => x.id === id));
+        if (a === 'del') delItem(id);
+        if (a === 'dir') window.fde.appsOpenFolder(id);
+        if (a === 'use') openUseMenu(ev.currentTarget, id);
+      };
+    });
+  });
+}
+
+/* ---------------- 「用」 ---------------- */
+function openUseMenu(anchor, id) {
+  const it = S.items.find(x => x.id === id);
+  if (!it) return;
+  const pop = $('#pop');
+  const canOpen = (it.kind === 'library' && it.library && it.library.path) || (it.connector && it.connector.url);
+  let h = '<button data-u="canvas">🧩 放到工作流画布</button>';
+  if (it.kind === 'expert' || it.kind === 'skill' || it.kind === 'connector') h += '<button data-u="copy">📋 复制给 AI（提示词）</button>';
+  if (canOpen) h += '<button data-u="open">↗ 打开位置</button>';
+  h += '<button data-u="edit">✎ 修改</button>';
+  pop.innerHTML = h;
+  pop.classList.add('on');
+  const r = anchor.getBoundingClientRect();
+  const w = 176;
+  pop.style.left = Math.max(8, Math.min(window.innerWidth - w - 10, r.left - 40)) + 'px';
+  pop.style.top = (r.bottom + 6) + 'px';
+  pop.querySelectorAll('button').forEach(b => {
+    b.onclick = async () => {
+      pop.classList.remove('on');
+      const u = b.dataset.u;
+      if (u === 'edit') return openEditor(it);
+      if (u === 'canvas') {
+        const rr = await window.fde.appsToCanvas(id);
+        if (rr && rr.ok) toast('已放到画布，右边就能看到', 'ok');
+        else toast((rr && rr.error) || '放不上画布', 'err');
+        return;
+      }
+      if (u === 'copy') {
+        const rr = await window.fde.appsPrompt(id);
+        if (!rr || !rr.ok) return toast('取不到内容', 'err');
+        const c = await window.fde.copyText(rr.text);
+        toast(c && c.ok ? '已复制，粘到任意 AI 里就能用' : '复制失败', c && c.ok ? 'ok' : 'err');
+        return;
+      }
+      if (u === 'open') {
+        const rr = await window.fde.appsOpenTarget(id);
+        if (rr && rr.ok === false) toast(rr.error || '打不开', 'err');
+      }
+    };
+  });
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#pop') && !e.target.closest('button[data-act="use"]')) $('#pop').classList.remove('on');
+}, true);
+
+/* ---------------- 编辑器 ---------------- */
+function kindButtons(active, lock) {
+  return KIND_ORDER.map(k =>
+    '<button data-k="' + k + '" class="' + (k === active ? 'on' : '') + '"' + (lock ? ' disabled' : '') + '>' +
+    '<span class="e">' + kindIcon(k) + '</span>' + kindLabel(k) + '</button>').join('');
+}
+
+function syncKindHint() {
+  const h = (S.kinds[EDIT_KIND] && S.kinds[EDIT_KIND].hint) || '';
+  $('#kindHint').textContent = h;
+  const isConn = EDIT_KIND === 'connector';
+  const isLib = EDIT_KIND === 'library';
+  $('#connFld').style.display = isConn ? 'flex' : 'none';
+  $('#libFld').style.display = isLib ? 'flex' : 'none';
+  $('#bodyFld').style.display = (isConn || isLib) ? 'none' : 'block';
+  $('#bodyLabel').textContent = EDIT_KIND === 'expert' ? '专家设定（角色 / 判断标准 / 输出格式）' : '做法（步骤 / 判断 / 产出）';
+}
+
+function openEditor(item) {
+  EDIT = item || null;
+  EDIT_KIND = item ? item.kind : (V.kind === 'all' ? 'expert' : V.kind);
+  $('#dTitle').textContent = item ? '修改' : '新建';
+  $('#kinds').innerHTML = kindButtons(EDIT_KIND, !!item);
+  $('#kinds').querySelectorAll('button').forEach(b => {
+    b.onclick = () => { if (item) return; EDIT_KIND = b.dataset.k; $('#kinds').innerHTML = kindButtons(EDIT_KIND, false); bindKindBtns(); syncKindHint(); };
+  });
+  bindKindBtns();
+  $('#fIcon').value = (item && item.icon) || KIND_ICON[EDIT_KIND] || '';
+  $('#fName').value = (item && item.name) || '';
+  $('#fTagline').value = (item && item.tagline) || '';
+  $('#fDesc').value = (item && item.desc) || '';
+  $('#fTags').value = (item && item.tags || []).join(', ');
+  $('#fBody').value = (item && item.body) || '';
+  const c = (item && item.connector) || {};
+  $('#fConnType').value = c.type || 'mcp';
+  $('#fConnUrl').value = c.url || c.command || '';
+  $('#fConnCfg').value = c.config || '';
+  const l = (item && item.library) || {};
+  $('#fLibPath').value = l.path || '';
+  $('#fLibItems').value = (l.items || []).join('\n');
+  const src = item && item.source;
+  $('#srcFld').style.display = src && src.type ? 'block' : 'none';
+  $('#srcText').textContent = src && src.type
+    ? (SRC_LABEL[src.type] || src.type) + (src.path ? ' · ' + src.path : '')
+    : '';
+  $('#fDel').style.display = item ? 'inline-block' : 'none';
+  $('#fCopy').style.display = item ? 'inline-block' : 'none';
+  syncKindHint();
+  $('#drawer').classList.add('on');
+  setTimeout(() => $('#fName').focus(), 80);
+}
+
+function bindKindBtns() {
+  $('#kinds').querySelectorAll('button').forEach(b => {
+    if (b.dataset.bound) return;
+    b.dataset.bound = '1';
+    b.onclick = () => {
+      if (EDIT) return;
+      EDIT_KIND = b.dataset.k;
+      $('#kinds').innerHTML = kindButtons(EDIT_KIND, false);
+      bindKindBtns();
+      if (!$('#fIcon').value || Object.values(KIND_ICON).includes($('#fIcon').value)) $('#fIcon').value = kindIcon(EDIT_KIND);
+      syncKindHint();
+    };
+  });
+}
+
+function closeEditor() {
+  $('#drawer').classList.remove('on');
+  EDIT = null;
+}
+
+async function saveEditor() {
+  const name = $('#fName').value.trim();
+  if (!name) { $('#fName').focus(); return toast('起个名字吧', 'err'); }
+  const patch = {
+    id: EDIT ? EDIT.id : '',
+    kind: EDIT ? EDIT.kind : EDIT_KIND,
+    name,
+    icon: $('#fIcon').value.trim(),
+    tagline: $('#fTagline').value.trim(),
+    desc: $('#fDesc').value.trim(),
+    tags: $('#fTags').value,
+    body: $('#fBody').value
+  };
+  if (patch.kind === 'connector') {
+    const urlOrCmd = $('#fConnUrl').value.trim();
+    patch.connector = {
+      type: $('#fConnType').value,
+      url: /^https?:/i.test(urlOrCmd) ? urlOrCmd : '',
+      command: /^https?:/i.test(urlOrCmd) ? '' : urlOrCmd,
+      config: $('#fConnCfg').value
+    };
+  }
+  if (patch.kind === 'library') {
+    patch.library = {
+      path: $('#fLibPath').value.trim(),
+      items: $('#fLibItems').value.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+    };
+  }
+  const r = await window.fde.appsSave(patch);
+  if (!r.ok) return toast(r.error || '保存失败', 'err');
+  S = await window.fde.appsGet();
+  renderAll();
+  toast(r.created ? '已新建「' + name + '」' : '已保存「' + name + '」', 'ok');
+  if (r.created) { closeEditor(); return; }
+  EDIT = S.items.find(x => x.id === r.item.id) || null;
+}
+
+async function delItem(id) {
+  const it = S.items.find(x => x.id === id);
+  if (!it) return;
+  const r = await window.fde.appsRemove(id);
+  if (!r.ok) return toast(r.error || '删不掉', 'err');
+  S = await window.fde.appsGet();
+  renderAll();
+  if (EDIT && EDIT.id === id) closeEditor();
+  toast('「' + it.name + '」已放进回收站');
+}
+
+/* ---------------- 导入 ---------------- */
+async function doImport() {
+  const r = await window.fde.appsImport();
+  if (!r || r.canceled) return;
+  if (!r.ok) return toast(r.error || '导入失败', 'err');
+  const ok = (r.results || []).filter(x => x.ok);
+  const bad = (r.results || []).filter(x => !x.ok);
+  S = await window.fde.appsGet();
+  renderAll();
+  if (ok.length) toast('导入 ' + ok.length + ' 项：' + ok.map(x => x.name).join('、'), 'ok');
+  if (bad.length) toast('有 ' + bad.length + ' 项没导进来：' + (bad[0].error || ''), 'err');
+}
+
+/* ---------------- 下载 ---------------- */
+async function openDownload() {
+  $('#dlMask').classList.add('on');
+  if (SCAN) return renderDownload();
+  $('#dlList').innerHTML = '<div class="empty" style="padding:40px 10px;">正在扫描本机的 WorkBuddy / Codex / Claude …<br><span style="color:#6b7789">连接器市场有几百个，第一次要几秒</span></div>';
+  const r = await window.fde.appsScan(false);
+  SCAN = (r && r.items) || [];
+  renderDownload();
+}
+
+function renderDownload() {
+  const list = (SCAN || []).filter(x => {
+    if (DLK !== 'all' && x.kind !== DLK) return false;
+    if (!DLQ) return true;
+    const hay = (x.name + ' ' + x.desc + ' ' + (x.group || '') + ' ' + (x.extra || '')).toLowerCase();
+    return hay.indexOf(DLQ) >= 0;
+  });
+  const total = (SCAN || []).length;
+  const done = (SCAN || []).filter(x => x.installed).length;
+  $('#dlStat').textContent = total + ' 个可选 · 已有 ' + done + ' 个';
+  const groups = {};
+  for (const x of list) {
+    const g = x.group || (SRC_LABEL[x.source] || x.source);
+    (groups[g] = groups[g] || []).push(x);
+  }
+  const order = ['连接器市场', '官方技能', '团队专家', '团队技能', '内置技能', '我的专家', 'WorkBuddy', 'Codex', 'Claude'];
+  const keys = Object.keys(groups).sort((a, b) => {
+    const ia = order.indexOf(a), ib = order.indexOf(b);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
+  let h = '';
+  for (const g of keys) {
+    h += '<div class="mgroup">' + esc(g) + ' · ' + groups[g].length + '</div>';
+    for (const x of groups[g]) {
+      const k = x.key;
+      h += '<label class="mrow">' +
+        '<input type="checkbox" data-k="' + esc(k) + '"' + (PICK.has(k) ? ' checked' : '') + '>' +
+        '<span class="kc">' + esc(kindLabel(x.kind)) + '</span>' +
+        '<span class="nm">' + esc(x.name) + '</span>' +
+        '<span class="ds">' + esc(x.desc || '') + '</span>' +
+        (x.installed ? '<span class="ig">已有</span>' : '') +
+        '</label>';
+    }
+  }
+  if (!h) h = '<div class="empty" style="padding:36px 10px;">没有匹配的。换个词，或者点「全部」。</div>';
+  $('#dlList').innerHTML = h;
+  $('#dlList').querySelectorAll('input[data-k]').forEach(cb => {
+    cb.onchange = () => {
+      if (cb.checked) PICK.add(cb.dataset.k); else PICK.delete(cb.dataset.k);
+      updateDlHint();
+    };
+  });
+  updateDlHint();
+}
+
+function updateDlHint() {
+  const n = PICK.size;
+  $('#dlGo').disabled = !n;
+  $('#dlHint').textContent = n ? '已选 ' + n + ' 项，下载后可在画布 / 场景市场里直接用' : '勾上要的，点「下载」放进 FDE';
+}
+
+async function downloadPicked() {
+  const picked = (SCAN || []).filter(x => PICK.has(x.key));
+  if (!picked.length) return;
+  const btn = $('#dlGo');
+  btn.disabled = true; btn.textContent = '下载中…';
+  let ok = 0, fail = 0, lastErr = '';
+  for (const c of picked) {
+    const r = await window.fde.appsInstall(c);
+    if (r && r.ok) ok++; else { fail++; lastErr = (r && r.error) || ''; }
+  }
+  btn.textContent = '下载选中';
+  PICK.clear();
+  S = await window.fde.appsGet();
+  renderAll();
+  const again = await window.fde.appsScan(true);
+  SCAN = (again && again.items) || SCAN;
+  renderDownload();
+  $('#dlMask').classList.remove('on');
+  toast('下载完成：' + ok + ' 项' + (fail ? '，' + fail + ' 项失败 ' + lastErr : ''), fail ? 'err' : 'ok');
+}
+
+/* ---------------- 回收站 ---------------- */
+function openTrash() {
+  const rows = (S.trash || []).map(t =>
+    '<div class="mrow" style="cursor:default;">' +
+    '<span class="kc">' + esc(kindLabel(t.kind)) + '</span>' +
+    '<span class="nm">' + esc(t.name) + '</span>' +
+    '<span class="ds">' + fmtTime(t.deletedAt) + ' 删除</span>' +
+    '<button class="hbtn" data-r="' + esc(t.key) + '" style="height:24px;font-size:11px;">恢复</button>' +
+    '<button class="hbtn" data-p="' + esc(t.key) + '" style="height:24px;font-size:11px;color:#ffb4b4;">彻底删</button>' +
+    '</div>').join('');
+  $('#trList').innerHTML = rows || '<div class="empty" style="padding:30px 10px;">回收站是空的。</div>';
+  $('#trList').querySelectorAll('button[data-r]').forEach(b => {
+    b.onclick = async () => {
+      const r = await window.fde.appsRestore(b.dataset.r);
+      if (!r.ok) return toast(r.error || '恢复失败', 'err');
+      S = await window.fde.appsGet(); renderAll(); openTrash(); toast('已恢复', 'ok');
+    };
+  });
+  $('#trList').querySelectorAll('button[data-p]').forEach(b => {
+    b.onclick = async () => {
+      if (!confirm('彻底删除后无法恢复，确定？')) return;
+      const r = await window.fde.appsPurge(b.dataset.p);
+      if (!r.ok) return toast(r.error || '删不掉', 'err');
+      S = await window.fde.appsGet(); renderAll(); openTrash(); toast('已彻底删除');
+    };
+  });
+  $('#trMask').classList.add('on');
+}
+
+/* ---------------- 模型设置（原 AI 算力） ---------------- */
+function renderAiPill() {
+  const st = (AI && AI.status) || { level: 'off', text: '未接算力' };
+  const pill = $('#aiPill');
+  if (!pill) return;
+  pill.className = 'aipill' + (st.level === 'on' ? ' on' : st.level === 'half' ? ' half' : '');
+  const mdl = String(AI.model || '');
+  $('#aiPillText').textContent = st.level === 'on'
+    ? ('算力 · ' + (!mdl || mdl === 'auto' ? '自动' : mdl))
+    : (st.level === 'half' ? '待选模型' : '未接算力');
+  pill.title = st.text || '';
+}
+
+async function loadAi() {
+  try { AI = await window.fde.aiGet(); } catch (e) { AI = AI || {}; }
+  renderAiPill();
+  renderAiUsage();
+}
+
+function fmtTok(n) {
+  n = Number(n || 0);
+  if (n >= 1000000) return (n / 1000000).toFixed(2) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return String(n);
+}
+
+function renderAiUsage() {
+  const fld = $('#aiUsageFld');
+  if (!fld) return;
+  const u = AI && AI.usage;
+  const badge = $('#aiDelivered');
+  if (badge) badge.style.display = (AI && AI.delivered) ? 'inline' : 'none';
+  if (!u || !(u.total && u.total.calls)) {
+    fld.style.display = (AI && AI.delivered) ? 'block' : 'none';
+    const t = $('#aiUsageText');
+    if (t && AI && AI.delivered) t.textContent = '还没有调用记录。跑一次画布 AI 节点或搭台助手，这里就会显示 token 消耗。';
+    return;
+  }
+  fld.style.display = 'block';
+  const rows = (u.byModel || []).map(m => esc(m.model) + '（' + m.calls + ' 次）').join('、');
+  $('#aiUsageText').innerHTML =
+    '今日：<b>' + fmtTok(u.today.tokens) + '</b> tokens / ' + u.today.calls + ' 次　·　累计：<b>' + fmtTok(u.total.tokens) + '</b> tokens / ' + u.total.calls + ' 次'
+    + (rows ? '<br>常用模型：' + rows : '');
+}
+
+function aiSay(kind, text) {
+  const el = $('#aiMsg');
+  if (!el) return;
+  if (!text) { el.className = 'aiMsg'; el.textContent = ''; return; }
+  el.className = 'aiMsg on ' + (kind || 'ok');
+  el.textContent = text;
+}
+
+/* ---------------- 自定义 / 本地模型供应商 ---------------- */
+const PV_PRESETS = {
+  ollama: { name: '本机 Ollama', baseUrl: 'http://127.0.0.1:11434/v1', local: true },
+  lmstudio: { name: 'LM Studio', baseUrl: 'http://127.0.0.1:1234/v1', local: true },
+  vllm: { name: 'vLLM', baseUrl: 'http://127.0.0.1:8000/v1', local: true }
+};
+let pvPendingModels = null;
+
+function pvSay(text, ok) {
+  const el = $('#pvMsg');
+  if (el) { el.textContent = text || ''; el.style.color = ok === false ? '#e8a0a0' : (ok === true ? '#8fd6a8' : ''); }
+}
+
+function renderPvList() {
+  const box = $('#pvList');
+  if (!box) return;
+  const list = (AI && AI.providers) || [];
+  box.innerHTML = list.length
+    ? list.map(p =>
+        '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #232837;">' +
+        '<div style="flex:1;min-width:0;"><div style="font-size:12px;color:#dfe4ee;">' + esc(p.name) +
+        (p.local ? ' <span style="color:#8fd6a8;font-size:10px;">本地</span>' : '') + '</div>' +
+        '<div style="font-size:10px;color:#6b7789;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(p.baseUrl) + ' · ' + (p.models || []).length + ' 个模型</div></div>' +
+        '<button data-pvuse="' + esc(p.id) + '" style="height:24px;padding:0 10px;border:none;border-radius:6px;background:#1d4ed8;color:#fff;font-size:11px;cursor:pointer;">启用</button>' +
+        '<button data-pvdel="' + esc(p.id) + '" style="height:24px;padding:0 8px;border:1px solid #3a2430;border-radius:6px;background:transparent;color:#c98a8a;font-size:11px;cursor:pointer;">删</button>' +
+        '</div>').join('')
+    : '<div style="font-size:11px;color:#5b6478;padding:2px 0;">还没有自定义供应商。本地 Ollama 装好后点上面按钮，两步就能接进来。</div>';
+}
+$('#pvList').addEventListener('click', async (e) => {
+  const use = e.target.closest('[data-pvuse]');
+  const del = e.target.closest('[data-pvdel]');
+  const list = (AI && AI.providers) || [];
+  if (use) {
+    const p = list.find(x => x.id === use.dataset.pvuse);
+    if (!p) return;
+    const r = await window.fde.aiUseProvider(p.id);
+    if (!r || !r.ok) { pvSay('启用失败：' + ((r && r.error) || '未知'), false); return; }
+    await loadAi();
+    $('#aiBase').value = AI.baseUrl || p.baseUrl;
+    fillModelSelect($('#aiModel'), AI.models || [], AI.model || '');
+    pvSay('已启用「' + p.name + '」，当前模型：' + (AI.model || '（去上面选一个）'), true);
+  } else if (del) {
+    const rest = list.filter(x => x.id !== del.dataset.pvdel);
+    await window.fde.aiSave({ providers: rest });
+    await loadAi();
+    renderPvList();
+  }
+});
+
+async function pvPull() {
+  const base = $('#pvBase').value.trim();
+  if (!base) { pvSay('先填地址（点预设自动填）', false); return; }
+  pvSay('正在拉模型…');
+  const r = await window.fde.aiModels({ baseUrl: base, apiKey: $('#pvKey').value, noSave: true });
+  if (!r || !r.ok) { pvPendingModels = null; pvSay('拉模型失败：' + ((r && r.error) || '未知错误'), false); return; }
+  pvPendingModels = (r.models || []).map(m => m.id);
+  pvSay('拉到 ' + pvPendingModels.length + ' 个模型，点「保存」收进列表', true);
+}
+
+async function pvSave() {
+  const base = $('#pvBase').value.trim();
+  if (!base) { pvSay('先填地址', false); return; }
+  if (!pvPendingModels) { pvPull().then(() => { if (pvPendingModels) pvSave(); }); return; }
+  const list = (AI && AI.providers) || [];
+  const entry = {
+    id: 'pv' + Date.now().toString(36),
+    name: $('#pvName').value.trim() || '自定义',
+    baseUrl: base,
+    apiKey: $('#pvKey').value,
+    models: pvPendingModels,
+    local: /^http:\/\/(127\.|localhost)/.test(base)
+  };
+  const dupIdx = list.findIndex(x => x.baseUrl === entry.baseUrl);
+  if (dupIdx >= 0) list[dupIdx] = Object.assign({}, list[dupIdx], entry, { id: list[dupIdx].id });
+  else list.push(entry);
+  await window.fde.aiSave({ providers: list });
+  await loadAi();
+  renderPvList();
+  pvPendingModels = null;
+  pvSay((dupIdx >= 0 ? '已更新「' + entry.name + '」' : '已保存「' + entry.name + '」') + '，点它的「启用」开始用', true);
+}
+$('#pvPull').onclick = pvPull;
+$('#pvSaveBtn').onclick = pvSave;
+
+function pvFill(kind) {
+  const p = PV_PRESETS[kind];
+  if (!p) return;
+  $('#pvName').value = p.name;
+  $('#pvBase').value = p.baseUrl;
+  $('#pvKey').value = '';
+  pvPull();
+}
+$('#pvOllama').onclick = () => pvFill('ollama');
+$('#pvLmstudio').onclick = () => pvFill('lmstudio');
+$('#pvVllm').onclick = () => pvFill('vllm');
+
+
+function fillModelSelect(sel, models, cur) {
+  // 双格式兼容：老配置/渠道预置可能存字符串数组，统一转成 {id,name}
+  const list = (models || []).slice().map((m) => {
+    if (typeof m === 'string') return m.trim() ? { id: m.trim(), name: m.trim() } : null;
+    if (m && m.id) return { id: String(m.id), name: String(m.name || m.id) };
+    return null;
+  }).filter(Boolean);
+  const atAuto = !cur || cur === 'auto';
+  if (cur && !atAuto && !list.some(m => m.id === cur)) list.unshift({ id: cur, name: cur + '（当前）' });
+  const autoOpt = '<option value="auto">🪄 自动（按任务挑模型）</option>';
+  sel.innerHTML = autoOpt + (list.length
+    ? list.map(m => '<option value="' + esc(m.id) + '">' + esc(m.name || m.id) + '</option>').join('')
+    : '<option value="">（还没拉取，点右边「拉模型」）</option>');
+  sel.value = atAuto ? 'auto' : cur;
+}
+
+/* ---------------- 模型库：四类模型一眼找到 ---------------- */
+let ML = { models: [], groups: { chat: [], image: [], video: [], audio: [] }, counts: {}, loaded: false, error: '' };
+let ML_TAB = 'chat';
+
+async function loadMl(force) {
+  const box = $('#mlCounts');
+  if (box) box.textContent = '· 读取中…';
+  let r = null;
+  try { r = await window.fde.modelsCatalog(!!force); } catch (e) { r = { ok: false, error: e.message }; }
+  if (!r || !r.ok) {
+    ML = Object.assign({}, ML, { loaded: false, error: (r && r.error) || '读不到模型目录' });
+    if (box) box.textContent = '· 读不到';
+    renderMl();
+    return;
+  }
+  let flat = r.models || [];
+  if (!flat.length && r.groups) flat = Object.values(r.groups).reduce((a, g) => a.concat(g || []), []);
+  ML = { models: flat, groups: r.groups || {}, counts: r.counts || {}, loaded: true, error: '' };
+  if (box) box.textContent = '· 共 ' + (ML.counts.total || ML.models.length) + ' 个（文本 ' + (ML.counts.chat || 0) +
+    ' · 图片 ' + (ML.counts.image || 0) + ' · 视频 ' + (ML.counts.video || 0) + ' · 音乐 ' + (ML.counts.audio || 0) + '）';
+  renderMl();
+}
+
+const TYPE_NAME = { chat: '聊天', image: '图片', video: '视频', audio: '音乐' };
+
+function renderMl() {
+  const box = $('#mlList');
+  if (!box) return;
+  const q = (($('#mlSearch') || {}).value || '').trim().toLowerCase();
+  document.querySelectorAll('#mlTabs .mltab').forEach(b => b.classList.toggle('on', b.dataset.ml === ML_TAB));
+  if (!ML.loaded) {
+    box.innerHTML = '<div class="hint" style="color:#e8a0a0;">' + esc(ML.error || '还没读到模型目录') + '</div>';
+    return;
+  }
+  let list, head;
+  if (q) {
+    // 搜索：跨全部四类，按模型名 / 中文名 / 标签匹配
+    list = ML.models.filter(m =>
+      (m.name || '').toLowerCase().includes(q) ||
+      (m.displayName || '').toLowerCase().includes(q) ||
+      (m.tags || []).some(t => String(t).toLowerCase().includes(q)));
+    head = '搜「' + q + '」· 命中 ' + list.length + ' 个';
+  } else {
+    list = (ML.groups && ML.groups[ML_TAB]) || [];
+    head = '';
+  }
+  if (!list.length) { box.innerHTML = '<div class="hint">' + (q ? '没搜到，换个词试试（支持拼音名、中文名、标签）。' : '这一类暂时没有可用模型。') + '</div>'; return; }
+  const headHtml = head ? '<div style="font-size:11px;color:#7b849c;margin:2px 0 7px;">' + esc(head) + '</div>' : '';
+  box.innerHTML = headHtml + list.map(m =>
+    '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid #202a3c;border-radius:7px;margin-bottom:5px;background:#0e1420;">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:12px;color:#dfe4ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(m.displayName || m.name) +
+        (m.available === false ? ' <span style="color:#e8a0a0;font-size:10px;">本密钥不可用</span>' : '') + '</div>' +
+        '<div style="font-size:10px;color:#6d7589;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(m.name) +
+        (m.tags && m.tags.length ? ' · ' + esc(m.tags.slice(0, 4).join(' / ')) : '') + '</div>' +
+      '</div>' +
+      (q ? '<span style="font-size:10px;color:#8ab4ff;border:1px solid #26406e;border-radius:4px;padding:1px 5px;">' + esc(TYPE_NAME[m.type] || m.type) + '</span>' : '') +
+      '<button data-mlcopy="' + esc(m.name) + '" style="font-size:10px;">复制名</button>' +
+      '<button data-mluse="' + esc(m.name) + '" data-mltype="' + esc(m.type) + '" style="font-size:10px;">加到画布</button>' +
+    '</div>').join('');
+  box.querySelectorAll('[data-mlcopy]').forEach(b => {
+    b.onclick = async () => { try { await window.fde.copyText(b.dataset.mlcopy); b.textContent = '✓'; setTimeout(() => b.textContent = '复制名', 900); } catch (e) {} };
+  });
+  box.querySelectorAll('[data-mluse]').forEach(b => {
+    b.onclick = async () => {
+      const type = b.dataset.mltype;
+      if (type === 'chat') { await window.fde.openOverview('canvas'); return; }
+      // 生成类模型：直接打开画布，用户点 ＋图片/＋视频/＋音乐 后在这个列表里选它
+      await window.fde.copyText(b.dataset.mluse);
+      try { localStorage.setItem('fde.ml.pick', b.dataset.mluse); } catch (e) {}
+      await window.fde.openOverview('canvas');
+    };
+  });
+}
+
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('#mlTabs [data-ml]');
+  if (!t) return;
+  ML_TAB = t.dataset.ml;
+  renderMl();
+});
+const mlReloadBtn = document.getElementById('mlReload');
+if (mlReloadBtn) mlReloadBtn.onclick = () => loadMl(true);
+const mlSearch = document.getElementById('mlSearch');
+if (mlSearch) mlSearch.addEventListener('input', () => renderMl());
+
+function openAi() {
+  $('#aiMask').classList.add('on');
+  $('#aiBase').value = AI.baseUrl || (AI.defaults && AI.defaults.baseUrl) || 'https://api.lk888.ai/v1';
+  // 密钥框永远是空的：别人的密钥不显示、不回填，只能"贴新的"或"清空"
+  $('#aiKey').value = '';
+  $('#aiKey').placeholder = AI.hasKey ? '已保存（sk-****），要换就贴新的；留空不改' : 'sk-…（填这台电脑自己的密钥）';
+  const clearBtn = $('#aiClearKey');
+  if (clearBtn) { clearBtn.style.display = AI.hasKey ? 'inline-block' : 'none'; clearBtn.textContent = '清空'; }
+  const hint = $('#aiKeyHint');
+  if (hint) {
+    hint.innerHTML = AI.hasKey
+      ? '当前已保存一个密钥（只显示 <b>sk-****</b>）。换人用 / 交接前点「<b>清空</b>」就彻底删掉；输入框不会显示原文。'
+      : '还没填。密钥只存在这台电脑（ai.json），不进快照、不进便携包、也不进交付包——<b>每台电脑各填自己的</b>。';
+  }
+  $('#aiState').textContent = AI.status ? AI.status.text : '未接算力';
+  renderAiUsage();
+  renderPvList();
+  loadMl(false);
+  $('#aiModelText').value = (AI.model && AI.model !== 'auto') ? AI.model : '';
+  fillModelSelect($('#aiModel'), AI.models || [], AI.model || '');
+  if ($('#aiAutoSwitch')) $('#aiAutoSwitch').checked = AI.autoSwitch !== false;
+  aiSay('', '');
+  $('#aiBottom').textContent = AI.hasKey
+    ? (!AI.model || AI.model === 'auto' ? '正在用：🪄 自动（按任务挑模型）' : '正在用：' + AI.model)
+    : '密钥和模型都填好后点「测试连接」';
+}
+
+async function aiDetect() {
+  const base = $('#aiBase').value.trim();
+  const key = $('#aiKey').value.trim();
+  if (!key && !AI.hasKey) return aiSay('err', '先填密钥，再自动找接口。');
+  $('#aiDetect').disabled = true; $('#aiDetect').textContent = '探测中…';
+  aiSay('busy', '正在依次试常见接口地址，最多十几秒…');
+  const r = await window.fde.aiDetect({ baseUrl: base, apiKey: key });
+  $('#aiDetect').disabled = false; $('#aiDetect').textContent = '自动找接口';
+  if (!r.ok) {
+    const t = (r.tries || []).map(x => x.base + ' → ' + (x.ok ? '可用' : (x.error || '失败'))).join('\n');
+    aiSay('err', r.error + (t ? '\n' + t : ''));
+    return;
+  }
+  $('#aiBase').value = r.baseUrl;
+  AI = await window.fde.aiGet();
+  fillModelSelect($('#aiModel'), r.models, AI.model || (r.models[0] || {}).id);
+  aiSay('ok', '找到了：' + r.baseUrl + (r.protocol === 'site' ? '（站点原生 · 统一入口）' : '') + ' · ' + r.count + ' 个模型可用。选一个模型后点「保存」。');
+  renderAiPill();
+}
+
+async function aiModels() {
+  const base = $('#aiBase').value.trim();
+  const key = $('#aiKey').value.trim();
+  $('#aiRefresh').disabled = true; $('#aiRefresh').textContent = '拉取中…';
+  aiSay('busy', '正在拉模型列表…');
+  const r = await window.fde.aiModels({ baseUrl: base, apiKey: key });
+  $('#aiRefresh').disabled = false; $('#aiRefresh').textContent = '拉模型';
+  if (!r.ok) return aiSay('err', r.error || '拉不到模型列表');
+  AI = await window.fde.aiGet();
+  fillModelSelect($('#aiModel'), r.models, AI.model || (r.models[0] || {}).id);
+  aiSay('ok', '拉到 ' + r.models.length + ' 个模型（' + r.baseUrl + (r.protocol === 'site' ? ' · 站点原生' : '') + '）。选一个再保存。');
+}
+
+function pickedModel() {
+  if ($('#aiModel').value === 'auto') return 'auto';
+  return ($('#aiManualFld').style.display !== 'none' && $('#aiModelText').value.trim())
+    ? $('#aiModelText').value.trim()
+    : $('#aiModel').value;
+}
+
+async function aiSaveCfg(silent) {
+  const baseUrl = $('#aiBase').value.trim();
+  const apiKey = $('#aiKey').value.trim();
+  const model = pickedModel();
+  const autoSwitch = !!($('#aiAutoSwitch') && $('#aiAutoSwitch').checked);
+  if (!baseUrl) return aiSay('err', '平台地址不能空');
+  if (!apiKey && !AI.hasKey) return aiSay('err', '密钥还没填');
+  const r = await window.fde.aiSave({ baseUrl, apiKey, model, models: AI.models || [], autoSwitch });
+  if (!r || r.ok === false) return aiSay('err', (r && r.error) || '保存失败');
+  AI = r;
+  renderAiPill();
+  if (S && S.stats) renderRail();
+  if (!silent) aiSay('ok', model === 'auto'
+    ? '已保存：模型用「🪄 自动」，每次按任务挑最合适的，失败自动换下一个。'
+    : ('已保存，画布里的聊天节点现在会用「' + model + '」跑' + (autoSwitch ? '（不稳时自动换）' : '') + '。'));
+  return r;
+}
+
+async function aiTestCfg() {
+  const baseUrl = $('#aiBase').value.trim();
+  const apiKey = $('#aiKey').value.trim();
+  const model = pickedModel();
+  if (!apiKey && !AI.hasKey) return aiSay('err', '密钥还没填');
+  $('#aiTest').disabled = true; $('#aiTest').textContent = '测试中…';
+  aiSay('busy', '正在真发一次对话验证（最多 45 秒）…');
+  const r = await window.fde.aiTest({ baseUrl, apiKey, model });
+  $('#aiTest').disabled = false; $('#aiTest').textContent = '测试连接';
+  if (!r.ok) {
+    const map = { nokey: '密钥没填', auth: '密钥不对或没权限', html: '地址指向了网页而不是接口', dns: '域名解析不了', timeout: '超时，网络或地址不通' };
+    return aiSay('err', '连不上：' + (r.error || '') + (map[r.kind] ? '（' + map[r.kind] + '）' : ''));
+  }
+  AI = await window.fde.aiGet();
+  renderAiPill();
+  if (S && S.stats) renderRail();
+  aiSay('ok', '通了 · ' + r.model + ' · ' + Math.round(r.ms / 100) / 10 + ' 秒 · 模型回："' + r.text.slice(0, 40) + '"' +
+    (r.usage ? ' · ' + (r.usage.total_tokens || 0) + ' token' : ''));
+  $('#aiBottom').textContent = '已接上 ' + r.model + '，回画布点 AI 节点的「▶ 运行」就能用';
+}
+
+/* ---------------- 事件 ---------------- */
+$('#q').oninput = () => { V.q = $('#q').value; renderGrid(); };
+$('#newBtn').onclick = () => openEditor(null);
+$('#importBtn').onclick = doImport;
+$('#dlBtn').onclick = openDownload;
+$('#refreshBtn').onclick = async () => { await load(); toast('已刷新'); };
+$('#closeBtn').onclick = () => window.fde.appsClose();
+document.querySelectorAll('#seg button').forEach(b => {
+  b.onclick = () => setPane(b.dataset.tab);
+});
+// 资料库那一类点进去，直接给个进知识库的入口
+window.__fdeSetPane = setPane;
+$('#dX').onclick = closeEditor;
+$('#fCancel').onclick = closeEditor;
+$('#fSave').onclick = saveEditor;
+$('#fDel').onclick = () => { if (EDIT) delItem(EDIT.id); };
+$('#fCopy').onclick = async () => {
+  if (!EDIT) return;
+  const r = await window.fde.appsPrompt(EDIT.id);
+  if (!r || !r.ok) return toast('取不到内容', 'err');
+  const c = await window.fde.copyText(r.text);
+  toast(c && c.ok ? '已复制' : '复制失败', c && c.ok ? 'ok' : 'err');
+};
+document.querySelectorAll('.bar .chip').forEach(b => {
+  b.onclick = () => { V.sort = b.dataset.sort; renderBar(); renderGrid(); };
+});
+document.querySelectorAll('.msub .chip').forEach(b => {
+  b.onclick = () => {
+    DLK = b.dataset.dlk;
+    document.querySelectorAll('.msub .chip').forEach(x => x.classList.toggle('on', x === b));
+    renderDownload();
+  };
+});
+$('#dlQ').oninput = () => { DLQ = $('#dlQ').value.trim().toLowerCase(); renderDownload(); };
+$('#dlX').onclick = $('#dlCancel').onclick = () => $('#dlMask').classList.remove('on');
+$('#dlGo').onclick = downloadPicked;
+$('#trX').onclick = $('#trClose').onclick = () => $('#trMask').classList.remove('on');
+
+// 模型设置（原 AI 算力）
+$('#aiX').onclick = $('#aiCancel').onclick = () => $('#aiMask').classList.remove('on');
+$('#aiDetect').onclick = aiDetect;
+$('#aiRefresh').onclick = aiModels;
+if ($('#aiAutoSwitch')) $('#aiAutoSwitch').onchange = () => { aiSaveCfg(true).then(() => aiSay('ok', $('#aiAutoSwitch').checked ? '已开启：模型失败会自动换下一个' : '已关闭：固定用你选的模型')); };
+$('#aiSaveBtn').onclick = () => aiSaveCfg(false);
+$('#aiTest').onclick = aiTestCfg;
+/**
+ * 打开官网类页面：给按钮即时反馈（默认浏览器起不来时要等一两秒才换浏览器），
+ * 并把主进程的结论说出来 —— 用了别的浏览器 / 用了内置窗口都要让用户知道。
+ */
+async function openSite(which, btn, label) {
+  const old = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '正在打开…'; }
+  aiSay('busy', '正在打开网页…（默认浏览器起不来会自动换一个）');
+  let r = null;
+  try { r = await window.fde.aiOpen(which); } catch (e) { r = { ok: false, error: e.message }; }
+  if (btn) { btn.disabled = false; btn.textContent = old || label || '打开'; }
+  if (!r || r.ok === false) return aiSay('err', '打不开这个网址：' + ((r && r.error) || '未知原因'));
+  const exeName = r.exe ? String(r.exe).split(/[\\/]/).pop() : '';
+  if (r.via === 'alt') aiSay('ok', '系统默认浏览器没起来，已改用 ' + (exeName || '另一个浏览器') + ' 打开');
+  else if (r.via === 'internal') aiSay('ok', '系统里的浏览器都没起来，已用 FDE 内置窗口打开（登录后复制密钥即可）');
+  else aiSay('ok', '已在浏览器里打开：' + (r.url || ''));
+}
+
+$('#aiOpenHome').onclick = () => openSite('home', $('#aiOpenHome'));
+$('#aiOpenConsole').onclick = () => openSite('console', $('#aiOpenConsole'));
+$('#aiOpenBilling').onclick = () => openSite('keys', $('#aiOpenBilling'));
+$('#aiOpenLines').onclick = () => openSite('keys', $('#aiOpenLines'));
+$('#aiOpenSkill').onclick = () => openSite('skill', $('#aiOpenSkill'));
+$('#aiOpenKey').onclick = () => openSite('keys', $('#aiOpenKey'));
+if ($('#aiOpenKeyLink')) $('#aiOpenKeyLink').onclick = (e) => { e.preventDefault(); openSite('keys', null); };
+
+/* 清空密钥：两下确认（第一下变红字，4 秒内再点一次才真删），避免误点 */
+let clearArmAt = 0, clearArmTimer = null;
+if ($('#aiClearKey')) $('#aiClearKey').onclick = async () => {
+  const b = $('#aiClearKey');
+  if (Date.now() > clearArmAt) {
+    clearArmAt = Date.now() + 4000;
+    b.textContent = '再点一次确认';
+    clearTimeout(clearArmTimer);
+    clearArmTimer = setTimeout(() => { clearArmAt = 0; b.textContent = '清空'; }, 4000);
+    aiSay('busy', '点「再点一次确认」就把本机保存的密钥删掉（模型列表和接口地址会留着）');
+    return;
+  }
+  clearTimeout(clearArmTimer); clearArmAt = 0;
+  b.disabled = true; b.textContent = '清空中…';
+  const r = await window.fde.aiSave({ clearKey: true });
+  b.disabled = false; b.textContent = '清空';
+  if (!r || r.ok === false) return aiSay('err', (r && r.error) || '清空失败');
+  AI = r;
+  renderAiPill();
+  if (S && S.stats) renderRail();
+  $('#aiKey').value = '';
+  $('#aiKey').placeholder = 'sk-…（填这台电脑自己的密钥）';
+  b.style.display = 'none';
+  const hint = $('#aiKeyHint');
+  if (hint) hint.innerHTML = '密钥已清空。密钥只存在这台电脑（ai.json），不进快照、不进便携包、也不进交付包——<b>每台电脑各填自己的</b>。';
+  aiSay('ok', '已清空：这台电脑不再保存任何密钥，画布里的 AI 节点会提示先填密钥');
+};
+$('#aiPaste').onclick = async () => {
+  const r = await window.fde.pasteText();
+  if (!r || !r.ok || !r.text) return aiSay('err', '剪贴板里没有文字，或者读不到剪贴板');
+  $('#aiKey').value = r.text.trim();
+  aiSay('ok', '已从剪贴板填入密钥（' + r.text.trim().length + ' 位）');
+};
+$('#aiManual').onclick = (e) => {
+  e.preventDefault();
+  const f = $('#aiManualFld');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  if (f.style.display === 'block') $('#aiModelText').focus();
+};
+$('#aiModel').onchange = () => { $('#aiModelText').value = $('#aiModel').value; };
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if ($('#pop').classList.contains('on')) return $('#pop').classList.remove('on');
+  if ($('#aiMask').classList.contains('on')) return $('#aiMask').classList.remove('on');
+  if ($('#dlMask').classList.contains('on')) return $('#dlMask').classList.remove('on');
+  if ($('#trMask').classList.contains('on')) return $('#trMask').classList.remove('on');
+  if ($('#drawer').classList.contains('on')) return closeEditor();
+  window.fde.appsClose();
+});
+window.fde.on('fde:apps', (p) => { S = p; renderAll(); });
+window.fde.on('fde:ai', (p) => { AI = p; renderAiPill(); renderAiUsage(); });
+window.fde.on('fde:ai-open', () => { openAi(); });
+
+const START_TAB = (() => {
+  try {
+    const t = new URLSearchParams(location.search).get('tab');
+    return t === 'kb' ? 'kb' : 'apps';   // 默认停在「能力」，知识库要点才进
+  } catch (e) { return 'apps'; }
+})();
+
+load().then(() => { loadAi(); setPane(START_TAB); });
+window.fde.onAppsTab((t) => setPane(t === 'kb' ? 'kb' : 'apps'));
+</script>
+</body>
+</html>

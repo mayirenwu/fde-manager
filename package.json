@@ -1,0 +1,132 @@
+{
+  "name": "fde-manager",
+  "version": "7.26.3",
+  "description": "FDE 桌面项目管理器：左侧常驻菜单 + 右侧原生桌面，项目窗口相互隔离，手动建立流程联动（Windows / macOS Intel+M / Linux）",
+  "main": "main.js",
+  "author": "FDE",
+  "license": "MIT",
+  "keywords": [
+    "electron",
+    "virtual-desktop",
+    "window-manager",
+    "knowledge-base",
+    "workflow",
+    "ai-agent",
+    "fde"
+  ],
+  "scripts": {
+    "start": "electron .",
+    "test": "node scripts/run-tests.js",
+    "icons": "electron scripts/make-icons.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win nsis portable --x64",
+    "dist:mac": "electron-builder --mac dmg zip --x64 --arm64",
+    "dist:mac:universal": "electron-builder --mac dmg zip --universal",
+    "dist:linux": "electron-builder --linux AppImage deb --x64"
+  },
+  "dependencies": {
+    "iconv-lite": "^0.6.3"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.fde.manager",
+    "productName": "FDE Manager",
+    "copyright": "Copyright © 2026 FDE",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "platform.js",
+      "wmp.js",
+      "runtime.js",
+      "ai.js",
+      "apps.js",
+      "builder.js",
+      "desktop.js",
+      "panels.js",
+      "acks.js",
+      "adopt.js",
+      "trust.js",
+      "urlopen.js",
+      "models.js",
+      "router.js",
+      "ecom.js",
+      "gbk.js",
+      "kb.js",
+      "*.html",
+      "winhelper.ps1",
+      "启动 FDE.vbs",
+      "启动 FDE.command",
+      "fde.sh",
+      "fde-delivery.example.json",
+      "assets/**/*",
+      "build/icon.png",
+      "build/icon.ico",
+      "build/icon.icns"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "winhelper.ps1",
+      "启动 FDE.vbs"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "FDE 工作台",
+      "artifactName": "FDE-Manager-${version}-setup-${arch}.${ext}"
+    },
+    "portable": {
+      "artifactName": "FDE-Manager-${version}-portable-${arch}.${ext}"
+    },
+    "mac": {
+      "icon": "build/icon.icns",
+      "category": "public.app-category.productivity",
+      "darkModeSupport": true,
+      "identity": null,
+      "extendInfo": {
+        "NSAppleEventsUsageDescription": "FDE 需要控制其它应用的窗口，以便按项目切换桌面（隐藏/显示/排列窗口）。"
+      },
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
+      ]
+    },
+    "dmg": {
+      "title": "FDE Manager ${version}",
+      "artifactName": "FDE-Manager-${version}-${arch}.${ext}"
+    },
+    "linux": {
+      "icon": "build/icons",
+      "category": "Office",
+      "executableName": "fde-manager",
+      "synopsis": "FDE 桌面项目管理器",
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] },
+        { "target": "deb", "arch": ["x64"] }
+      ]
+    },
+    "appImage": {
+      "artifactName": "FDE-Manager-${version}-${arch}.AppImage"
+    },
+    "deb": {
+      "artifactName": "FDE-Manager-${version}-${arch}.deb",
+      "maintainer": "FDE"
+    }
+  }
+}

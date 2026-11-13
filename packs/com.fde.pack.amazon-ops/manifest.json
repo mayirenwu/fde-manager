@@ -1,0 +1,18 @@
+{
+  "id": "com.fde.pack.amazon-ops",
+  "name": "亚马逊店铺运营",
+  "projectName": "亚马逊 {{site}} · {{shop}}",
+  "version": "1.0.0",
+  "category": "跨境电商",
+  "author": "official",
+  "icon": "🛒",
+  "color": "#f59e0b",
+  "desc": "选品调研 → 上架文案 → 广告投放 → 日复盘。套用后自动开好后台与选品工具，并生成一条可执行的运营工作流。",
+  "tags": ["亚马逊", "选品", "广告", "Listing"],
+  "permissions": ["autorun", "script", "context", "canvas"],
+  "params": [
+    { "key": "site", "label": "站点", "type": "select", "options": ["美国 US", "英国 UK", "德国 DE", "日本 JP"], "default": "美国 US" },
+    { "key": "shop", "label": "店铺名", "type": "text", "default": "主力店" },
+    { "key": "acos", "label": "ACOS 红线（%）", "type": "text", "default": "25" }
+  ]
+}

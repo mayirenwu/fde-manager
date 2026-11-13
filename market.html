@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>场景市场 · FDE</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0b0f17;
+    --panel: #11161f;
+    --panel2: #161c27;
+    --line: #1e2635;
+    --line2: #2a3444;
+    --tx: #e6ebf4;
+    --tx2: #9aa6b8;
+    --tx3: #6b7789;
+    --acc: #4f8cff;
+    --ok: #22c55e;
+    --warn: #f59e0b;
+    --err: #ef4444;
+  }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--tx);
+    font: 13px/1.6 -apple-system, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .hd {
+    -webkit-app-region: drag;
+    height: 52px; flex: 0 0 52px; display: flex; align-items: center; gap: 10px;
+    padding: 0 16px; border-bottom: 1px solid var(--line); background: #0d121b;
+  }
+  .hd .logo {
+    width: 24px; height: 24px; border-radius: 7px; flex: 0 0 24px;
+    background: linear-gradient(135deg, #4f8cff, #a855f7);
+  }
+  .hd h1 { font-size: 14px; font-weight: 600; letter-spacing: .3px; }
+  .hd .sub { color: var(--tx3); font-size: 12px; }
+  .hd .grow { flex: 1; }
+  .hd input.search {
+    -webkit-app-region: no-drag;
+    width: 210px; height: 30px; border-radius: 8px; border: 1px solid var(--line2);
+    background: #0a0e16; color: var(--tx); padding: 0 10px; font-size: 12px; outline: none;
+  }
+  .hd input.search:focus { border-color: var(--acc); }
+  .hbtn {
+    -webkit-app-region: no-drag;
+    height: 30px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line2);
+    background: #131a25; color: var(--tx2); font-size: 12px; cursor: pointer; white-space: nowrap;
+  }
+  .hbtn:hover { color: #fff; border-color: #3a4658; background: #18202d; }
+  .hbtn.pri { background: var(--acc); border-color: var(--acc); color: #fff; }
+  .hbtn.pri:hover { background: #3d7df2; }
+
+  .body { flex: 1; display: flex; min-height: 0; }
+
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .cats {
+    flex: 0 0 auto; display: flex; gap: 6px; padding: 12px 16px 4px; flex-wrap: wrap;
+  }
+  .cat {
+    height: 26px; padding: 0 11px; border-radius: 20px; border: 1px solid var(--line2);
+    background: transparent; color: var(--tx2); font-size: 12px; cursor: pointer;
+  }
+  .cat:hover { color: var(--tx); border-color: #3a4658; }
+  .cat.on { background: rgba(79,140,255,.14); border-color: rgba(79,140,255,.55); color: #cfe0ff; }
+
+  .grid {
+    flex: 1; overflow-y: auto; padding: 12px 16px 20px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 12px; align-content: start;
+  }
+  .card {
+    border: 1px solid var(--line); border-radius: 12px; background: var(--panel);
+    padding: 14px; cursor: pointer; transition: border-color .15s, transform .15s; position: relative;
+    display: flex; flex-direction: column; gap: 8px; min-height: 168px;
+  }
+  .card:hover { border-color: var(--line2); transform: translateY(-1px); }
+  .card.sel { border-color: var(--acc); box-shadow: 0 0 0 1px rgba(79,140,255,.35) inset; }
+  .card .top { display: flex; align-items: center; gap: 10px; }
+  .card .ic {
+    width: 34px; height: 34px; flex: 0 0 34px; border-radius: 9px; display: flex;
+    align-items: center; justify-content: center; font-size: 17px; background: #1a2130;
+    border: 1px solid var(--line2);
+  }
+  .card .nm { font-size: 13.5px; font-weight: 600; }
+  .card .mt { color: var(--tx3); font-size: 11.5px; margin-top: 1px; }
+  .card .ds { color: var(--tx2); font-size: 12px; line-height: 1.55; flex: 1;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card .tags { display: flex; gap: 5px; flex-wrap: wrap; }
+  .tag { font-size: 11px; color: #8ea6c8; background: rgba(79,140,255,.1); border: 1px solid rgba(79,140,255,.22);
+    padding: 1px 7px; border-radius: 20px; }
+  .card .ft { display: flex; align-items: center; gap: 6px; }
+  .card .src { font-size: 11px; color: var(--tx3); margin-left: auto; }
+  .mini {
+    height: 26px; padding: 0 10px; border-radius: 7px; border: 1px solid var(--line2);
+    background: #131a25; color: var(--tx2); font-size: 12px; cursor: pointer;
+  }
+  .mini:hover { color: #fff; border-color: #3a4658; }
+  .mini.pri { background: rgba(79,140,255,.16); border-color: rgba(79,140,255,.5); color: #bcd4ff; }
+  .mini.pri:hover { background: rgba(79,140,255,.28); color: #fff; }
+
+  .empty { color: var(--tx3); text-align: center; padding: 60px 20px; font-size: 13px; line-height: 2; }
+  .empty b { color: var(--tx2); }
+
+  .side {
+    width: 392px; flex: 0 0 392px; border-left: 1px solid var(--line); background: #0d121b;
+    display: none; flex-direction: column; min-height: 0;
+  }
+  .side.on { display: flex; }
+  .side .sh { padding: 16px 16px 12px; border-bottom: 1px solid var(--line); }
+  .side .sh .r1 { display: flex; align-items: flex-start; gap: 10px; }
+  .side .sh .ic { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 10px; background: #1a2130;
+    border: 1px solid var(--line2); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .side .sh h2 { font-size: 15px; font-weight: 600; }
+  .side .sh .mt { color: var(--tx3); font-size: 11.5px; margin-top: 2px; }
+  .side .x { margin-left: auto; width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--line2);
+    background: transparent; color: var(--tx3); cursor: pointer; flex: 0 0 auto; }
+  .side .x:hover { color: #fff; border-color: #3a4658; }
+  .side .sd { color: var(--tx2); font-size: 12px; margin-top: 10px; line-height: 1.6; }
+  .side .sc { flex: 1; overflow-y: auto; padding: 14px 16px 20px; }
+  .sec { margin-bottom: 16px; }
+  .sec > .lb { font-size: 11.5px; color: var(--tx3); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 7px; }
+  .fld { margin-bottom: 10px; }
+  .fld label { display: block; font-size: 12px; color: var(--tx2); margin-bottom: 4px; }
+  .fld input, .fld select {
+    width: 100%; height: 32px; border-radius: 8px; border: 1px solid var(--line2);
+    background: #0a0e16; color: var(--tx); padding: 0 10px; font-size: 12.5px; outline: none;
+  }
+  .fld input:focus, .fld select:focus { border-color: var(--acc); }
+  .chk { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--tx2); margin: 10px 0 0; }
+  .chk input { width: 14px; height: 14px; accent-color: var(--acc); }
+  .rd {
+    background: #0a0e16; border: 1px solid var(--line); border-radius: 10px; padding: 12px;
+    font: 12px/1.7 -apple-system, "Microsoft YaHei", system-ui, sans-serif; color: var(--tx2);
+    white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow: auto;
+  }
+  .kv { display: flex; gap: 8px; font-size: 12px; color: var(--tx2); margin-bottom: 5px; }
+  .kv i { color: var(--tx3); font-style: normal; flex: 0 0 62px; }
+  .perm { display: flex; gap: 6px; flex-wrap: wrap; }
+  .perm span { font-size: 11px; color: #93b0d8; border: 1px solid var(--line2); border-radius: 6px; padding: 1px 7px; }
+
+  .sf {
+    flex: 0 0 auto; padding: 12px 16px; border-top: 1px solid var(--line); display: flex; gap: 8px;
+    background: #0d121b;
+  }
+  .sf .go {
+    flex: 1; height: 36px; border-radius: 9px; border: none; background: var(--acc); color: #fff;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .sf .go:hover { background: #3d7df2; }
+  .sf .go:disabled { background: #2a3444; color: var(--tx3); cursor: default; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
+    background: #18202d; border: 1px solid var(--line2); color: var(--tx); padding: 9px 16px;
+    border-radius: 10px; font-size: 12.5px; opacity: 0; pointer-events: none; transition: all .22s;
+    max-width: 74%; box-shadow: 0 8px 28px rgba(0,0,0,.45); z-index: 90;
+  }
+  .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.err { border-color: rgba(239,68,68,.55); color: #ffd4d4; }
+  .toast.ok { border-color: rgba(34,197,94,.5); color: #d5ffe2; }
+
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-thumb { background: #263140; border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: #33404f; }
+  ::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body>
+  <div class="hd">
+    <div class="logo"></div>
+    <div>
+      <h1>场景市场</h1>
+      <div class="sub" id="stat">正在读取…</div>
+    </div>
+    <div class="grow"></div>
+    <input class="search" id="q" placeholder="搜场景、标签、分类…" />
+    <button class="hbtn" id="importBtn">导入包</button>
+    <button class="hbtn" id="dirBtn">包目录</button>
+    <button class="hbtn" id="refreshBtn">刷新</button>
+    <button class="hbtn" id="closeBtn">✕</button>
+  </div>
+
+  <div class="body">
+    <div class="main">
+      <div class="cats" id="cats"></div>
+      <div class="grid" id="grid"></div>
+    </div>
+    <div class="side" id="side">
+      <div class="sh">
+        <div class="r1">
+          <div class="ic" id="dIcon">🧩</div>
+          <div style="min-width:0;">
+            <h2 id="dName">—</h2>
+            <div class="mt" id="dMeta"></div>
+          </div>
+          <button class="x" id="dClose">✕</button>
+        </div>
+        <div class="sd" id="dDesc"></div>
+      </div>
+      <div class="sc">
+        <div class="sec" id="pSec" style="display:none;">
+          <div class="lb">填写参数</div>
+          <div id="pForm"></div>
+          <label class="chk"><input type="checkbox" id="enterChk" checked />创建后立即进入该桌面</label>
+        </div>
+        <div class="sec" id="infoSec">
+          <div class="lb">信息</div>
+          <div id="dInfo"></div>
+        </div>
+        <div class="sec" id="readSec" style="display:none;">
+          <div class="lb">使用说明</div>
+          <div class="rd" id="dRead"></div>
+        </div>
+      </div>
+      <div class="sf">
+        <button class="go" id="applyBtn">套用并创建项目</button>
+        <button class="mini" id="folderBtn" title="在资源管理器里打开这个包">📂</button>
+        <button class="mini" id="delBtn" title="删除这个包" style="display:none;">🗑</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+let PACKS = [];
+let CUR = null;
+let CAT = '全部';
+let Q = '';
+
+function toast(msg, kind) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.className = 'toast on' + (kind ? ' ' + kind : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = 'toast' + (kind ? ' ' + kind : ''); }, 3200);
+}
+
+function cats() {
+  const set = ['全部'];
+  for (const p of PACKS) if (p.category && !set.includes(p.category)) set.push(p.category);
+  $('#cats').innerHTML = set.map(c =>
+    '<button class="cat' + (c === CAT ? ' on' : '') + '" data-c="' + esc(c) + '">' + esc(c) + '</button>'
+  ).join('');
+}
+
+function filtered() {
+  const q = Q.trim().toLowerCase();
+  return PACKS.filter(p => {
+    if (CAT !== '全部' && p.category !== CAT) return false;
+    if (!q) return true;
+    return (p.name + ' ' + p.desc + ' ' + p.category + ' ' + (p.tags || []).join(' ')).toLowerCase().includes(q);
+  });
+}
+
+function cardHtml(p) {
+  return '<div class="card' + (CUR && CUR.id === p.id ? ' sel' : '') + '" data-id="' + esc(p.id) + '">' +
+    '<div class="top"><div class="ic">' + esc(p.icon || '🧩') + '</div>' +
+    '<div style="min-width:0;"><div class="nm">' + esc(p.name) + '</div>' +
+    '<div class="mt">' + esc(p.category) + ' · v' + esc(p.version) + '</div></div></div>' +
+    '<div class="ds">' + esc(p.desc) + '</div>' +
+    '<div class="tags">' + (p.tags || []).slice(0, 4).map(t => '<span class="tag">' + esc(t) + '</span>').join('') + '</div>' +
+    '<div class="ft">' +
+    '<button class="mini pri" data-act="apply" data-id="' + esc(p.id) + '">套用</button>' +
+    '<button class="mini" data-act="detail" data-id="' + esc(p.id) + '">详情</button>' +
+    '<span class="src">' + (p.source === 'builtin' ? '内置' : '我的') + '</span>' +
+    '</div></div>';
+}
+
+function render() {
+  cats();
+  const list = filtered();
+  $('#stat').textContent = PACKS.length + ' 个场景包 · 选中一个填参数即可开工';
+  if (!list.length) {
+    $('#grid').innerHTML = '<div class="empty" style="grid-column:1/-1;">没有匹配的场景包。<br>' +
+      '<b>点右上角「导入包」</b>可以加载别人给你的包文件夹；<br>' +
+      '你也可以把任意项目<b>导出成包</b>（项目设置 → 导出为场景包）。</div>';
+    return;
+  }
+  $('#grid').innerHTML = list.map(cardHtml).join('');
+}
+
+function fieldHtml(d, val) {
+  const id = 'f_' + esc(d.key);
+  const label = esc(d.label || d.key);
+  if (d.type === 'select' && Array.isArray(d.options) && d.options.length) {
+    return '<div class="fld"><label>' + label + '</label><select id="' + id + '" data-k="' + esc(d.key) + '">' +
+      d.options.map(o => '<option value="' + esc(o) + '"' + (String(o) === String(val) ? ' selected' : '') + '>' + esc(o) + '</option>').join('') +
+      '</select></div>';
+  }
+  return '<div class="fld"><label>' + label + '</label><input id="' + id + '" data-k="' + esc(d.key) + '" value="' + esc(val == null ? '' : val) + '" /></div>';
+}
+
+function openDetail(id) {
+  const p = PACKS.find(x => x.id === id);
+  if (!p) return;
+  CUR = p;
+  $('#side').classList.add('on');
+  $('#dIcon').textContent = p.icon || '🧩';
+  $('#dName').textContent = p.name;
+  $('#dMeta').textContent = p.category + ' · v' + p.version + (p.author ? ' · ' + p.author : '') + (p.source === 'builtin' ? ' · 内置' : ' · 我的包');
+  $('#dDesc').textContent = p.desc || '';
+
+  const params = p.params || [];
+  $('#pSec').style.display = params.length ? 'block' : 'none';
+  $('#pForm').innerHTML = params.map(d => fieldHtml(d, d.default)).join('');
+
+  $('#dInfo').innerHTML =
+    '<div class="kv"><i>来源</i><span>' + (p.source === 'builtin' ? '随软件内置' : '用户导入 / 导出') + '</span></div>' +
+    '<div class="kv"><i>目录</i><span style="word-break:break-all;">' + esc(p.dir) + '</span></div>' +
+    '<div class="kv"><i>权限</i><span class="perm">' + (p.permissions || []).map(x => '<span>' + esc(x) + '</span>').join('') + '</span></div>' +
+    (p.projectName && p.projectName !== p.name
+      ? '<div class="kv"><i>项目名</i><span>' + esc(p.projectName) + '</span></div>' : '');
+
+  $('#delBtn').style.display = p.source === 'user' ? 'block' : 'none';
+
+  // 读说明（异步，避免详情面板打开被 README 拖慢）
+  $('#readSec').style.display = 'none';
+  window.fde.packDetail(p.id).then(d => {
+    if (!CUR || CUR.id !== p.id) return;
+    if (d && d.readme) {
+      $('#dRead').textContent = d.readme;
+      $('#readSec').style.display = 'block';
+    }
+    // 补全参数：manifest 里的 params 为准，缺省值来自 detail
+    if (d && Array.isArray(d.params) && d.params.length && !params.length) {
+      $('#pSec').style.display = 'block';
+      $('#pForm').innerHTML = d.params.map(x => fieldHtml(x, x.default)).join('');
+    }
+  }).catch(() => {});
+
+  render();
+}
+
+function closeDetail() {
+  CUR = null;
+  $('#side').classList.remove('on');
+  render();
+}
+
+function collectParams() {
+  const out = {};
+  document.querySelectorAll('#pForm [data-k]').forEach(el => { out[el.dataset.k] = el.value; });
+  return out;
+}
+
+async function doApply(id) {
+  const p = PACKS.find(x => x.id === id);
+  if (!p) return;
+  const btn = $('#applyBtn');
+  const old = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '正在创建…';
+  try {
+    const r = await window.fde.packApply(id, collectParams(), $('#enterChk').checked);
+    if (r && r.ok) {
+      toast('已创建项目「' + r.name + '」，正在进入桌面…', 'ok');
+      setTimeout(() => { $('#stat').textContent = PACKS.length + ' 个场景包 · 选中一个填参数即可开工'; }, 100);
+    } else {
+      toast('套用失败：' + ((r && r.error) || '未知错误'), 'err');
+    }
+  } catch (e) {
+    toast('套用失败：' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = old;
+  }
+}
+
+async function loadPacks() {
+  try {
+    PACKS = await window.fde.packList() || [];
+  } catch (e) {
+    PACKS = [];
+    toast('读取场景包失败：' + e.message, 'err');
+  }
+  // 默认分类选第一个有内容的
+  if (CAT !== '全部' && !PACKS.some(p => p.category === CAT)) CAT = '全部';
+  if (CUR && !PACKS.some(p => p.id === CUR.id)) closeDetail();
+  render();
+}
+
+// ---- 事件（全部委托，避免重渲染丢点击）----
+$('#grid').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (btn) {
+    e.stopPropagation();
+    if (btn.dataset.act === 'apply') {
+      openDetail(btn.dataset.id);
+      doApply(btn.dataset.id);
+    } else {
+      openDetail(btn.dataset.id);
+    }
+    return;
+  }
+  const card = e.target.closest('.card');
+  if (card) openDetail(card.dataset.id);
+});
+
+$('#cats').addEventListener('click', (e) => {
+  const b = e.target.closest('.cat');
+  if (!b) return;
+  CAT = b.dataset.c;
+  render();
+});
+
+$('#q').addEventListener('input', (e) => { Q = e.target.value; render(); });
+$('#dClose').onclick = closeDetail;
+$('#applyBtn').onclick = () => { if (CUR) doApply(CUR.id); };
+$('#closeBtn').onclick = () => window.fde.closeMarket();
+$('#refreshBtn').onclick = () => { loadPacks(); toast('已刷新'); };
+$('#dirBtn').onclick = () => window.fde.packOpenDir();
+$('#folderBtn').onclick = () => { if (CUR) window.fde.packOpenFolder(CUR.id); };
+$('#delBtn').onclick = async () => {
+  if (!CUR) return;
+  if (!confirm('删除场景包「' + CUR.name + '」？\n只会删除这个包的文件夹，已用它创建的项目不受影响。')) return;
+  const r = await window.fde.packDelete(CUR.id);
+  if (r && r.ok) { toast('已删除', 'ok'); closeDetail(); loadPacks(); }
+  else toast('删除失败：' + ((r && r.error) || ''), 'err');
+};
+$('#importBtn').onclick = async () => {
+  const r = await window.fde.packImport();
+  if (r && r.ok) { toast('导入成功：' + (r.id || ''), 'ok'); loadPacks(); }
+  else if (r && r.canceled) { /* 用户取消 */ }
+  else toast('导入失败：' + ((r && r.error) || ''), 'err');
+};
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (CUR) closeDetail(); else window.fde.closeMarket();
+  }
+  if (e.key === 'Enter' && CUR && document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.id !== 'q') {
+    doApply(CUR.id);
+  }
+});
+
+try {
+  window.fde.on('fde:packs', () => loadPacks());
+} catch (e) {}
+
+loadPacks();
+</script>
+</body>
+</html>

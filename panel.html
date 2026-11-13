@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>FDE 智能体 控制台</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: #10131a; color: #dfe4ee;
+    height: 100vh; overflow: hidden; user-select: none;
+    display: flex; flex-direction: column;
+  }
+  header {
+    -webkit-app-region: drag;
+    padding: 14px 14px 10px; border-bottom: 1px solid #232837;
+    display: flex; align-items: center; gap: 8px; background: #141824;
+  }
+  header .logo {
+    width: 26px; height: 26px; border-radius: 6px;
+    background: linear-gradient(135deg, #4f8cff, #a855f7);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 13px; color: #fff;
+  }
+  header h1 {
+    flex: 1;
+    /* 标题「FDE 智能体 控制台」较长：面板越窄字号越小，280px 也不截断 */
+    font-size: clamp(11px, 4vw, 15px);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  header button {
+    -webkit-app-region: no-drag; background: none; border: none; color: #8b93a7;
+    font-size: 14px; cursor: pointer; padding: 4px 6px; border-radius: 4px;
+  }
+  header button:hover { background: #232837; color: #fff; }
+
+  main { flex: 1; overflow-y: auto; }
+  section { padding: 12px 14px; border-bottom: 1px solid #1c2130; }
+  section h2 {
+    font-size: 12px; color: #7b849c;
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+  }
+  section h2 .hcount { color: #4f5768; font-weight: normal; letter-spacing: 0; }
+
+  /* 可折叠分组：面板默认只留「当前桌面 + 项目」，其余按需展开，展开状态会记住 */
+  .grp { padding: 10px 14px; }
+  .grp .grphead {
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    margin-bottom: 0; user-select: none;
+  }
+  .grp .grphead:hover { color: #a9b2c6; }
+  .grp .grphead .arrow { font-size: 10px; transition: transform .15s; }
+  .grp.open .grphead .arrow { transform: rotate(90deg); }
+  .grp .grphead .gcount { margin-left: auto; font-size: 10px; color: #4a5265; letter-spacing: 0; }
+  .grp .grpbody { display: none; margin-top: 10px; }
+  .grp.open .grpbody { display: block; }
+  .grp .grpbody .deskbtns:last-child { margin-bottom: 0; }
+  .grp .grpbody .wallrow:first-child { margin-top: 0; }
+
+  /* 当前桌面 */
+  .nowdesk {
+    border-radius: 10px; padding: 12px; margin-bottom: 10px;
+    background: linear-gradient(135deg, #1a2334, #141a26);
+    border: 1px solid #2a3244;
+  }
+  .nowdesk .lbl { font-size: 10px; color: #6d7589; letter-spacing: 1px; margin-bottom: 4px; }
+  .nowdesk .nm { font-size: 15px; font-weight: bold; display: flex; align-items: center; gap: 7px; }
+  .nowdesk .nm .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .nowdesk .sub { font-size: 11px; color: #7b849c; margin-top: 4px; }
+  .wallrow {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 9px; font-size: 11px; color: #8b93a7;
+  }
+  .wallrow input { accent-color: #4f8cff; }
+  .warnrow {
+    display: none; align-items: center; gap: 6px; flex-wrap: wrap;
+    margin-top: 9px; padding: 7px 8px; border-radius: 6px;
+    background: #2a1f14; border: 1px solid #4a3a1e;
+    font-size: 11px; color: #e0a94a; line-height: 1.5;
+  }
+  .warnrow button {
+    background: #3a2c18; border: 1px solid #6b5225; color: #f0c070;
+    font-size: 10px; padding: 3px 8px; border-radius: 4px; cursor: pointer;
+  }
+  .warnrow button:hover { background: #4a3a20; }
+  /* "有窗口没显示"：比"无法隐藏"更常见，用偏蓝的警示色区分开 */
+  .missrow { background: #14202e; border-color: #24405c; color: #7db3e8; }
+  .missrow button { background: #1b2c3f; border-color: #2c4d6b; color: #a8cdf0; }
+  .missrow button:hover { background: #22384f; }
+  .missrow.ok { background: #16261c; border-color: #244630; color: #7bd39a; }
+  .missrow.ok button { display: none; }
+
+  .adminrow {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 8px; padding-top: 8px; border-top: 1px dashed #2a3244;
+    font-size: 11px; line-height: 1.4;
+  }
+  .adminrow.ok { color: #5fd08a; }
+  .adminrow.bad { color: #e0a94a; }
+  .adminrow button {
+    margin-left: auto; flex-shrink: 0;
+    background: #2a3244; border: 1px solid #38425a; color: #dfe4ee;
+    font-size: 10px; padding: 3px 8px; border-radius: 4px; cursor: pointer;
+  }
+  .adminrow button:hover { background: #35405a; }
+
+  .deskbtns { display: flex; gap: 6px; margin-bottom: 10px; }
+  .origbtn {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: #1b2130; border: 1px solid #2a3244; color: #cdd3e0;
+    font-size: 12px; padding: 9px 8px; border-radius: 8px; cursor: pointer;
+  }
+  .origbtn:hover { background: #242c3e; border-color: #4f8cff; }
+
+  /* 项目行 */
+  .project {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 7px; row-gap: 6px;
+    padding: 8px 9px; border-radius: 8px; margin-bottom: 6px;
+    background: #171c28; border: 1px solid #232837; cursor: pointer;
+  }
+  .project:hover { border-color: #4f8cff; background: #1b2130; }
+  .project.active { border-color: #22c55e; background: #16241d; }
+  .project .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .project .info { flex: 1 1 calc(100% - 56px); min-width: 0; }
+  .project .ops { flex: 1 1 100%; display: flex; gap: 5px; justify-content: flex-end; }
+  .project .name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .project .status { font-size: 11px; color: #6d7589; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .project .status.running { color: #22c55e; }
+  .project .status.background { color: #7b849c; }
+  .project .status.task { color: #f59e0b; }
+  .project .status.error { color: #ef4444; font-weight: bold; }
+  .project .alert {
+    font-size: 10px; color: #fff; background: #ef4444;
+    padding: 1px 7px; border-radius: 8px; flex-shrink: 0;
+  }
+  .project button {
+    background: #232837; border: none; color: #cdd3e0;
+    font-size: 11px; padding: 4px 8px; border-radius: 5px; cursor: pointer;
+  }
+  .project button:hover { background: #2e3547; }
+  .project button.gear { background: #1d3a5f; }
+  .project button.gear:hover { background: #264d7d; }
+  .project button.danger:hover { background: #7f2d2d; }
+
+  /* 回收站 */
+  #trashHeader { cursor: pointer; display: flex; align-items: center; gap: 6px; margin-bottom: 0; }
+  #trashHeader .arrow { font-size: 10px; transition: transform .15s; }
+  #trashHeader.open .arrow { transform: rotate(90deg); }
+  #trashList { display: none; margin-top: 10px; }
+  #trashHeader.open + #trashList { display: block; }
+  .trashitem {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: #b7bfd2; padding: 6px 8px; border-radius: 6px;
+    background: #171c28; border: 1px dashed #3a2c2c; margin-bottom: 4px;
+  }
+  .trashitem .date { color: #6d7589; font-size: 10px; }
+  .trashitem button {
+    margin-left: 4px; background: #232837; border: none; color: #cdd3e0;
+    font-size: 10px; padding: 3px 8px; border-radius: 4px; cursor: pointer;
+  }
+  .trashitem button:hover { background: #2e3547; }
+  .trashitem button.purge:hover { background: #7f2d2d; }
+
+  /* 项目间联动提示 */
+  .empty { font-size: 11px; color: #565e72; padding: 4px 2px; }
+
+  .addrow { display: flex; gap: 6px; margin-top: 8px; }
+  .addrow input {
+    flex: 1; background: #171c28; border: 1px solid #232837;
+    border-radius: 6px; padding: 7px 9px; color: #dfe4ee; font-size: 12px; outline: none;
+  }
+  .addrow input:focus { border-color: #4f8cff; }
+  .addrow button {
+    background: #4f8cff; border: none; color: #fff; font-size: 12px;
+    padding: 7px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  }
+  .addrow button:hover { background: #3d78e0; }
+
+  /* 验证弹窗 */
+  #modalMask {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.6); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .modalbox {
+    width: 300px; background: #1b2130; border: 1px solid #2a3244;
+    border-radius: 10px; padding: 16px;
+  }
+  .modalbox h3 { font-size: 14px; margin-bottom: 8px; color: #fff; }
+  .modalbox p { font-size: 12px; color: #8b93a7; margin-bottom: 10px; line-height: 1.5; }
+  .modalbox input {
+    width: 100%; background: #171c28; border: 1px solid #232837;
+    border-radius: 6px; padding: 8px 10px; color: #dfe4ee; font-size: 12px; outline: none;
+  }
+  .modalbox input:focus { border-color: #4f8cff; }
+  /* 要核对的名称：点一下自动填入（生僻字、符号、emoji 打不出来时用） */
+  #modalNameRow { display: none; gap: 6px; align-items: center; margin-bottom: 8px; }
+  #modalNameRow.on { display: flex; }
+  #modalName {
+    flex: 1; min-width: 0; background: #241a1c; border: 1px solid #4a2b2b; color: #ffd7d7;
+    border-radius: 6px; padding: 6px 9px; font-size: 12px; cursor: pointer;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #modalName:hover { border-color: #ef4444; }
+  #modalCopy {
+    background: #232837; border: none; color: #cdd3e0; font-size: 10px;
+    padding: 5px 9px; border-radius: 5px; cursor: pointer; white-space: nowrap;
+  }
+  #modalCopy:hover { background: #2e3547; color: #fff; }
+  #modalHint { font-size: 10px; color: #6d7589; margin-top: 6px; min-height: 14px; line-height: 1.55; }
+  .modalbtns button:disabled { opacity: .45; cursor: default; }
+  .modalbtns button:disabled:hover { background: #ef4444; }
+  .modalbtns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+  .modalbtns button {
+    border: none; border-radius: 6px; padding: 7px 14px;
+    font-size: 12px; cursor: pointer; background: #232837; color: #cdd3e0;
+  }
+  .modalbtns button:hover { background: #2e3547; }
+  .modalbtns button.ok { background: #ef4444; color: #fff; }
+  .modalbtns button.ok:hover { background: #d13a3a; }
+
+  footer {
+    padding: 8px 14px; font-size: 10px; color: #565e72;
+    border-top: 1px solid #1c2130; background: #141824; flex-shrink: 0;
+  }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #2a3040; border-radius: 3px; }
+
+  /* ---------------- 新手三步向导（窄面板自适应：不溢出、可滚动） ---------------- */
+  #wiz, #np {
+    position: fixed; inset: 0; z-index: 999;
+    background: rgba(5, 8, 14, .82); backdrop-filter: blur(3px);
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 10px 8px 12px; overflow-y: auto; overflow-x: hidden;
+    -webkit-app-region: no-drag;
+  }
+  .wizcard {
+    width: 100%; max-width: 430px; min-width: 0;
+    background: #151a24; border: 1px solid #232d40; border-radius: 12px;
+    padding: 14px 14px 16px; box-shadow: 0 18px 60px rgba(0, 0, 0, .5);
+    box-sizing: border-box;
+  }
+  .wiztag { font-size: 10.5px; color: #6b7789; letter-spacing: 1.2px; line-height: 1.5; }
+  .wizh {
+    margin: 8px 0 6px; font-size: 15px; line-height: 1.4;
+    color: #e7ecf6; font-weight: 600; word-break: break-word;
+  }
+  .wizp {
+    margin: 0 0 10px; font-size: 12px; line-height: 1.75; color: #aeb8cc;
+    word-break: break-word;
+  }
+  .wizp b { color: #dfe4ee; }
+  .wizcol { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+  #wizProjName, #npName {
+    width: 100%; min-width: 0; height: 34px; border-radius: 8px;
+    border: 1px solid #232d40; background: #0f141f; color: #dfe4ee;
+    padding: 0 10px; font-size: 13px; outline: none;
+    font-family: inherit; user-select: text;
+  }
+  #wizProjName:focus, #npName:focus { border-color: #3b6fd4; }
+  #wizProjName::placeholder, #npName::placeholder, .wizta::placeholder { color: #5d6678; }
+  .wizta {
+    width: 100%; min-height: 64px; resize: vertical; box-sizing: border-box;
+    border-radius: 8px; border: 1px solid #232d40; background: #0f141f; color: #dfe4ee;
+    padding: 8px 10px; font-size: 12.5px; line-height: 1.65; outline: none;
+    font-family: inherit; user-select: text;
+  }
+  .wizta:focus { border-color: #3b6fd4; }
+  .wizbtn {
+    width: 100%; height: 34px; border-radius: 8px; border: none;
+    font-size: 13px; cursor: pointer; font-family: inherit;
+    padding: 0 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .wizbtn.wizprimary { background: #1d4ed8; color: #fff; }
+  .wizbtn.wizprimary:hover { background: #2560e8; }
+  .wizbtn.wizghost { background: transparent; border: 1px solid #232d40; color: #8b96ab; }
+  .wizbtn.wizghost:hover { background: #1c2230; color: #c7cfdd; }
+  .wizeg {
+    background: #0f141f; border: 1px solid #232d40; border-radius: 8px;
+    padding: 9px 10px; font-size: 12px; color: #cfd6e4; line-height: 1.7;
+    margin-bottom: 12px; word-break: break-word;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="logo">F</div>
+    <h1>FDE 智能体 控制台</h1>
+    <button id="pinBtn" title="窗口置顶开关">📌</button>
+    <button id="minBtn" title="最小化">—</button>
+    <button id="quitBtn" title="退出软件">✕</button>
+  </header>
+
+  <main>
+    <section>
+      <div class="nowdesk">
+        <div class="lbl">当前桌面</div>
+        <div class="nm"><span class="dot" id="nowDot"></span><span id="nowName">原电脑桌面</span></div>
+        <div class="sub" id="nowSub">—</div>
+        <div class="warnrow" id="warnRow">
+          <span>⚠ <b id="warnN">0</b> 个窗口无法隐藏</span>
+          <button id="adminBtn2">启用管理员权限</button>
+        </div>
+        <div class="warnrow missrow" id="missRow">
+          <span>⚠ <b id="missN">0</b> 个窗口没显示</span>
+          <button id="missBtn">看原因 / 修复</button>
+        </div>
+        <div class="adminrow" id="adminRow">
+          <span id="adminText">—</span>
+          <button id="adminBtn">启用</button>
+        </div>
+        <div style="margin-top:8px;text-align:right;">
+          <button id="diagBtn" style="height:24px;padding:0 10px;border:1px solid #232d40;border-radius:7px;background:transparent;color:#6d7589;font-size:11px;cursor:pointer;" title="窗口原因分布、异常日志、崩溃记录，远程排查一眼定位">📊 诊断看板</button>
+        </div>
+      </div>
+      <div class="deskbtns">
+        <button id="origDeskBtn" class="origbtn">🖥 原电脑桌面</button>
+        <button id="overviewBtn" class="origbtn">🗂 总览</button>
+      </div>
+    </section>
+
+    <!-- 新手三步向导：首次运行显示（窄面板自适应，不溢出、可滚动） -->
+    <div id="wiz" style="display:none;">
+      <div class="wizcard">
+        <div class="wiztag">FDE 新手向导 · <span id="wizStepNo">第 1 / 3 步</span></div>
+        <div id="wizStep1">
+          <h3 class="wizh">① 建一个项目桌面</h3>
+          <p class="wizp">项目 = 一台独立的电脑桌面。窗口、网页、脚本都归它管，互不干扰。先给你最常做的事建一个，比如「亚马逊运营」。</p>
+          <div class="wizcol">
+            <input id="wizProjName" placeholder="项目名，例如：亚马逊运营" />
+            <button id="wizCreate" class="wizbtn wizprimary">创建</button>
+          </div>
+        </div>
+        <div id="wizStep2" style="display:none;">
+          <h3 class="wizh">② 窗口会自动归类</h3>
+          <p class="wizp">把要用的程序窗口都打开，它们会<b>自动归进当前项目</b>——切到哪个项目，就只看到那个项目的窗口，不会串。</p>
+          <p class="wizp">跑掉的窗口按 <b>Alt + `</b> 呼出快速切换；项目列表里点一下就是切桌面。</p>
+          <div class="wizcol">
+            <button id="wizNext3" class="wizbtn wizprimary">明白了，下一步</button>
+          </div>
+        </div>
+        <div id="wizStep3" style="display:none;">
+          <h3 class="wizh">③ 说一句话，自动搭流程</h3>
+          <p class="wizp">打开「工作流画布」，右侧有 <b>🤖 搭台助手</b>：像聊天一样说需求，它自动建项目、写脚本、摆好节点连成流程，还能一键开跑。试试这句：</p>
+          <div class="wizeg" id="wizExample">搭一个亚马逊美国站：卖家后台和 ERP 自动打开，一个整理订单的脚本，加一个 AI 每天汇总</div>
+          <div class="wizcol">
+            <button id="wizOpenCanvas" class="wizbtn wizprimary">打开画布去搭台 →</button>
+            <button id="wizFinish" class="wizbtn wizghost">先跳过</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新建项目：名字 + 方向，可选让 AI 直接按方向搭能力 -->
+    <div id="np" style="display:none;">
+      <div class="wizcard">
+        <div class="wiztag">新建项目 · 2 步</div>
+        <h3 class="wizh">这个项目叫什么</h3>
+        <input id="npName" placeholder="例如：亚马逊美国站运营" />
+        <h3 class="wizh" style="margin-top:12px;">它要做什么（方向）</h3>
+        <p class="wizp" style="margin-bottom:6px;">一句人话就行。写了方向，就能让 AI 直接把这个项目需要的智能体、网页、流程摆到画布上。</p>
+        <textarea id="npDir" class="wizta" placeholder="例如：每天看订单、库存和广告，异常当天报出来"></textarea>
+        <div class="wizcol" style="margin-top:10px;">
+          <button id="npCreate" class="wizbtn wizprimary">创建项目</button>
+          <button id="npBuild" class="wizbtn wizprimary">创建并让 AI 搭能力</button>
+          <button id="npCancel" class="wizbtn wizghost">取消</button>
+        </div>
+        <div id="npStatus" class="wizp" style="margin:8px 0 0;color:#8b96ab;"></div>
+      </div>
+    </div>
+
+    <section>
+      <h2>项目桌面 <span class="hcount" id="projCount"></span></h2>
+      <div id="projectList"></div>
+      <div class="addrow">
+        <input id="newProjectName" placeholder="项目名，回车新建" />
+        <button id="addProjectBtn">＋ 新建</button>
+      </div>
+    </section>
+
+    <!-- 以下分组默认收起：面板只用来看桌面和项目，其它按需展开 -->
+    <section class="grp" data-grp="work">
+      <h2 class="grphead"><span class="arrow">▶</span>工作台<span class="gcount">7</span></h2>
+      <div class="grpbody">
+        <div class="deskbtns">
+          <button id="appsBtn" class="origbtn" title="专家 / 技能 / 连接器 / 资料库：从 WorkBuddy、Codex 下载，也能自己新建、改、导入">🧰 应用功能</button>
+          <button id="marketBtn" class="origbtn" title="场景市场：一键套用现成的行业工作台（跨境 / 外贸 / 盯盘）">📦 场景市场</button>
+        </div>
+        <div class="deskbtns">
+          <button id="kbBtn" class="origbtn" title="知识库：把现有文件夹一键变成可检索、可问答的资料库（本地存储，不联网也能用）">📚 知识库</button>
+          <button id="canvasBtn" class="origbtn" title="工作流画布：把项目/窗口/网页/脚本/资料搭成可执行的上下文流程">🧩 工作流画布</button>
+        </div>
+        <div class="deskbtns">
+          <button id="ecomBtn" class="origbtn" title="卖货台：选品打分 → 小红书文案 → 合规检查 → 发布复盘（一条链走完）">🛒 卖货台</button>
+          <button id="tileBtn" class="origbtn" title="把当前项目的窗口在右侧排成网格，位置固定下来就不会认错">▦ 整理窗口</button>
+        </div>
+        <div class="deskbtns">
+          <button id="aiBtn3" class="origbtn" title="接算力：填一把密钥，画布里的 AI 节点就直接跑模型（ai.my10086.cn）">⚡ AI 算力 / 模型对接</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="grp" data-grp="biz">
+      <h2 class="grphead"><span class="arrow">▶</span>交付与协作<span class="gcount">2</span></h2>
+      <div class="grpbody">
+        <div class="deskbtns">
+          <button id="trustBtn" class="origbtn" title="双方共用的一扇窗：确认台账、核对签认、人和分工、数据安全、案例、条款">🛡 信任中心</button>
+          <button id="envBtn" class="origbtn" title="环境体检、导出/导入环境快照、绿色便携版、数据目录">🩺 环境 / 迁移</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="grp" data-grp="prefs">
+      <h2 class="grphead"><span class="arrow">▶</span>这台电脑<span class="gcount">4</span></h2>
+      <div class="grpbody">
+        <div class="wallrow">
+          <input type="checkbox" id="winPinChk" /><label for="winPinChk" title="默认关：功能窗口不抢在最前，切到浏览器/文档时不会被挡住">功能窗口始终浮在最前（默认关）</label>
+        </div>
+        <div class="wallrow">
+          <input type="checkbox" id="wallChk" /><label for="wallChk">切换桌面时同时切换真实壁纸</label>
+        </div>
+        <div class="wallrow">
+          <input type="checkbox" id="adminAutoChk" /><label for="adminAutoChk">保留管理员权限（隐藏管理员程序必需）</label>
+        </div>
+        <div class="wallrow">
+          <input type="checkbox" id="autoStartChk" /><label for="autoStartChk">开机自动启动（需确认一次 UAC 提权）</label>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 id="trashHeader"><span class="arrow">▶</span>回收站 <span id="trashCount" style="color:#565e72;font-weight:normal;">(0)</span></h2>
+      <div id="trashList"></div>
+    </section>
+
+    <section class="grp" data-grp="link">
+      <h2 class="grphead"><span class="arrow">▶</span>项目之间要互通？<span class="gcount">说明</span></h2>
+      <div class="grpbody">
+        <div class="empty" style="line-height:1.75; margin-bottom:8px;">
+          项目默认完全隔离。要互通就在「工作流画布」里把两个项目连成一条交接线 ——
+          关系只维护一份，连线上能直接发提示，不用再单独配流程。
+        </div>
+        <div class="deskbtns">
+          <button id="flowToCanvasBtn" class="origbtn">🧩 去画布连项目</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>真实桌面 · 窗口级隔离 · 被隐藏的项目仍在后台运行</footer>
+
+  <div id="modalMask">
+    <div class="modalbox">
+      <h3 id="modalTitle">删除项目</h3>
+      <p id="modalText"></p>
+      <div id="modalNameRow">
+        <span id="modalName" title="点一下自动填入"></span>
+        <button id="modalCopy" title="复制到剪贴板">复制</button>
+      </div>
+      <input id="modalInput" placeholder="请输入项目名验证" />
+      <div id="modalHint"></div>
+      <div class="modalbtns">
+        <button id="modalCancel">取消</button>
+        <button id="modalOk" class="ok">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+let state = { projects: [], flows: [], logs: [], trash: [], inbox: {}, activeId: null, settings: {}, missing: 0 };
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+const statusMap = {
+  stopped:     { text: '○ 空桌面', cls: '' },
+  running:     { text: '● 当前桌面', cls: 'running' },
+  background:  { text: '◐ 后台隐藏', cls: 'background' },
+  task:        { text: '● 待处理', cls: 'task' },
+  error:       { text: '● 报错', cls: 'error' }
+};
+
+async function doSwitch(target) {
+  try {
+    const r = await window.fde.switchDesktop(target);
+    if (r && r.ok === false) alert('切换失败: ' + (r.error || '未知错误'));
+    return r;
+  } catch (err) {
+    alert('切换异常: ' + ((err && err.message) || err));
+  }
+}
+
+function renderNowDesk() {
+  const p = state.projects.find(x => x.id === state.activeId);
+  $('#nowDot').style.background = p ? p.color : '#6d7589';
+  $('#nowName').textContent = p ? p.name : '原电脑桌面';
+  const n = p ? (p.windowsCount || 0) : (state.originalCount || 0);
+  $('#nowSub').textContent = p
+    ? ('本项目桌面 · ' + n + ' 个窗口 · 其它桌面已隐藏')
+    : ('真实桌面 · ' + n + ' 个窗口 · 所有项目桌面已隐藏');
+  $('#wallChk').checked = state.settings.wallpaper !== false;
+  $('#adminAutoChk').checked = state.settings.needAdmin !== false;
+  $('#autoStartChk').checked = !!state.autostart;
+  {
+    // 功能窗口置顶：默认关，主进程说了算（老数据里没这个字段时读回来是 false）
+    const chk = $('#winPinChk');
+    if (chk && !chk.dataset.touched) chk.checked = !!state.settings.winPin;
+  }
+  const admin = !!state.isAdmin;
+  const row = $('#adminRow');
+  const isWinPlat = state.platformId ? state.platformId === 'win32' : true;
+  const isoNote = state.isolationNote || '';
+  if (!isWinPlat) {
+    // macOS / Linux：没有 UAC，显示窗口隔离的实际状态，按钮藏起来
+    const isoOk = admin;   // 主进程在隔离可用时会把 isAdmin 置 true
+    row.className = 'adminrow ' + (isoOk ? 'ok' : 'bad');
+    $('#adminText').textContent = isoOk
+      ? ('✅ ' + (state.platformLabel || '') + ' 窗口隔离已就绪')
+      : ('⚠ ' + (state.platformLabel || '') + ' 窗口隔离未就绪' + (isoNote ? '（' + isoNote + '）' : ''));
+    $('#adminBtn').style.display = 'none';
+  } else {
+    row.className = 'adminrow ' + (admin ? 'ok' : 'bad');
+    $('#adminText').textContent = admin
+      ? '✅ 管理员权限已启用'
+      : '⚠ 未启用管理员权限';
+    $('#adminBtn').style.display = admin ? 'none' : 'inline-block';
+  }
+  const uc = state.uncontrolled || 0;
+  $('#warnRow').style.display = uc > 0 ? 'flex' : 'none';
+  $('#warnN').textContent = uc;
+  // "有窗口没显示"：数量来自主进程每轮收敛后的核对结果
+  const miss = state.missing || 0;
+  const row2 = $('#missRow');
+  row2.style.display = miss > 0 ? 'flex' : 'none';
+  $('#missN').textContent = miss;
+}
+
+function renderProjects() {
+  const box = $('#projectList');
+  box.innerHTML = '';
+  const cnt = $('#projCount');
+  if (cnt) cnt.textContent = state.projects.length ? '· ' + state.projects.length + ' 个' : '';
+  if (!state.projects.length) {
+    box.innerHTML = '<div class="empty">还没有项目，先在下面添加一个。</div>';
+    return;
+  }
+  for (const p of state.projects) {
+    const st = statusMap[p.status] || statusMap.stopped;
+    const div = document.createElement('div');
+    div.className = 'project' + (state.activeId === p.id ? ' active' : '');
+    div.innerHTML =
+      '<span class="dot" style="background:' + p.color + '"></span>' +
+      '<div class="info"><div class="name">' + esc(p.name) + '</div>' +
+      '<div class="status ' + st.cls + '" title="' + esc(p.statusMsg || '') + '">' + st.text +
+      (p.windowsCount ? ' · ' + p.windowsCount + ' 窗口' : '') + '</div></div>';
+    if (p.status === 'error') {
+      const badge = document.createElement('span');
+      badge.className = 'alert';
+      badge.textContent = '需处理';
+      div.appendChild(badge);
+    }
+    div.onclick = (ev) => {
+      if (ev.target.tagName === 'BUTTON') return;
+      doSwitch(p.id);
+    };
+    const gear = document.createElement('button');
+    gear.className = 'gear';
+    gear.textContent = '⚙';
+    gear.title = '项目控制面板（窗口归属 / 自动打开 / 设置）';
+    gear.onclick = async () => { await window.fde.openProjectPanel(p.id); };
+    const cvBtn = document.createElement('button');
+    cvBtn.textContent = '🎨';
+    cvBtn.title = '在画布里看这个项目：节点、智能体、流程（可继续搭）';
+    cvBtn.onclick = async () => { await window.fde.openOverview('canvas', p.id); };
+    const restartBtn = document.createElement('button');
+    restartBtn.textContent = '🔄';
+    restartBtn.title = '重启本项目：关闭项目内所有程序，并按「自动打开」重新启动';
+    restartBtn.onclick = async () => {
+      if (!confirm('重启「' + p.name + '」？\n\n将关闭本项目内的所有程序窗口（无响应的会被强制结束），然后按「自动打开」列表重新启动。')) return;
+      restartBtn.textContent = '⏳';
+      const r = await window.fde.restartProject(p.id);
+      if (!r.ok) alert(r.error);
+      refresh();
+    };
+    const copyBtn = document.createElement('button');
+    copyBtn.textContent = '⧉';
+    copyBtn.title = '复制项目';
+    copyBtn.onclick = async () => {
+      const r = await window.fde.copyProject(p.id);
+      if (!r.ok) alert(r.error);
+      refresh();
+    };
+    const delBtn = document.createElement('button');
+    delBtn.className = 'danger';
+    delBtn.textContent = '删';
+    delBtn.title = '删除项目（进入回收站）';
+    delBtn.onclick = () => {
+      openVerifyModal(
+        '删除项目',
+        '删除后项目进入回收站，可随时恢复；它占用的应用窗口会回到原电脑桌面。',
+        '在这里粘贴，或输入项目名',
+        async (v) => {
+          if (!v) return;
+          const r = await window.fde.removeProject(p.id, v);
+          if (!r.ok) { alert(r.error); return; }
+          refresh();
+        },
+        p.name
+      );
+    };
+    const ops = document.createElement('div');
+    ops.className = 'ops';
+    ops.appendChild(gear);
+    ops.appendChild(cvBtn);
+    ops.appendChild(restartBtn);
+    ops.appendChild(copyBtn);
+    ops.appendChild(delBtn);
+    div.appendChild(ops);
+    box.appendChild(div);
+  }
+}
+
+function renderTrash() {
+  const box = $('#trashList');
+  box.innerHTML = '';
+  $('#trashCount').textContent = '(' + state.trash.length + ')';
+  if (!state.trash.length) {
+    box.innerHTML = '<div class="empty">回收站为空。</div>';
+    return;
+  }
+  for (const t of state.trash) {
+    const div = document.createElement('div');
+    div.className = 'trashitem';
+    const d = new Date(t.deletedAt);
+    const when = (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    div.innerHTML = '🗑 ' + esc(t.project.name) + ' <span class="date">删除于 ' + when + '</span>';
+    const restore = document.createElement('button');
+    restore.textContent = '恢复';
+    restore.onclick = async () => { const r = await window.fde.restoreProject(t.project.id); if (!r.ok) alert(r.error); refresh(); };
+    const purge = document.createElement('button');
+    purge.className = 'purge';
+    purge.textContent = '彻底删除';
+    purge.onclick = async () => {
+      if (!confirm('彻底删除「' + t.project.name + '」？此操作不可恢复！')) return;
+      const r = await window.fde.purgeProject(t.project.id);
+      if (!r.ok) alert(r.error);
+      refresh();
+    };
+    div.appendChild(restore);
+    div.appendChild(purge);
+    box.appendChild(div);
+  }
+}
+
+async function refresh() {
+  state = await window.fde.getData();
+  renderNowDesk(); renderProjects(); renderTrash();
+}
+
+$('#trashHeader').onclick = () => $('#trashHeader').classList.toggle('open');
+
+// ---------- 分组折叠（状态记在本机，下次打开保持） ----------
+const GRP_KEY = 'fde.panel.groups';
+function grpState() {
+  try { return JSON.parse(localStorage.getItem(GRP_KEY) || '{}') || {}; } catch (e) { return {}; }
+}
+function grpSave(o) {
+  try { localStorage.setItem(GRP_KEY, JSON.stringify(o)); } catch (e) {}
+}
+document.querySelectorAll('.grp').forEach(g => {
+  const key = g.dataset.grp;
+  if (grpState()[key] === true) g.classList.add('open');
+  const head = g.querySelector('.grphead');
+  if (!head) return;
+  head.onclick = () => {
+    g.classList.toggle('open');
+    const s = grpState();
+    s[key] = g.classList.contains('open');
+    grpSave(s);
+  };
+});
+
+let modalCb = null;
+let modalNeed = null; // 需要核对的项目名（可为空 = 不校验）
+
+async function copyText(t) {
+  try {
+    if (window.fde && window.fde.copyText) {
+      const r = await window.fde.copyText(t);
+      if (r && r.ok) return true;
+    }
+  } catch (e) {}
+  try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = t;
+    ta.style.cssText = 'position:fixed;top:-1000px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  } catch (e) { return false; }
+}
+
+function syncModal() {
+  const inp = $('#modalInput'), btn = $('#modalOk'), hint = $('#modalHint');
+  if (!modalNeed) {
+    btn.disabled = false; hint.textContent = '';
+    return;
+  }
+  const v = inp.value.trim();
+  const done = v === modalNeed;
+  btn.disabled = !done;
+  if (!v) {
+    hint.style.color = '#6d7589';
+    hint.textContent = '点上面的名字自动填入，打不出来的字、符号也能用。';
+  } else if (done) {
+    hint.style.color = '#4ade80';
+    hint.textContent = '✓ 名字一致，可以删除（进回收站，可恢复）';
+  } else {
+    hint.style.color = '#f59e0b';
+    hint.textContent = '还没对上：当前 ' + [...v].length + ' 个字，需要 ' + [...modalNeed].length + ' 个字';
+  }
+}
+
+function openVerifyModal(title, text, placeholder, cb, needName) {
+  $('#modalTitle').textContent = title;
+  $('#modalText').textContent = text;
+  $('#modalInput').value = '';
+  $('#modalInput').placeholder = placeholder;
+  modalCb = cb;
+  modalNeed = needName || null;
+  const row = $('#modalNameRow');
+  if (modalNeed) {
+    row.classList.add('on');
+    $('#modalName').textContent = modalNeed;
+    $('#modalName').title = '点一下把项目名填到下面（共 ' + [...modalNeed].length + ' 个字）';
+  } else {
+    row.classList.remove('on');
+    $('#modalName').textContent = '';
+  }
+  syncModal();
+  $('#modalMask').style.display = 'flex';
+  setTimeout(() => $('#modalInput').focus(), 60);
+}
+$('#modalName').onclick = () => {
+  if (!modalNeed) return;
+  $('#modalInput').value = modalNeed;
+  syncModal();
+  $('#modalInput').focus();
+  $('#modalInput').setSelectionRange(modalNeed.length, modalNeed.length);
+};
+$('#modalCopy').onclick = async () => {
+  if (!modalNeed) return;
+  const ok = await copyText(modalNeed);
+  const btn = $('#modalCopy');
+  btn.textContent = ok ? '✓ 已复制' : '复制失败';
+  setTimeout(() => { btn.textContent = '复制'; }, 1600);
+  if (ok) $('#modalInput').focus();
+};
+$('#modalInput').addEventListener('input', syncModal);
+$('#modalCancel').onclick = () => { $('#modalMask').style.display = 'none'; modalCb = null; modalNeed = null; };
+$('#modalOk').onclick = () => {
+  const v = $('#modalInput').value.trim();
+  if (modalNeed && v !== modalNeed) { syncModal(); return; }
+  $('#modalMask').style.display = 'none';
+  const cb = modalCb; modalCb = null; modalNeed = null;
+  if (cb) cb(v);
+};
+$('#modalInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !$('#modalOk').disabled) $('#modalOk').onclick();
+});
+
+// 新建项目：先收名字和方向，再决定要不要让 AI 按方向搭能力
+function npShow(prefill) {
+  const box = $('#np');
+  box.style.display = 'flex';
+  box.scrollTop = 0;
+  $('#npName').value = prefill || $('#newProjectName').value.trim() || '';
+  $('#npDir').value = '';
+  $('#npStatus').textContent = '';
+  setTimeout(() => { try { ($('#npName').value ? $('#npDir') : $('#npName')).focus(); } catch (e) {} }, 60);
+}
+function npHide() { $('#np').style.display = 'none'; }
+
+async function npCreate(withAI) {
+  const name = $('#npName').value.trim();
+  const dir = $('#npDir').value.trim();
+  if (!name) { $('#npName').focus(); $('#npStatus').textContent = '先给项目起个名字'; return; }
+  if (withAI && !dir) { $('#npDir').focus(); $('#npStatus').textContent = '要让 AI 按方向搭能力，先把方向写一句'; return; }
+  const b1 = $('#npCreate'), b2 = $('#npBuild');
+  b1.disabled = true; b2.disabled = true;
+  $('#npStatus').textContent = withAI ? '正在创建项目…' : '正在创建…';
+  try {
+    const r = await window.fde.addProject(name, { direction: dir });
+    if (!r || r.ok === false) { $('#npStatus').textContent = (r && r.error) || '创建失败'; return; }
+    const p = r.project;
+    $('#newProjectName').value = '';
+    await refresh();
+    if (!withAI) { npHide(); return; }
+    $('#npStatus').textContent = '项目已建好，AI 正在按方向搭能力（20~60 秒）…';
+    const br = await window.fde.buildAgents(p.id, dir);
+    if (!br || !br.ok) { $('#npStatus').textContent = '项目已建好，但 AI 没搭成：' + ((br && br.error) || '未知错误'); return; }
+    $('#npStatus').textContent = '✓ ' + br.summary;
+    await refresh();
+    setTimeout(() => { npHide(); window.fde.openOverview('canvas', p.id); }, 500);
+  } catch (e) {
+    $('#npStatus').textContent = '出错了：' + e.message;
+  } finally {
+    b1.disabled = false; b2.disabled = false;
+  }
+}
+
+$('#addProjectBtn').onclick = () => npShow();
+$('#newProjectName').addEventListener('keydown', e => { if (e.key === 'Enter') npShow(); });
+$('#npCreate').onclick = () => npCreate(false);
+$('#npBuild').onclick = () => npCreate(true);
+$('#npCancel').onclick = npHide;
+$('#npName').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#npDir').focus(); } });
+$('#npDir').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) npCreate(true); });
+
+$('#flowToCanvasBtn').onclick = () => window.fde.openOverview('canvas');
+
+/* ---------------- 新手三步向导 ---------------- */
+const WIZ_KEY = 'fdeWizardDone.v1';
+function wizShow(step) {
+  const box = $('#wiz');
+  box.style.display = 'flex';
+  box.scrollTop = 0;
+  for (let i = 1; i <= 3; i++) $('#wizStep' + i).style.display = i === step ? 'block' : 'none';
+  $('#wizStepNo').textContent = '第 ' + step + ' / 3 步';
+  // 换步后把卡片滚到可见区域顶部，避免按钮跑到面板可视区之外
+  setTimeout(() => { try { box.scrollTop = 0; } catch (e) {} }, 0);
+  if (step === 1) setTimeout(() => { try { $('#wizProjName').focus(); } catch (e) {} }, 80);
+}
+function wizDone() {
+  try { localStorage.setItem(WIZ_KEY, '1'); } catch (e) {}
+  $('#wiz').style.display = 'none';
+}
+function wizMaybeStart() {
+  let done = '1';
+  try { done = localStorage.getItem(WIZ_KEY) || ''; } catch (e) {}
+  if (done !== '1') wizShow(1);
+}
+$('#wizCreate').onclick = async () => {
+  const name = $('#wizProjName').value.trim();
+  if (!name) { $('#wizProjName').focus(); return; }
+  const r = await window.fde.addProject(name);
+  if (r && r.ok === false) { $('#wizProjName').placeholder = r.error || '创建失败'; return; }
+  refresh();
+  wizShow(2);
+};
+$('#wizProjName').addEventListener('keydown', e => { if (e.key === 'Enter') $('#wizCreate').click(); });
+$('#wizNext3').onclick = () => wizShow(3);
+$('#wizOpenCanvas').onclick = () => {
+  wizDone();
+  try { localStorage.setItem('fde.bdExample', '搭一个亚马逊美国站：卖家后台和 ERP 自动打开，一个整理订单的脚本，加一个 AI 每天汇总'); } catch (e) {}
+  window.fde.openOverview('canvas');
+};
+$('#wizFinish').onclick = wizDone;
+
+$('#wallChk').onchange = async (e) => {
+  await window.fde.toggleWallpaper(e.target.checked);
+  refresh();
+};
+
+$('#adminBtn').onclick = askAdmin;
+$('#adminBtn2').onclick = askAdmin;
+
+async function askAdmin() {
+  if (!confirm('将以管理员身份重启 FDE（当前窗口会关闭并自动重开）。\n\n为什么需要：Windows 不允许普通权限的程序隐藏「以管理员权限运行」的软件（例如交易软件、部分工具）的窗口，授予权限后这些窗口也能被正确收起。\n\n继续？')) return;
+  const r = await window.fde.relaunchAdmin();
+  if (r && r.ok === false) alert('未能获取管理员权限：' + (r.error || '已取消'));
+}
+
+$('#adminAutoChk').onchange = async (e) => {
+  await window.fde.setAdminAuto(e.target.checked);
+  refresh();
+};
+
+$('#autoStartChk').onchange = async (e) => {
+  const r = await window.fde.setAutostart(e.target.checked);
+  if (!r || r.ok === false) {
+    alert('设置开机自启失败: ' + ((r && r.error) || '未知错误'));
+    $('#autoStartChk').checked = false;
+    return;
+  }
+  $('#autoStartChk').checked = !!r.enabled;
+};
+
+// 功能窗口是否浮在最前（默认关：置顶会挡住浏览器，底下点不到）
+$('#winPinChk').onchange = async (e) => {
+  const chk = e.target;
+  chk.dataset.touched = '1';
+  const r = await window.fde.setWinPin(chk.checked);
+  if (!r || r.ok === false) {
+    alert('设置失败：' + ((r && r.error) || '未知错误'));
+    chk.checked = !chk.checked;
+    return;
+  }
+  chk.checked = !!r.pinned;
+  refresh();
+};
+
+$('#pinBtn').onclick = async () => { const r = await window.fde.togglePin(); $('#pinBtn').textContent = r.pinned ? '📌' : '📍'; };
+$('#minBtn').onclick = () => window.fde.minimizePanel();
+$('#origDeskBtn').onclick = () => doSwitch('original');
+$('#overviewBtn').onclick = () => window.fde.openOverview('cards');
+$('#canvasBtn').onclick = () => window.fde.openOverview('canvas');
+$('#marketBtn').onclick = () => window.fde.openMarket();
+$('#ecomBtn').onclick = () => window.fde.openEcom();
+$('#kbBtn').onclick = () => window.fde.appsOpenTab('kb');
+$('#appsBtn').onclick = () => window.fde.appsOpen();
+$('#aiBtn3').onclick = () => window.fde.aiOpenSettings();
+$('#tileBtn').onclick = async () => {
+  const r = await window.fde.tileWindows(state.activeId === undefined ? null : state.activeId);
+  if (!r || r.ok === false) return alert((r && r.msg) || '整理失败');
+  if (!r.count) alert(r.msg || '当前桌面没有可整理的窗口');
+};
+$('#envBtn').onclick = () => window.fde.openEnv();
+$('#trustBtn').onclick = () => window.fde.openTrust();
+$('#quitBtn').onclick = () => {
+  if (confirm('退出 FDE？所有项目窗口会重新显示并恢复原壁纸。')) window.fde.quitApp();
+};
+
+window.fde.on('fde:projects', d => { state.projects = d; renderNowDesk(); renderProjects(); });
+window.fde.on('fde:trash', d => { state.trash = d; renderTrash(); });
+window.fde.on('fde:desktop', d => {
+  state.activeId = d.activeId;
+  state.originalCount = d.originalCount;
+  state.uncontrolled = d.uncontrolled;
+  if (typeof d.missing === 'number') state.missing = d.missing;
+  if (typeof d.isAdmin === 'boolean') state.isAdmin = d.isAdmin;
+  renderNowDesk(); renderProjects();
+});
+
+// ---------- "有窗口没显示"：先看原因，再一键修复 ----------
+// 窗口明明属于这个桌面却没露面，原因无非几种：被搬到屏幕外、被程序自己藏起来、
+// 管理员权限叫不动、句柄换了我们还没跟上。把原因写清楚，用户才知道该点哪个。
+const WHY_TEXT = {
+  'parked': ['曾经被搬到屏幕外', '多半是这程序藏不掉，被移出屏幕后没搬回来。点"修复"会把它移回可见区域。'],
+  'hidden': ['窗口被藏起来了', '通常是程序自己收进了托盘，或上一个桌面留下的隐藏状态。点"修复"强制叫出来。'],
+  'hidden-by-us': ['我们藏起来后没叫回来', '切换桌面时留下的状态没还原。点"修复"会把它叫回来。'],
+  'not-visible': ['程序自己把窗口藏了', '多数是收进了系统托盘（比如聊天软件），点托盘图标就能展开。'],
+  'show-failed': ['叫了但没反应', '程序没响应显示请求。如果它是管理员权限程序，需要让 FDE 也用管理员权限运行。'],
+  'uncontrollable': ['管理员权限程序', 'FDE 现阶段动不了它，需要以管理员权限重启 FDE 才能隔离/还原。'],
+  'not-enumerated': ['窗口句柄暂时读不到', '程序在切换状态（UWP 挂起、或者正在重建窗口），一般过几秒自己会好。'],
+  'cloaked': ['被系统挂起了', '这类应用（如系统商店应用）休眠时由 Windows 托管，点它的任务栏图标或重新打开一次即可恢复。'],
+  'minimized': ['被最小化了', '它其实在这个桌面，只是收在任务栏里。'],
+  'ok': ['正常', '']
+};
+
+// ---------- 全局诊断看板：窗口原因分布 + 异常日志 + 崩溃记录 ----------
+const DIAG_WHY = {
+  'ok': '正常显示', 'parked': '被搬到屏幕外', 'cloaked': '系统挂起', 'show-failed': '叫不出来',
+  'minimized': '最小化', 'not-enumerated': '句柄暂不可读', 'not-visible': '程序自藏', 'hidden-by-us': '切换残留'
+};
+async function openDiagBoard() {
+  const r = await window.fde.diagStats();
+  if (!r || !r.ok) return;
+  const old = document.getElementById('diagBoard');
+  if (old) old.remove();
+  const box = document.createElement('div');
+  box.id = 'diagBoard';
+  box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:210;padding:16px;';
+  const why = Object.entries(r.windows.whyCount || {}).sort((a, b) => b[1] - a[1]);
+  const total = r.windows.total || 0;
+  const whyRows = why.length
+    ? why.map(([k, n]) => {
+        const bad = k !== 'ok' && k !== 'minimized';
+        const pct = total ? Math.round(n * 100 / total) : 0;
+        return '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;">' +
+          '<div style="width:92px;font-size:11px;color:' + (bad ? '#f2d19b' : '#8b93a7') + ';">' + esc(DIAG_WHY[k] || k) + '</div>' +
+          '<div style="flex:1;height:8px;background:#232837;border-radius:4px;overflow:hidden;"><div style="width:' + pct + '%;height:100%;background:' + (bad ? '#d9a441' : '#3f9e6e') + ';"></div></div>' +
+          '<div style="width:52px;text-align:right;font-size:11px;color:#cfd6e4;">' + n + ' 个</div></div>';
+      }).join('')
+    : '<div style="font-size:11px;color:#6d7589;">还没有窗口记录。</div>';
+  const logs = (r.errLogs || []).map(l =>
+    '<div style="padding:5px 0;border-bottom:1px solid #232837;font-size:11px;color:#c9b28a;line-height:1.6;">' +
+    '<span style="color:#6d7589;">' + new Date(l.time).toLocaleString('zh-CN') + '</span> · ' + esc(l.text) + '</div>').join('');
+  box.innerHTML =
+    '<div style="width:430px;max-height:80vh;overflow:auto;background:#1b2130;border:1px solid #2a3244;border-radius:10px;padding:18px;">' +
+    '<div style="font-size:14px;color:#fff;margin-bottom:4px;">📊 诊断看板</div>' +
+    '<div style="font-size:11px;color:#8b93a7;margin-bottom:12px;">运行 ' + Math.round(r.uptime / 60) + ' 分钟 · 内存 ' + r.memory + ' MB' + (r.version ? ' · v' + r.version : '') + (r.uncontrolled ? ' · ' + r.uncontrolled + ' 个管理员窗口' : '') + '</div>' +
+    '<div style="font-size:12px;color:#dfe4ee;margin-bottom:6px;">窗口状态分布（共 ' + total + ' 个）</div>' + whyRows +
+    '<div style="font-size:12px;color:#dfe4ee;margin:14px 0 6px;">最近异常（' + (r.errLogs || []).length + ' 条）</div>' +
+    (logs || '<div style="font-size:11px;color:#5fd08a;">没有异常记录，一切正常。</div>') +
+    (r.crash ? '<div style="font-size:12px;color:#dfe4ee;margin:14px 0 6px;">主进程崩溃记录</div><pre style="white-space:pre-wrap;font-size:10px;color:#e8a0a0;background:#12161f;border-radius:8px;padding:10px;max-height:140px;overflow:auto;">' + esc(r.crash) + '</pre>' : '') +
+    '<div style="display:flex;justify-content:flex-end;margin-top:14px;"><button id="__diagc" class="btn">关闭</button></div></div>';
+  document.body.appendChild(box);
+  box.querySelector('#__diagc').onclick = () => box.remove();
+  box.addEventListener('click', (e) => { if (e.target === box) box.remove(); });
+}
+$('#diagBtn').onclick = openDiagBoard;
+
+async function openDiag() {
+  const r = await window.fde.desktopDiag();
+  if (!r || !r.ok) return;
+  const rows = r.missing || [];
+  const old = document.getElementById('missModal');
+  if (old) old.remove();
+  const box = document.createElement('div');
+  box.id = 'missModal';
+  box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;';
+  const list = rows.length
+    ? rows.map(x => {
+        const t = WHY_TEXT[x.reason] || [x.reason, ''];
+        return '<div style="padding:8px 0;border-bottom:1px solid #232837;">' +
+          '<div style="font-size:12px;color:#dfe4ee;">' + esc(x.proc) + ' · ' + esc(String(x.title || '').slice(0, 26)) + '</div>' +
+          '<div style="font-size:10px;color:#7db3e8;margin-top:3px;">' + esc(t[0]) + '</div>' +
+          '<div style="font-size:10px;color:#6d7589;margin-top:2px;line-height:1.55;">' + esc(t[1]) + '</div>' +
+          '</div>';
+      }).join('')
+    : '<div style="font-size:12px;color:#5fd08a;padding:6px 0;">本桌面 ' + (r.total || 0) + ' 个窗口都在，没有漏的。</div>';
+  box.innerHTML =
+    '<div style="width:380px;max-height:74vh;overflow:auto;background:#1b2130;border:1px solid #2a3244;border-radius:10px;padding:16px;">' +
+    '<div style="font-size:14px;color:#fff;margin-bottom:6px;">本桌面没显示的窗口</div>' +
+    '<div style="font-size:11px;color:#8b93a7;line-height:1.6;margin-bottom:10px;">共 ' + (r.total || 0) +
+    ' 个窗口属于这个桌面，其中 ' + rows.length + ' 个没露面。</div>' + list +
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">' +
+    '<button id="__dc" class="btn">关闭</button>' +
+    '<button id="__dr" class="btn" style="background:#2563eb;color:#fff;">修复</button></div></div>';
+  document.body.appendChild(box);
+  const close = () => box.remove();
+  box.querySelector('#__dc').onclick = close;
+  box.addEventListener('click', (e) => { if (e.target === box) close(); });
+  box.querySelector('#__dr').onclick = async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true; btn.textContent = '修复中…';
+    const rr = await window.fde.desktopRepair();
+    close();
+    state.missing = rr && typeof rr.missing === 'number' ? rr.missing : 0;
+    renderNowDesk();
+    if (rr && rr.missing > 0) setTimeout(openDiag, 400);
+  };
+}
+$('#missBtn').onclick = openDiag;
+
+
+refresh();
+wizMaybeStart();
+</script>
+</body>
+</html>

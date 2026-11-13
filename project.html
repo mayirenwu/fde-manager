@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>项目控制面板</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: #10131a; color: #dfe4ee; height: 100vh;
+    display: flex; flex-direction: column; overflow: hidden; user-select: none;
+  }
+  header {
+    -webkit-app-region: drag;
+    padding: 12px 14px; background: #141824; border-bottom: 1px solid #232837;
+    display: flex; align-items: center; gap: 9px;
+  }
+  header .dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  header .tt { flex: 1; min-width: 0; }
+  header .tt .nm { font-size: 14px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  header .tt .st { font-size: 11px; color: #7b849c; margin-top: 2px; }
+  header button {
+    -webkit-app-region: no-drag; background: none; border: none; color: #8b93a7;
+    font-size: 14px; cursor: pointer; padding: 3px 6px; border-radius: 4px;
+  }
+  header button:hover { background: #232837; color: #fff; }
+
+  .tabs { display: flex; background: #141824; border-bottom: 1px solid #232837; }
+  .tabs div {
+    flex: 1; text-align: center; font-size: 12px; padding: 9px 0;
+    color: #7b849c; cursor: pointer; border-bottom: 2px solid transparent;
+    white-space: nowrap;
+  }
+  .tabs div:hover { color: #dfe4ee; }
+  .tabs div.on { color: #4f8cff; border-bottom-color: #4f8cff; background: #171c28; }
+
+  .panes { flex: 1; overflow-y: auto; padding: 12px 14px; }
+  .pane { display: none; }
+  .pane.on { display: block; }
+
+  h3 { font-size: 12px; color: #7b849c; letter-spacing: .5px; margin: 14px 0 8px; }
+  h3:first-child { margin-top: 0; }
+
+  .btn {
+    background: #232837; border: none; color: #cdd3e0; font-size: 11px;
+    padding: 5px 10px; border-radius: 5px; cursor: pointer;
+  }
+  .btn:hover { background: #2e3547; }
+  .btn.pri { background: #4f8cff; color: #fff; }
+  .btn.pri:hover { background: #3d78e0; }
+  .btn.mini { padding: 3px 8px; font-size: 10px; }
+  .btn.danger:hover { background: #7f2d2d; }
+  .row { display: flex; gap: 6px; align-items: center; }
+  .row > input, .row > .grow { flex: 1; min-width: 0; }
+  input[type=text] {
+    background: #171c28; border: 1px solid #232837; border-radius: 6px;
+    padding: 7px 9px; color: #dfe4ee; font-size: 12px; outline: none;
+  }
+  input[type=text]:focus { border-color: #4f8cff; }
+  select.sel {
+    background: #171c28; border: 1px solid #232837; border-radius: 6px;
+    padding: 7px 9px; color: #dfe4ee; font-size: 12px; outline: none;
+  }
+
+  .witem {
+    display: flex; align-items: center; gap: 8px; padding: 7px 9px;
+    background: #171c28; border: 1px solid #232837; border-radius: 7px; margin-bottom: 5px;
+  }
+  .witem .ic { font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
+  .witem .tx { flex: 1; min-width: 0; }
+  .witem .t1 { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .witem .t2 { font-size: 10px; color: #6d7589; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .outbox {
+    margin: -2px 0 8px; border: 1px solid #232837; border-top: none;
+    border-radius: 0 0 7px 7px; background: #0e131c; padding: 8px 10px;
+  }
+  .outbox .oh { font-size: 10px; color: #6d7589; margin-bottom: 6px; }
+  .outbox pre {
+    margin: 0; max-height: 220px; overflow: auto; white-space: pre-wrap; word-break: break-all;
+    font: 11px/1.55 ui-monospace, "Cascadia Mono", Consolas, monospace; color: #b7bfd2;
+  }
+  .empty { font-size: 11px; color: #565e72; padding: 6px 2px; line-height: 1.6; }
+
+  .switchrow {
+    display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+    background: #171c28; border: 1px solid #232837; border-radius: 8px; margin-bottom: 6px;
+  }
+  .switchrow .tx { flex: 1; }
+  .switchrow .tx .t1 { font-size: 12px; }
+  .switchrow .tx .t2 { font-size: 10px; color: #6d7589; margin-top: 3px; line-height: 1.5; }
+  .switch { position: relative; width: 38px; height: 21px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; inset: 0; background: #2a3040; border-radius: 21px;
+    cursor: pointer; transition: .18s;
+  }
+  .slider:before {
+    content: ""; position: absolute; width: 15px; height: 15px; left: 3px; top: 3px;
+    background: #fff; border-radius: 50%; transition: .18s;
+  }
+  .switch input:checked + .slider { background: #22c55e; }
+  .switch input:checked + .slider:before { transform: translateX(17px); }
+
+  .msg {
+    background: #171c28; border: 1px solid #232837; border-left: 3px solid #22c55e;
+    border-radius: 6px; padding: 7px 9px; margin-bottom: 6px; font-size: 12px; line-height: 1.5;
+  }
+  .msg .meta { font-size: 10px; color: #6d7589; margin-bottom: 3px; }
+  .msg .ops { margin-top: 5px; }
+
+  .logline { font-size: 11px; color: #8b93a7; padding: 3px 0; border-bottom: 1px dashed #1c2130; }
+  .logline .t { color: #4f8cff; margin-right: 6px; }
+  .logline.err { color: #ef4444; }
+
+  .dangerbox {
+    border: 1px solid #3a2c2c; border-radius: 8px; padding: 10px; margin-top: 14px;
+    background: #1a1618;
+  }
+  .dangerbox .t { font-size: 12px; color: #ef4444; margin-bottom: 6px; }
+  .dangerbox .d { font-size: 10px; color: #8b93a7; margin-bottom: 8px; line-height: 1.5; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #2a3040; border-radius: 3px; }
+
+  /* 从画布点「设置」时，窗口离点击处远，闪两下让人一眼看到是它 */
+  body.flash2::after {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+    animation: fdePanelFlash .8s ease-in-out 2;
+  }
+  @keyframes fdePanelFlash {
+    0%   { box-shadow: inset 0 0 0 0 rgba(79,140,255,0); background: rgba(79,140,255,0); }
+    30%  { box-shadow: inset 0 0 0 3px rgba(79,140,255,.95), inset 0 0 46px rgba(79,140,255,.30); background: rgba(79,140,255,.10); }
+    100% { box-shadow: inset 0 0 0 0 rgba(79,140,255,0); background: rgba(79,140,255,0); }
+  }
+  #openedTip {
+    position: fixed; left: 50%; top: 8px; transform: translate(-50%, -12px);
+    background: #1d4ed8; color: #fff; font-size: 11px; line-height: 1;
+    padding: 7px 12px; border-radius: 20px; z-index: 10000; pointer-events: none;
+    opacity: 0; transition: opacity .18s, transform .18s;
+    box-shadow: 0 8px 24px rgba(29,78,216,.45); white-space: nowrap;
+  }
+  #openedTip.on { opacity: 1; transform: translate(-50%, 0); }
+
+  /* 画布页：项目方向 + 这个项目在画布上的能力 */
+  .dirbox {
+    width: 100%; min-height: 62px; resize: vertical; font-family: inherit;
+    background: #171c28; border: 1px solid #232837; border-radius: 7px;
+    padding: 8px 9px; color: #dfe4ee; font-size: 12px; line-height: 1.6; outline: none;
+    user-select: text;
+  }
+  .dirbox:focus { border-color: #4f8cff; }
+  .cvitem {
+    display: flex; align-items: center; gap: 8px; padding: 7px 9px;
+    background: #171c28; border: 1px solid #232837; border-radius: 7px; margin-bottom: 5px;
+  }
+  .cvitem .ic { font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
+  .cvitem .tx { flex: 1; min-width: 0; }
+  .cvitem .t1 { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cvitem .t2 { font-size: 10px; color: #6d7589; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cvitem .tag { font-size: 9px; color: #7b849c; border: 1px solid #2a3244; border-radius: 4px; padding: 1px 5px; flex-shrink: 0; }
+  .cvstatus { font-size: 11px; line-height: 1.6; color: #8b93a7; padding: 6px 2px; word-break: break-word; }
+  .cvstatus.ok { color: #22c55e; }
+  .cvstatus.err { color: #ef4444; }
+</style>
+</head>
+<body>
+  <header>
+    <span class="dot" id="hDot"></span>
+    <div class="tt">
+      <div class="nm" id="hName">项目</div>
+      <div class="st" id="hStatus">—</div>
+    </div>
+    <button id="gotoBtn" title="切换到本项目的真实桌面">🖥</button>
+    <button id="restartBtn" title="重启本项目：关闭项目内所有程序，并按「自动打开」重新启动">🔄</button>
+    <button id="closeBtn" title="关闭面板">✕</button>
+  </header>
+
+  <div class="tabs">
+    <div class="on" data-pane="win">应用窗口</div>
+    <div data-pane="canvas">画布</div>
+    <div data-pane="ctx">上下文</div>
+    <div data-pane="item">功能/脚本</div>
+    <div data-pane="msg">消息</div>
+    <div data-pane="set">设置</div>
+  </div>
+
+  <div class="panes">
+    <!-- 应用窗口 -->
+    <div class="pane on" id="pane-win">
+      <div class="row" style="margin-bottom:10px;">
+        <button class="btn pri" id="gotoBtn2">🖥 切换到本项目桌面</button>
+        <button class="btn" id="tileBtn2" title="把本项目窗口在面板右侧排成网格，位置固定就不会认错">▦ 整理窗口</button>
+        <button class="btn" id="rescanBtn">刷新</button>
+      </div>
+      <h3>本项目拥有的窗口</h3>
+      <div id="myWins"></div>
+      <h3>其它窗口（可移入本项目）</h3>
+      <div id="otherWins"></div>
+    </div>
+
+    <!-- 画布：项目方向 + 这个项目在画布上的能力（和工作流画布是同一份数据） -->
+    <div class="pane" id="pane-canvas">
+      <h3>项目方向（这个项目要做什么）</h3>
+      <div class="empty" style="margin-bottom:6px;">
+        用一句人话写清目标，AI 就按它给这个项目搭能力：需要哪些智能体、看哪些网页、按什么顺序跑。
+      </div>
+      <textarea id="dirInput" class="dirbox" placeholder="例如：亚马逊美国站日常运营，每天看订单/库存/广告，异常当天报出来"></textarea>
+      <div class="row" style="margin-top:8px;">
+        <button class="btn pri" id="dirSave">保存方向</button>
+        <button class="btn" id="dirBuild" title="AI 按这个方向给本项目生成智能体/网页节点，直接长在画布上">🤖 按方向搭能力</button>
+      </div>
+      <div id="dirStatus" class="cvstatus"></div>
+
+      <h3 style="margin-top:16px;">画布里的能力 <span id="cvCount" style="color:#4f5768;"></span></h3>
+      <div id="cvList"></div>
+      <div class="row" style="margin-top:8px;">
+        <button class="btn" id="cvOpen">🎨 在画布中查看</button>
+        <button class="btn" id="cvRefresh">刷新</button>
+      </div>
+    </div>
+
+    <!-- 上下文 -->
+    <div class="pane" id="pane-ctx">
+      <h3>项目上下文</h3>
+      <div class="empty" style="margin-bottom:10px; line-height:1.7;">
+        把这项工作的「材料」沉淀在这里：客户资料路径、数据源、接口文档、口径说明、常用网址。<br>
+        它们会进入画布 AI 节点的提示词，也能一键导出成给团队/AI 的上下文包。
+      </div>
+      <div id="ctxList"></div>
+
+      <h3 style="margin-top:14px;">添加材料</h3>
+      <div class="row" style="margin-bottom:6px;">
+        <select id="ctxKind" class="grow sel">
+          <option value="text">📝 文本 / 口径说明</option>
+          <option value="file">📄 文件</option>
+          <option value="folder">📁 文件夹</option>
+          <option value="url">🌐 网页 / 接口文档</option>
+          <option value="sql">🗄 数据源 / 连接</option>
+          <option value="api">🔌 API / 凭证说明</option>
+        </select>
+      </div>
+      <div class="row" style="margin-bottom:6px;">
+        <input type="text" id="ctxTitle" placeholder="标题，如：客户主数据口径" />
+      </div>
+      <div class="row" style="margin-bottom:6px;">
+        <input type="text" id="ctxValue" placeholder="内容 / 路径 / 网址 / 连接串" />
+        <button class="btn" id="ctxBrowse" title="选择文件或文件夹">浏览…</button>
+      </div>
+      <div class="row" style="margin-bottom:6px;">
+        <input type="text" id="ctxNote" placeholder="备注（可选）：为什么要用它、注意什么" />
+      </div>
+      <div class="row">
+        <button class="btn pri" id="ctxAddBtn">＋ 添加上下文</button>
+        <button class="btn" id="ctxPackBtn" title="导出为 Markdown 并复制到剪贴板">📋 复制上下文包</button>
+      </div>
+    </div>
+
+    <!-- 功能 / 脚本 -->
+    <div class="pane" id="pane-item">
+      <h3>功能模块</h3>
+      <div id="itemList"></div>
+      <div class="row" style="margin-top:8px;">
+        <input type="text" id="itemName" placeholder="模块名，如：客户管理" />
+        <button class="btn pri" id="addModuleBtn">＋ 模块</button>
+      </div>
+      <h3>脚本（可真实运行）</h3>
+      <div class="row" style="margin-top:6px;">
+        <input type="text" id="scriptName" placeholder="脚本名，如：日报生成" />
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <input type="text" id="scriptPath" placeholder="脚本文件路径（.ps1 / .py / .bat / .cmd / .js）" />
+        <button class="btn" id="scriptBrowseBtn">浏览…</button>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <span style="font-size:11px;color:#6d7589;">脚本在后台隐藏运行，输出会写进「运行日志」；失败时项目状态变红色「报错」。</span>
+        <button class="btn pri" id="addScriptBtn">＋ 添加脚本</button>
+      </div>
+      <div class="empty" style="margin-top:10px;">模块目前为占位；脚本添加路径后，点 ▶ 即可真实执行。</div>
+    </div>
+
+    <!-- 消息 -->
+    <div class="pane" id="pane-msg">
+      <h3>收件箱（其它项目经流程发来的提示）</h3>
+      <div id="inbox"></div>
+      <h3>发送提示到联动项目</h3>
+      <div class="row" style="margin-bottom:6px;">
+        <select id="flowSel" class="grow" style="background:#171c28;border:1px solid #232837;border-radius:6px;padding:7px;color:#dfe4ee;font-size:12px;outline:none;"></select>
+      </div>
+      <div class="row">
+        <input type="text" id="hintText" placeholder="提示内容" />
+        <button class="btn pri" id="sendBtn">发送</button>
+      </div>
+      <div class="empty" style="margin-top:8px;">可以直接发给任意项目；在「工作流画布」里连过交接线的项目会排在最前面。</div>
+    </div>
+
+    <!-- 设置 -->
+    <div class="pane" id="pane-set">
+      <div class="switchrow">
+        <div class="tx">
+          <div class="t1">进入本项目时隐藏其它桌面的应用</div>
+          <div class="t2">关闭后切换桌面不再隐藏别的桌面，只换壁纸（不推荐）</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="isoChk" /><span class="slider"></span></label>
+      </div>
+
+      <h3>自动打开（进入本项目桌面时启动）</h3>
+      <div id="autorunList"></div>
+      <div class="row" style="margin-top:6px;">
+        <input type="text" id="arPath" placeholder="程序或脚本路径" />
+        <button class="btn" id="browseBtn">浏览…</button>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <input type="text" id="arArgs" placeholder="启动参数（可留空）" />
+        <button class="btn pri" id="addArBtn">＋ 添加</button>
+        <button class="btn" id="runArBtn" title="立即运行一次">▶</button>
+      </div>
+
+      <h3>打开网页（进入本项目桌面时自动打开）</h3>
+      <div class="row" style="margin-bottom:6px;">
+        <input type="text" id="urlInput" placeholder="网址，如 www.example.com" />
+      </div>
+      <div class="row">
+        <select id="browserSel" class="grow sel">
+          <option value="">系统默认浏览器</option>
+        </select>
+        <button class="btn pri" id="addUrlBtn">＋ 添加网页</button>
+      </div>
+      <div class="empty" style="margin-top:6px;">电脑上装了多个浏览器时可以指定用哪个打开这个网址。</div>
+
+      <h3>桌面壁纸</h3>
+      <div class="row">
+        <button class="btn" id="regenWallBtn">重新生成本项目壁纸</button>
+      </div>
+      <div class="empty" style="margin-top:6px;">每个项目会有一张专属配色的真实 Windows 壁纸，切换桌面时自动更换。</div>
+
+      <h3>打包与交付</h3>
+      <div class="row">
+        <button class="btn pri" id="packExportBtn">📦 导出为场景包</button>
+      </div>
+      <div class="empty" id="packInfo" style="margin-top:6px;">
+        把本项目的自动打开清单、上下文材料、工作流存成一个可复用的包。<br>
+        同事或客户装上就能一键还原这套工作状态；你也可以改造成自己的行业包放进场景市场。
+      </div>
+
+      <h3>运行日志（本项目）</h3>
+      <div id="logs" style="max-height:180px;overflow-y:auto;"></div>
+
+      <div class="dangerbox">
+        <div class="t">删除本项目</div>
+        <div class="d">删除要在弹窗里确认项目名（点一下名字就自动填入，不用手打）。删除后进入回收站可恢复，它占用的窗口会回到原电脑桌面。</div>
+        <button class="btn danger" id="delBtn">删除项目…</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const params = new URLSearchParams(location.search);
+const myId = params.get('id');
+
+let data = { projects: [], flows: [], logs: [], inbox: {} };
+let myProject = null;
+let winList = { mine: [], others: [] };
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+const STATUS_TXT = {
+  stopped: '○ 空桌面',
+  running: '● 当前桌面',
+  background: '◐ 后台隐藏',
+  task: '● 有提示待处理',
+  error: '● 报错需处理'
+};
+
+// ---------- 标签切换 ----------
+document.querySelectorAll('.tabs div').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tabs div').forEach(x => x.classList.remove('on'));
+    document.querySelectorAll('.pane').forEach(x => x.classList.remove('on'));
+    t.classList.add('on');
+    $('#pane-' + t.dataset.pane).classList.add('on');
+    if (t.dataset.pane === 'win') loadWindows();
+    if (t.dataset.pane === 'canvas') loadCanvasPane();
+  };
+});
+
+// ---------- 头部 ----------
+function renderHeader() {
+  if (!myProject) return;
+  $('#hDot').style.background = myProject.color;
+  $('#hName').textContent = myProject.name;
+  $('#hStatus').textContent = (STATUS_TXT[myProject.status] || '—') +
+    (myProject.statusMsg ? ' · ' + myProject.statusMsg : '');
+  $('#isoChk').checked = myProject.exclusive !== false;
+}
+
+// ---------- 窗口 ----------
+async function loadWindows() {
+  try {
+    const r = await window.fde.listWindows(myId);
+    if (r && r.ok) winList = { mine: r.mine, others: r.others };
+  } catch (e) { winList = { mine: [], others: [] }; }
+  renderWindows();
+}
+
+function renderWindows() {
+  const box = $('#myWins');
+  box.innerHTML = '';
+  if (!winList.mine.length) {
+    box.innerHTML = '<div class="empty">本桌面还没有窗口。<br>切到本项目桌面后，在桌面上打开任意程序，它就会自动归入本项目。</div>';
+  } else {
+    for (const w of winList.mine) {
+      const div = document.createElement('div');
+      div.className = 'witem';
+      const state = w.onCurrentDesktop
+        ? (w.vis ? '' : ' · <span style="color:#e0a94a;">已最小化</span>')
+        : ' · <span style="color:#6d7589;">在别的桌面 · 切过来即显示</span>';
+      div.innerHTML = '<span class="ic">🪟</span><div class="tx"><div class="t1">' + esc(w.title) +
+        '</div><div class="t2">' + esc(w.proc) + state + '</div></div>';
+      const out = document.createElement('button');
+      out.className = 'btn mini';
+      out.textContent = '移出';
+      out.title = '移到原电脑桌面（不再属于本项目）';
+      out.onclick = async () => {
+        const r = await window.fde.assignWindow('__orig', w.hwnd);
+        if (!r.ok) alert(r.error);
+        loadWindows();
+      };
+      div.appendChild(out);
+      box.appendChild(div);
+    }
+  }
+
+  const obox = $('#otherWins');
+  obox.innerHTML = '';
+  const others = winList.others || [];
+  if (!others.length) {
+    obox.innerHTML = '<div class="empty">没有其它窗口。</div>';
+    return;
+  }
+  // 按进程归并展示，避免一屏几十个 chrome 窗口
+  const byProc = new Map();
+  for (const w of others) {
+    const k = w.proc + '|' + (w.owner || '__orig');
+    if (!byProc.has(k)) byProc.set(k, { proc: w.proc, owner: w.owner, items: [] });
+    byProc.get(k).items.push(w);
+  }
+  const nameOf = (id) => { const p = data.projects.find(x => x.id === id); return p ? p.name : '原电脑桌面'; };
+  for (const g of byProc.values()) {
+    const div = document.createElement('div');
+    div.className = 'witem';
+    div.innerHTML = '<span class="ic">📦</span><div class="tx"><div class="t1">' + esc(g.proc) +
+      (g.items.length > 1 ? '（' + g.items.length + ' 个窗口）' : '') +
+      '</div><div class="t2">当前属于：' + esc(nameOf(g.owner)) + '</div></div>';
+    const inBtn = document.createElement('button');
+    inBtn.className = 'btn mini pri';
+    inBtn.textContent = '移入';
+    inBtn.onclick = async () => {
+      const r = await window.fde.assignWindow(myId, g.items[0].hwnd);
+      if (!r.ok) alert(r.error);
+      loadWindows();
+    };
+    div.appendChild(inBtn);
+    obox.appendChild(div);
+  }
+}
+
+$('#rescanBtn').onclick = async () => {
+  await window.fde.rescanWindows();
+  loadWindows();
+};
+$('#tileBtn2').onclick = async () => {
+  const r = await window.fde.tileWindows(myId);
+  if (!r || r.ok === false) return alert((r && r.msg) || '整理失败');
+  if (!r.count) alert(r.msg || '当前桌面没有可整理的窗口（先切到本项目桌面）');
+};
+
+// ---------- 模块 / 脚本 ----------
+function renderItems() {
+  const box = $('#itemList');
+  box.innerHTML = '';
+  const items = (myProject && myProject.items) || [];
+  if (!items.length) {
+    box.innerHTML = '<div class="empty">还没有模块或脚本。</div>';
+    return;
+  }
+  for (const it of items) {
+    const div = document.createElement('div');
+    div.className = 'witem';
+    div.innerHTML = '<span class="ic">' + (it.kind === 'script' ? '📜' : '🧩') + '</span>' +
+      '<div class="tx"><div class="t1">' + esc(it.name) + '</div>' +
+      '<div class="t2" title="' + esc(it.path || '') + '">' +
+      (it.kind === 'script' ? (it.path ? esc(it.path) : '未配置脚本路径') : '功能模块') + '</div></div>';
+    if (it.kind === 'script') {
+      const run = document.createElement('button');
+      run.className = 'btn mini';
+      run.textContent = '▶';
+      run.title = '立即运行此脚本（后台隐藏执行）';
+      run.onclick = async () => {
+        run.textContent = '⏳';
+        const r = await window.fde.runItem(myId, it.id);
+        if (!r || r.ok === false) alert((r && r.error) || '已提交运行（结果见运行日志）');
+        setTimeout(() => { run.textContent = '▶'; refresh(); }, 1200);
+      };
+      div.appendChild(run);
+
+      // 最近一次运行的完整输出：脚本报错时最需要的东西，不该只躺在日志里
+      if (it.lastRun) {
+        const outBtn = document.createElement('button');
+        outBtn.className = 'btn mini';
+        outBtn.textContent = '📄';
+        outBtn.title = '查看最近一次运行输出' + (it.lastRun.code === 0 ? '（成功）' : '（退出码 ' + it.lastRun.code + '）');
+        outBtn.onclick = () => {
+          const next = div.nextElementSibling;
+          if (next && next.classList.contains('outbox')) { next.remove(); return; }
+          const box = document.createElement('div');
+          box.className = 'outbox';
+          box.innerHTML = '<div class="oh">最近运行 · ' +
+            new Date(it.lastRun.at).toLocaleString('zh-CN') +
+            ' · 退出码 <b style="color:' + (it.lastRun.code === 0 ? '#22c55e' : '#ef4444') + '">' +
+            it.lastRun.code + '</b></div><pre>' + esc(it.lastRun.output || '（没有输出）') + '</pre>';
+          div.insertAdjacentElement('afterend', box);
+        };
+        div.appendChild(outBtn);
+      }
+    }
+    const del = document.createElement('button');
+    del.className = 'btn mini';
+    del.textContent = '✕';
+    del.onclick = async () => {
+      await window.fde.removeItem(myId, it.id);
+      await refresh();
+    };
+    div.appendChild(del);
+    box.appendChild(div);
+  }
+}
+
+$('#scriptBrowseBtn').onclick = async () => {
+  const r = await window.fde.browseFile();
+  if (r && r.ok) $('#scriptPath').value = r.path;
+};
+
+$('#addModuleBtn').onclick = async () => {
+  const n = $('#itemName').value.trim();
+  if (!n) return;
+  const r = await window.fde.addItem(myId, { kind: 'module', name: n });
+  if (!r.ok) alert(r.error);
+  $('#itemName').value = '';
+  await refresh();
+};
+$('#addScriptBtn').onclick = async () => {
+  const n = $('#scriptName').value.trim();
+  const p = $('#scriptPath').value.trim();
+  if (!n) return alert('请先填脚本名');
+  if (!p) return alert('请先选择脚本文件路径');
+  const r = await window.fde.addItem(myId, { kind: 'script', name: n, path: p });
+  if (!r.ok) return alert(r.error);
+  $('#scriptName').value = '';
+  $('#scriptPath').value = '';
+  await refresh();
+};
+
+// ---------- 消息 ----------
+function renderInbox() {
+  const box = $('#inbox');
+  box.innerHTML = '';
+  const msgs = (data.inbox && data.inbox[myId]) || [];
+  if (!msgs.length) {
+    box.innerHTML = '<div class="empty">暂无消息。</div>';
+  } else {
+    for (const m of msgs) {
+      const d = new Date(m.time);
+      const hh = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+      const div = document.createElement('div');
+      div.className = 'msg';
+      div.innerHTML = '<div class="meta">来自 ' + esc(m.fromName) + ' · ' + esc(m.flowLabel) + ' · ' + hh + '</div>' +
+        esc(m.text) + '<div class="ops"></div>';
+      const ok = document.createElement('button');
+      ok.className = 'btn mini';
+      ok.textContent = '标记已处理';
+      ok.onclick = async () => {
+        await window.fde.clearInbox(myId, m.time);
+        await refresh();
+      };
+      div.querySelector('.ops').appendChild(ok);
+      box.appendChild(div);
+    }
+  }
+  // 可发送的目标：画布上与本项目相连的项目排在前面，其余项目也能直接发
+  const sel = $('#flowSel');
+  sel.innerHTML = '';
+  const linked = new Set();
+  for (const e of ((data.canvas && data.canvas.edges) || [])) {
+    const a = (data.canvas.nodes || []).find(n => n.id === e.from);
+    const b = (data.canvas.nodes || []).find(n => n.id === e.to);
+    const pa = a && a.ref && a.ref.projectId, pb = b && b.ref && b.ref.projectId;
+    if (pa === myId && pb && pb !== myId) linked.add(pb);
+  }
+  const others = (data.projects || []).filter(p => p.id !== myId);
+  if (!others.length) {
+    sel.add(new Option('（还没有其它项目）', ''));
+  } else {
+    const on = others.filter(p => linked.has(p.id));
+    const off = others.filter(p => !linked.has(p.id));
+    if (on.length) {
+      const g1 = document.createElement('optgroup');
+      g1.label = '画布上已连线';
+      for (const p of on) g1.appendChild(new Option('→ ' + p.name, p.id));
+      sel.appendChild(g1);
+    }
+    if (off.length) {
+      const g2 = document.createElement('optgroup');
+      g2.label = on.length ? '其它项目（直接发）' : '项目';
+      for (const p of off) g2.appendChild(new Option('→ ' + p.name, p.id));
+      sel.appendChild(g2);
+    }
+  }
+}
+
+$('#sendBtn').onclick = async () => {
+  const toId = $('#flowSel').value;
+  const text = $('#hintText').value.trim();
+  if (!toId) return alert('还没有可发送的目标项目');
+  if (!text) return;
+  const r = await window.fde.sendHint(myId, toId, text);
+  if (!r.ok) return alert(r.error);
+  $('#hintText').value = '';
+  await refresh();
+};
+
+// ---------- 设置 ----------
+function renderAutorun() {
+  const box = $('#autorunList');
+  box.innerHTML = '';
+  const list = (myProject && myProject.autorun) || [];
+  if (!list.length) {
+    box.innerHTML = '<div class="empty">还没有自动打开项。</div>';
+    return;
+  }
+  for (const a of list) {
+    const isUrl = a.type === 'url';
+    const t1 = isUrl ? (a.name || a.url) : (a.name || a.path);
+    const t2 = isUrl
+      ? a.url
+      : (a.path + (a.args ? ' ' + a.args : ''));
+    const div = document.createElement('div');
+    div.className = 'witem';
+    div.innerHTML = '<span class="ic">' + (isUrl ? '🌐' : '🚀') + '</span>' +
+      '<div class="tx"><div class="t1">' + esc(t1) + '</div>' +
+      '<div class="t2" title="' + esc(t2) + '">' + esc(t2) + '</div></div>';
+    // 网页项：随时换浏览器，不用删掉重加
+    if (isUrl) {
+      const bs = document.createElement('select');
+      bs.title = '用哪个浏览器打开这个网址（存好后下次自动打开就用它）';
+      bs.style.cssText = 'max-width:92px;flex-shrink:0;background:#171c28;border:1px solid #232837;' +
+        'border-radius:5px;padding:3px 4px;color:#dfe4ee;font-size:10px;outline:none;';
+      bs.add(new Option('默认浏览器', ''));
+      for (const b of browserList) bs.add(new Option(b.name, b.path));
+      // 已存过但列表里没有（浏览器卸载 / 自定义路径）也要能显示当前值
+      if (a.browserPath && !browserList.some(b => String(b.path).toLowerCase() === String(a.browserPath).toLowerCase())) {
+        bs.add(new Option(a.browserName || '自定义浏览器', a.browserPath));
+      }
+      bs.value = a.browserPath || '';
+      bs.onchange = async () => {
+        const opt = bs.options[bs.selectedIndex];
+        const r = await window.fde.setUrlBrowser(myId, a.id, bs.value, bs.value ? opt.textContent : '');
+        if (!r || r.ok === false) { alert((r && r.error) || '设置失败'); bs.value = a.browserPath || ''; return; }
+        await refresh();
+      };
+      div.appendChild(bs);
+      if (!browserList.length) ensureBrowsers();
+    }
+
+    // 延迟启动（秒）：先开行情再开下单之类的顺序需求
+    const dly = document.createElement('input');
+    dly.type = 'text';
+    dly.value = String(a.delay || 0);
+    dly.title = '延迟启动秒数（0 = 立即）';
+    dly.style.cssText = 'width:44px;flex-shrink:0;background:#171c28;border:1px solid #232837;border-radius:5px;padding:3px 5px;color:#dfe4ee;font-size:10px;outline:none;text-align:center;';
+    dly.onchange = async () => {
+      const r = await window.fde.setAutorunDelay(myId, a.id, dly.value);
+      if (!r || r.ok === false) { alert((r && r.error) || '设置失败'); return; }
+      await refresh();
+    };
+    div.appendChild(dly);
+    const sec = document.createElement('span');
+    sec.textContent = '秒';
+    sec.style.cssText = 'font-size:10px;color:#6d7589;flex-shrink:0;';
+    div.appendChild(sec);
+    const del = document.createElement('button');
+    del.className = 'btn mini';
+    del.textContent = '✕';
+    del.onclick = async () => {
+      await window.fde.removeAutorun(myId, a.id);
+      await refresh();
+    };
+    div.appendChild(del);
+    box.appendChild(div);
+  }
+}
+
+// 浏览器列表（只取一次；给「新增网页」下拉和列表里每条的"换浏览器"下拉共用）
+let browserList = [];
+let browsersLoaded = false;
+let browsersLoading = false;
+async function loadBrowsers() {
+  if (browsersLoaded || browsersLoading) return browserList;
+  browsersLoading = true;
+  try {
+    const r = await window.fde.listBrowsers();
+    if (r && r.ok) {
+      browserList = Array.isArray(r.list) ? r.list : [];
+      const sel = $('#browserSel');
+      if (sel) {
+        while (sel.options.length > 1) sel.remove(1);
+        for (const b of browserList) sel.add(new Option(b.name + ' — ' + b.path, b.path));
+      }
+      browsersLoaded = true;
+    }
+  } catch (e) {} finally { browsersLoading = false; }
+  return browserList;
+}
+// 列表里的网页项要用浏览器清单：没加载完就先拉一次，回来再重画
+function ensureBrowsers() {
+  if (browsersLoaded || browsersLoading) return;
+  loadBrowsers().then(list => { if (list && list.length) renderAutorun(); }).catch(() => {});
+}
+
+$('#isoChk').onchange = async (e) => {
+  await window.fde.setExclusive(myId, e.target.checked);
+  await refresh();
+};
+$('#browseBtn').onclick = async () => {
+  const r = await window.fde.browseFile();
+  if (r && r.ok) $('#arPath').value = r.path;
+};
+$('#addArBtn').onclick = async () => {
+  const p = $('#arPath').value.trim();
+  if (!p) return alert('请先选择程序路径');
+  const r = await window.fde.addAutorun(myId, p, $('#arArgs').value.trim());
+  if (!r.ok) return alert(r.error);
+  $('#arPath').value = '';
+  $('#arArgs').value = '';
+  await refresh();
+};
+$('#runArBtn').onclick = async () => {
+  const r = await window.fde.runAutorun(myId);
+  if (!r.ok) alert(r.error);
+};
+$('#addUrlBtn').onclick = async () => {
+  const url = $('#urlInput').value.trim();
+  if (!url) return alert('请输入网址');
+  const sel = $('#browserSel');
+  const opt = sel.options[sel.selectedIndex];
+  const r = await window.fde.addUrl(myId, url, sel.value, sel.value ? opt.textContent.split(' — ')[0] : '');
+  if (!r.ok) return alert(r.error);
+  $('#urlInput').value = '';
+  await refresh();
+};
+$('#regenWallBtn').onclick = async () => {
+  const r = await window.fde.regenWallpaper(myId);
+  if (!r.ok) alert('生成失败');
+  else alert('壁纸已重新生成（切到本项目桌面即可看到）');
+};
+
+$('#packExportBtn').onclick = async () => {
+  const btn = $('#packExportBtn');
+  btn.disabled = true;
+  const old = btn.textContent;
+  btn.textContent = '正在导出…';
+  try {
+    const r = await window.fde.packExport(myId);
+    if (r && r.ok) {
+      $('#packInfo').innerHTML = '已导出到：<br><span style="color:#8ea6c8;word-break:break-all;">' + r.dir + '</span><br>' +
+        '在「📦 场景市场」里可以直接看到并套用它。';
+      alert('已导出为场景包：\n' + r.dir + '\n\n包里有 manifest.json / autorun.json / context.json / canvas.json / README.md，\n改一改就能变成你自己的行业包。');
+    } else {
+      alert('导出失败：' + ((r && r.error) || '未知错误'));
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = old;
+  }
+};
+
+function renderLogs() {
+  const box = $('#logs');
+  box.innerHTML = '';
+  const logs = (data.logs || []).filter(l => l.projectId === myId).slice(0, 40);
+  if (!logs.length) {
+    box.innerHTML = '<div class="empty">暂无本项目日志。</div>';
+    return;
+  }
+  for (const l of logs) {
+    const d = new Date(l.time);
+    const t = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2);
+    const div = document.createElement('div');
+    div.className = 'logline' + (/失败|异常|报错|error/i.test(l.text) ? ' err' : '');
+    div.innerHTML = '<span class="t">' + t + '</span>' + esc(l.text);
+    box.appendChild(div);
+  }
+}
+
+// ---------- 删除 ----------
+// 项目名里可能有生僻字、符号、emoji，输入法根本打不出来。
+// 所以名字做成可点的：点一下自动填入，旁边的「复制」可以复制到剪贴板。
+async function copyText(t) {
+  try {
+    if (window.fde && window.fde.copyText) {
+      const r = await window.fde.copyText(t);
+      if (r && r.ok) return true;
+    }
+  } catch (e) {}
+  try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = t;
+    ta.style.cssText = 'position:fixed;top:-1000px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  } catch (e) { return false; }
+}
+
+$('#delBtn').onclick = () => {
+  // Electron 渲染进程不支持 prompt()，使用内联输入框
+  const target = myProject ? myProject.name : '';
+  const len = [...target].length;
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:99;';
+  box.innerHTML = '<div style="width:344px;background:#1b2130;border:1px solid #2a3244;border-radius:10px;padding:16px;">' +
+    '<div style="font-size:14px;color:#fff;margin-bottom:8px;">删除项目</div>' +
+    '<div style="font-size:12px;color:#8b93a7;line-height:1.6;margin-bottom:11px;">删除后进入回收站，可随时恢复；它占用的窗口会回到原电脑桌面。</div>' +
+    '<div style="font-size:10px;color:#6d7589;margin-bottom:5px;">要删除的项目名 · 点一下自动填入，不用手打（' + len + ' 个字）</div>' +
+    '<div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">' +
+      '<span id="__dn" title="点一下把项目名填到下面" style="flex:1;min-width:0;background:#241a1c;border:1px solid #4a2b2b;color:#ffd7d7;border-radius:6px;padding:7px 9px;font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(target) + '</span>' +
+      '<button id="__dcp" class="btn mini" title="复制项目名到剪贴板（也可以直接粘贴进输入框）">复制</button>' +
+    '</div>' +
+    '<input id="__dv" type="text" placeholder="在这里粘贴，或输入项目名" style="width:100%;background:#171c28;border:1px solid #232837;border-radius:6px;padding:8px 10px;color:#dfe4ee;font-size:12px;outline:none;" />' +
+    '<div id="__ds" style="font-size:10px;line-height:1.6;color:#6d7589;margin-top:6px;min-height:16px;"></div>' +
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">' +
+    '<button id="__dc" class="btn">取消</button>' +
+    '<button id="__dok" class="btn" style="background:#ef4444;color:#fff;opacity:.45;cursor:default;" disabled>确认删除</button></div></div>';
+  document.body.appendChild(box);
+
+  const inp = box.querySelector('#__dv');
+  const okBtn = box.querySelector('#__dok');
+  const status = box.querySelector('#__ds');
+  const chip = box.querySelector('#__dn');
+  let copiedTimer = null;
+
+  const sync = () => {
+    const val = inp.value.trim();
+    const done = val === target;
+    okBtn.disabled = !done;
+    okBtn.style.opacity = done ? '1' : '.45';
+    okBtn.style.cursor = done ? 'pointer' : 'default';
+    if (!val) {
+      status.style.color = '#6d7589';
+      status.textContent = '点上面的名字可以自动填入；打不出来的字也可以直接粘贴。';
+    } else if (done) {
+      status.style.color = '#4ade80';
+      status.textContent = '✓ 名字一致，可以删除（进回收站，可恢复）';
+    } else {
+      status.style.color = '#f59e0b';
+      const got = [...val].length;
+      status.textContent = '还没对上：当前 ' + got + ' 个字，需要 ' + len + ' 个字（点上面的名字最省事）';
+    }
+  };
+
+  chip.onclick = () => {
+    inp.value = target;
+    sync();
+    inp.focus();
+    inp.setSelectionRange(target.length, target.length);
+    status.style.color = '#4ade80';
+    status.textContent = '已填入项目名，再点下面的「确认删除」。';
+  };
+
+  box.querySelector('#__dcp').onclick = async () => {
+    const ok = await copyText(target);
+    const btn = box.querySelector('#__dcp');
+    btn.textContent = ok ? '✓ 已复制' : '复制失败';
+    clearTimeout(copiedTimer);
+    copiedTimer = setTimeout(() => { btn.textContent = '复制'; }, 1600);
+    if (ok) {
+      status.style.color = '#6d7589';
+      status.textContent = '已复制到剪贴板，可直接 Ctrl+V 粘贴到下面。';
+      inp.focus();
+    }
+  };
+
+  inp.addEventListener('input', sync);
+  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !okBtn.disabled) okBtn.click(); });
+  sync();
+
+  const close = () => { clearTimeout(copiedTimer); box.remove(); };
+  box.querySelector('#__dc').onclick = close;
+  okBtn.onclick = async () => {
+    const v2 = inp.value.trim();
+    if (v2 !== target) { sync(); return; }
+    okBtn.disabled = true;
+    okBtn.textContent = '删除中…';
+    const r = await window.fde.removeProject(myId, v2);
+    if (!r.ok) {
+      okBtn.disabled = false;
+      okBtn.textContent = '确认删除';
+      alert(r.error);
+      return;
+    }
+    close();
+    window.close();
+  };
+  setTimeout(() => inp.focus(), 50);
+};
+
+// ---------- 项目上下文（FDE 的核心资产：口径、资料、数据源） ----------
+const CTX_ICON = { text: '📝', file: '📄', folder: '📁', url: '🌐', sql: '🗄', api: '🔌' };
+
+function renderCtx() {
+  const box = $('#ctxList');
+  if (!box || !myProject) return;
+  const list = myProject.context || [];
+  box.innerHTML = '';
+  if (!list.length) {
+    box.innerHTML = '<div class="empty">还没有上下文材料。FDE 交付时最值钱的不是代码，而是这些口径与资料。</div>';
+    return;
+  }
+  for (const c of list) {
+    const div = document.createElement('div');
+    div.className = 'witem';
+    div.innerHTML = '<span class="ic">' + (CTX_ICON[c.kind] || '📝') + '</span>' +
+      '<div class="tx"><div class="t1">' + esc(c.title || c.value) + '</div>' +
+      '<div class="t2" title="' + esc(c.value || '') + '">' + esc((c.value || '').slice(0, 90)) + '</div>' +
+      (c.note ? '<div class="t2">' + esc(c.note.slice(0, 70)) + '</div>' : '') + '</div>';
+    const cp = document.createElement('button');
+    cp.className = 'btn mini';
+    cp.textContent = '⧉';
+    cp.title = '复制内容';
+    cp.onclick = async () => {
+      try { await navigator.clipboard.writeText(c.value || ''); cp.textContent = '✓'; setTimeout(() => cp.textContent = '⧉', 900); } catch (e) {}
+    };
+    const del = document.createElement('button');
+    del.className = 'btn mini';
+    del.textContent = '✕';
+    del.title = '删除这条上下文';
+    del.onclick = async () => {
+      await window.fde.ctxRemove(myId, c.id);
+      await refresh();
+    };
+    div.appendChild(cp);
+    div.appendChild(del);
+    box.appendChild(div);
+  }
+}
+
+$('#ctxBrowse').onclick = async () => {
+  const kind = $('#ctxKind').value;
+  const k = (kind === 'file' || kind === 'folder') ? kind : 'file';
+  const r = await window.fde.canvasPick(k);
+  if (r && r.ok) {
+    $('#ctxValue').value = r.path;
+    if (!$('#ctxTitle').value.trim()) {
+      $('#ctxTitle').value = r.path.split(/[\\/]/).pop();
+    }
+    $('#ctxKind').value = k;
+  }
+};
+
+$('#ctxAddBtn').onclick = async () => {
+  const r = await window.fde.ctxAdd(myId, {
+    kind: $('#ctxKind').value,
+    title: $('#ctxTitle').value,
+    value: $('#ctxValue').value,
+    note: $('#ctxNote').value
+  });
+  if (!r.ok) return alert(r.error);
+  $('#ctxTitle').value = ''; $('#ctxValue').value = ''; $('#ctxNote').value = '';
+  await refresh();
+};
+
+$('#ctxPackBtn').onclick = async () => {
+  const r = await window.fde.ctxPack(myId);
+  if (!r.ok) return alert(r.error);
+  const old = $('#ctxPackBtn').textContent;
+  $('#ctxPackBtn').textContent = '✓ 已复制 ' + r.length + ' 字';
+  setTimeout(() => { $('#ctxPackBtn').textContent = old; }, 1800);
+};
+
+// ---------- 画布：方向 + 本项目能力 ----------
+const CV_ICON = { project: '🖥', ai: '🤖', script: '📜', url: '🌐', note: '📝', file: '📄', folder: '📁', window: '🪟', group: '📦' };
+const CV_NAME = { project: '项目', ai: '智能体', script: '脚本', url: '网页', note: '笔记', file: '文件', folder: '文件夹', window: '窗口', group: '分组' };
+
+async function loadCanvasPane() {
+  $('#dirInput').value = (myProject && myProject.direction) || '';
+  const box = $('#cvList');
+  box.innerHTML = '<div class="empty">读取画布…</div>';
+  let d = null;
+  try { d = await window.fde.canvasGet(); } catch (e) { d = null; }
+  if (!d || !d.ok) {
+    box.innerHTML = '<div class="empty">读不到画布数据（画布窗口没打开过也能读，这里是异常）。</div>';
+    return;
+  }
+  const nodes = ((d.canvas && d.canvas.nodes) || []).filter(n => n && n.ref && n.ref.projectId === myId && n.type !== 'project');
+  const projNode = ((d.canvas && d.canvas.nodes) || []).find(n => n && n.type === 'project' && n.ref && n.ref.projectId === myId);
+  $('#cvCount').textContent = nodes.length ? '· ' + nodes.length + ' 个' : '';
+  box.innerHTML = '';
+  if (projNode) {
+    const row = document.createElement('div');
+    row.className = 'cvitem';
+    row.innerHTML = '<span class="ic">🖥</span><div class="tx"><div class="t1">' + esc(projNode.title) +
+      '</div><div class="t2">这个项目在画布上的入口节点</div></div><span class="tag">已上画布</span>';
+    box.appendChild(row);
+  }
+  if (!nodes.length) {
+    const e = document.createElement('div');
+    e.className = 'empty';
+    e.innerHTML = projNode
+      ? '这个项目还没有能力节点。写清方向后点「🤖 按方向搭能力」，AI 会给你摆出来。'
+      : '这个项目还没上画布。点下面「在画布中查看」进去加节点，或直接「按方向搭能力」。';
+    box.appendChild(e);
+  }
+  for (const n of nodes) {
+    const row = document.createElement('div');
+    row.className = 'cvitem';
+    row.innerHTML = '<span class="ic">' + (CV_ICON[n.type] || '•') + '</span><div class="tx"><div class="t1">' +
+      esc(n.title || '') + '</div><div class="t2">' + esc(String(n.note || CV_NAME[n.type] || '').slice(0, 80)) +
+      '</div></div><span class="tag">' + (CV_NAME[n.type] || n.type) + '</span>';
+    box.appendChild(row);
+  }
+}
+
+function setDirStatus(text, cls) {
+  const el = $('#dirStatus');
+  el.textContent = text || '';
+  el.className = 'cvstatus' + (cls ? ' ' + cls : '');
+}
+
+$('#dirSave').onclick = async () => {
+  const r = await window.fde.setProjectDirection(myId, $('#dirInput').value);
+  if (!r || !r.ok) return setDirStatus((r && r.error) || '保存失败', 'err');
+  if (myProject) myProject.direction = r.direction;
+  setDirStatus('✓ 方向已保存（' + (r.direction || '空') + '）', 'ok');
+};
+
+$('#dirBuild').onclick = async () => {
+  const dir = $('#dirInput').value.trim();
+  if (!dir) { setDirStatus('先写一句这个项目要做什么', 'err'); $('#dirInput').focus(); return; }
+  await window.fde.setProjectDirection(myId, dir);
+  const btn = $('#dirBuild');
+  const old = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'AI 正在搭…';
+  setDirStatus('把方向发给模型，让它给这个项目摆能力节点（通常 20~60 秒）');
+  try {
+    const r = await window.fde.buildAgents(myId, dir);
+    if (!r || !r.ok) { setDirStatus('没搭成：' + ((r && r.error) || '未知错误'), 'err'); return; }
+    const parts = [];
+    if (r.created && r.created.nodes.length) parts.push(r.created.nodes.join('、'));
+    if (r.created && r.created.edges.length) parts.push(r.created.edges.length + ' 条连线');
+    setDirStatus('✓ ' + r.summary + (parts.length ? '：' + parts.join('；') : '') +
+      (r.errors && r.errors.length ? '（提示：' + r.errors.slice(0, 2).join('；') + '）' : ''), 'ok');
+    await refresh();
+    await loadCanvasPane();
+  } catch (e) {
+    setDirStatus('没搭成：' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = old;
+  }
+};
+
+$('#cvOpen').onclick = () => window.fde.openOverview('canvas', myId);
+$('#cvRefresh').onclick = () => loadCanvasPane();
+
+// ---------- 通用 ----------
+async function refresh() {
+  let d = null;
+  try {
+    d = await window.fde.getData();
+  } catch (err) {
+    // 读数据失败时给出人能看懂的原因，而不是留一个空面板
+    document.body.innerHTML = '<div style="padding:24px;color:#ef4444;font-size:12px;line-height:1.8;">' +
+      '设置面板没读到数据：' + esc(err && err.message || err) +
+      '<br><span style="color:#8b93a7;">一般是这个窗口的渲染进程刚重启过。关掉本窗口重新点「⚙」即可。</span></div>';
+    return;
+  }
+  if (!d || !Array.isArray(d.projects)) {
+    document.body.innerHTML = '<div style="padding:24px;color:#ef4444;font-size:12px;line-height:1.8;">' +
+      '设置面板拿到的是空数据。<br><span style="color:#8b93a7;">关掉本窗口重新点「⚙」试试。</span></div>';
+    return;
+  }
+  data = d;
+  myProject = data.projects.find(p => p.id === myId);
+  if (!myProject) {
+    document.body.innerHTML = '<div style="padding:30px;color:#8b93a7;font-size:13px;">该项目已不存在（可能已删除）。</div>';
+    return;
+  }
+  renderHeader(); renderItems(); renderInbox(); renderAutorun(); renderLogs(); renderCtx();
+  loadBrowsers();
+  if ($('#pane-win').classList.contains('on')) loadWindows();
+  if ($('#pane-canvas').classList.contains('on')) loadCanvasPane();
+}
+
+$('#gotoBtn').onclick = async () => {
+  const r = await window.fde.switchDesktop(myId);
+  if (r && r.ok === false) alert(r.error);
+};
+$('#gotoBtn2').onclick = $('#gotoBtn').onclick;
+
+// 重启本项目（内联确认弹窗，渲染进程不支持 confirm 的交互阻塞）
+$('#restartBtn').onclick = () => {
+  if (!myProject) return;
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:99;';
+  box.innerHTML = '<div style="width:300px;background:#1b2130;border:1px solid #2a3244;border-radius:10px;padding:16px;">' +
+    '<div style="font-size:14px;color:#fff;margin-bottom:8px;">重启「' + esc(myProject.name) + '」？</div>' +
+    '<div style="font-size:12px;color:#8b93a7;line-height:1.5;margin-bottom:12px;">将关闭本项目内的所有程序窗口（无响应的会被强制结束），然后按「自动打开」列表重新启动。</div>' +
+    '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+    '<button id="__rc" class="btn">取消</button>' +
+    '<button id="__rok" class="btn" style="background:#f59e0b;color:#fff;">确认重启</button></div></div>';
+  document.body.appendChild(box);
+  const close = () => box.remove();
+  box.querySelector('#__rc').onclick = close;
+  box.querySelector('#__rok').onclick = async () => {
+    close();
+    const r = await window.fde.restartProject(myId);
+    if (!r.ok) alert(r.error);
+    await refresh();
+  };
+};
+
+$('#closeBtn').onclick = () => window.close();
+
+window.fde.on('fde:projects', d => { data.projects = d; myProject = d.find(p => p.id === myId); renderHeader(); renderAutorun(); });
+window.fde.on('fde:inbox', () => refresh());
+
+// ---------- 「设置」提示：窗口在屏幕右侧，闪两下 + 顶部标签，避免点了不知道在哪 ----------
+function showOpenedTip() {
+  let tip = document.getElementById('openedTip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'openedTip';
+    document.body.appendChild(tip);
+  }
+  tip.textContent = '⚙ 这里是「' + ((myProject && myProject.name) || '项目') + '」的设置面板';
+  tip.classList.add('on');
+  clearTimeout(showOpenedTip._t);
+  showOpenedTip._t = setTimeout(() => tip.classList.remove('on'), 2800);
+}
+function flashSelf() {
+  document.body.classList.remove('flash2');
+  void document.body.offsetWidth; // 强制重排，让动画能连续触发
+  document.body.classList.add('flash2');
+  clearTimeout(flashSelf._t);
+  flashSelf._t = setTimeout(() => document.body.classList.remove('flash2'), 1800);
+  showOpenedTip();
+  try { window.focus(); } catch (e) {}
+}
+window.fde.on('panel:flash', flashSelf);
+// 窗口被系统藏过再显示：补一次重绘/刷新，避免看起来是空面板
+window.fde.on('fde:redraw', () => { refresh().catch(() => {}); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh().catch(() => {}); });
+
+refresh();
+</script>
+</body>
+</html>

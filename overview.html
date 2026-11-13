@@ -1,0 +1,3622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>FDE 工作台 · 总览</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: #05070c; color: #dfe4ee; overflow: hidden; user-select: none;
+    display: flex; flex-direction: column; height: 100vh;
+  }
+  button { font-family: inherit; }
+  input, textarea, select { font-family: inherit; }
+
+  /* ---------- 顶栏 ---------- */
+  .topbar {
+    height: 50px; flex: 0 0 50px; display: flex; align-items: center; gap: 14px;
+    padding: 0 16px; border-bottom: 1px solid #161c28; background: #080b12;
+  }
+  .brand { font-size: 13px; letter-spacing: 3px; color: #7c86a0; font-weight: bold; white-space: nowrap; }
+  .brand b { color: #4f8cff; }
+  .vtabs { display: flex; gap: 4px; background: #10141d; padding: 3px; border-radius: 9px; }
+  .vtabs button {
+    background: none; border: none; color: #7c86a0; font-size: 12px;
+    padding: 6px 15px; border-radius: 7px; cursor: pointer; transition: .14s; white-space: nowrap;
+  }
+  .vtabs button:hover { color: #dfe4ee; }
+  .vtabs button.on { background: #1d2637; color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+  .now { flex: 1; font-size: 12px; color: #565e72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .now b { color: #dfe4ee; font-weight: normal; }
+  .topbar .tb {
+    background: #1b2130; border: 1px solid #2a3244; color: #cdd3e0;
+    font-size: 12px; padding: 6px 13px; border-radius: 7px; cursor: pointer; white-space: nowrap;
+  }
+  .topbar .tb:hover { background: #242c3e; border-color: #4f8cff; color: #fff; }
+
+  .view { display: none; flex: 1; min-height: 0; position: relative; }
+  .view.on { display: flex; }
+
+  /* ---------- 卡片视图 ---------- */
+  #viewCards { flex-direction: column; align-items: center; justify-content: center; }
+  .hint { font-size: 11px; color: #4f5768; margin-bottom: 18px; text-align: center; padding: 0 20px; }
+  .grid {
+    display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+    max-width: 1240px; padding: 0 40px; overflow-y: auto; max-height: 70vh;
+  }
+  .card {
+    width: 258px; border-radius: 13px; cursor: pointer;
+    border: 1px solid #2a3244; background: #12161f;
+    display: flex; flex-direction: column; overflow: hidden;
+    transition: transform .12s, border-color .12s, box-shadow .12s;
+    position: relative; flex: 0 0 auto;
+  }
+  .card:hover { transform: translateY(-4px); border-color: #4f8cff; }
+  .card.active { border-color: #22c55e; box-shadow: 0 0 0 1px #22c55e inset; }
+  .card.sel { outline: 2px solid #4f8cff; }
+  .wall { height: 54px; position: relative; display: flex; align-items: flex-end; }
+  .wall .cn { position: absolute; right: 10px; top: 4px; font-size: 24px; font-weight: bold; color: rgba(255,255,255,.28); }
+  .wall .nm { font-size: 14px; font-weight: bold; color: #fff; padding: 0 12px 8px; text-shadow: 0 1px 3px rgba(0,0,0,.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .strow { display: flex; align-items: center; gap: 6px; padding: 8px 12px 0; }
+  .pill { font-size: 10px; padding: 2px 9px; border-radius: 9px; background: #1d2432; color: #8b93a7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+  .pill.g { background: #14301f; color: #4ade80; }
+  .pill.y { background: #33270f; color: #fbbf24; }
+  .pill.r { background: #331a1a; color: #f87171; }
+  .pill.b { background: #16283f; color: #7cb1f5; }
+  .cnt { font-size: 11px; color: #7b849c; margin-left: auto; white-space: nowrap; }
+  .wins { padding: 7px 12px 4px; min-height: 56px; }
+  .wins .w { font-size: 11px; color: #9aa3b8; line-height: 1.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wins .w::before { content: "▪ "; color: #3d465c; }
+  .wins .more { font-size: 10px; color: #565e72; }
+  .wins .none { font-size: 11px; color: #4f5768; }
+  .meta { padding: 2px 12px 9px; font-size: 10px; color: #565e72; display: flex; gap: 10px; flex-wrap: wrap; }
+  .meta .u { color: #fbbf24; }
+  .meta .cx { color: #7cb1f5; }
+  .ops { display: flex; border-top: 1px solid #202636; }
+  .ops button { flex: 1; background: none; border: none; color: #8b93a7; font-size: 11px; padding: 9px 0; cursor: pointer; }
+  .ops button:hover { background: #1a2130; color: #fff; }
+  .ops button.go { color: #4f8cff; }
+  .card.active .ops button.go { color: #22c55e; }
+  .footer { margin-top: 16px; font-size: 11px; color: #4f5768; text-align: center; padding: 0 20px; }
+
+  /* ---------- 画布 ---------- */
+  #viewCanvas { flex-direction: column; background: #070a10; }
+  .cbar {
+    height: 44px; flex: 0 0 44px; display: flex; align-items: center; gap: 6px;
+    padding: 0 10px; border-bottom: 1px solid #141a26; background: #0a0e16;
+    overflow-x: auto; overflow-y: hidden;
+  }
+  .cbar .grp { display: flex; gap: 1px; background: #10151f; padding: 3px; border-radius: 8px; flex: 0 0 auto; }
+  .cbar button {
+    background: none; border: none; color: #9aa3b8; font-size: 12px; cursor: pointer;
+    padding: 6px 9px; border-radius: 6px; white-space: nowrap;
+  }
+  .cbar button:hover { background: #1c2434; color: #fff; }
+  .cbar button.act { color: #4f8cff; background: #14203a; }
+  .cbar button.run { background: #10261a; color: #4ade80; }
+  .cbar button.run:hover { background: #16402a; }
+  .cbar .sp { flex: 1; min-width: 4px; }
+  .srch { position: relative; flex: 0 1 170px; min-width: 80px; }
+  .srch input {
+    width: 100%; background: #10151f; border: 1px solid #1f2937; color: #dfe4ee;
+    font-size: 11px; padding: 6px 9px; border-radius: 7px; outline: none;
+  }
+  .srch input:focus { border-color: #4f8cff; }
+  .searchpop {
+    position: absolute; left: 0; top: 34px; width: 260px; max-height: 260px; overflow-y: auto;
+    background: #0f141e; border: 1px solid #263042; border-radius: 9px; padding: 5px; z-index: 60;
+    display: none; box-shadow: 0 14px 34px rgba(0,0,0,.6);
+  }
+  .searchpop.on { display: block; }
+  .searchpop .it { font-size: 11px; padding: 6px 9px; border-radius: 6px; cursor: pointer; color: #cdd3e0; display: flex; gap: 7px; align-items: center; }
+  .searchpop .it:hover { background: #1e283a; }
+  .searchpop .it small { color: #5d6a83; margin-left: auto; font-size: 10px; }
+
+  .cbody { flex: 1; display: flex; min-height: 0; }
+  .stage {
+    flex: 1; position: relative; overflow: hidden; cursor: default;
+    background-color: #070a10;
+    background-image:
+      radial-gradient(circle, #1a2131 1px, transparent 1px),
+      linear-gradient(#0d1220 1px, transparent 1px),
+      linear-gradient(90deg, #0d1220 1px, transparent 1px);
+    background-size: 24px 24px, 120px 120px, 120px 120px;
+  }
+  .stage.panning { cursor: grabbing; }
+  .stage.panmode { cursor: grab; }
+  .stage.linking { cursor: crosshair; }
+  .world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  #edges {
+    position: absolute; left: -50000px; top: -50000px; width: 100000px; height: 100000px;
+    pointer-events: none; overflow: visible;
+  }
+  #edges path.hit { pointer-events: stroke; stroke: transparent; stroke-width: 18; fill: none; cursor: pointer; }
+  #edges path.ehover { stroke: #4f8cff; }
+  #edges text.elabel {
+    font-size: 10px; fill: #9db2d6; text-anchor: middle; pointer-events: none;
+    paint-order: stroke; stroke: #070a10; stroke-width: 3px;
+  }
+  #guides { position: absolute; left: -50000px; top: -50000px; width: 100000px; height: 100000px; pointer-events: none; overflow: visible; }
+
+  /* 节点 */
+  .node {
+    position: absolute; background: #0f141e; border: 1px solid #263042;
+    border-radius: 11px; box-shadow: 0 6px 22px rgba(0,0,0,.45);
+    width: 240px; transition: box-shadow .12s, border-color .12s;
+    z-index: 2;
+  }
+  .node::before {
+    content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px;
+    border-radius: 3px; background: var(--c, #4f8cff); opacity: .9;
+  }
+  .node:hover { border-color: #3a475f; }
+  .node.sel { border-color: #4f8cff; box-shadow: 0 0 0 1px #4f8cff, 0 8px 26px rgba(79,140,255,.22); }
+  .node.t-project { background: linear-gradient(160deg, #101a2c, #0f141e 60%); }
+  .node.t-ai { background: linear-gradient(160deg, #1e1020, #0f141e 60%); }
+  .node.running { border-color: #fbbf24; box-shadow: 0 0 0 1px #fbbf24, 0 0 22px rgba(251,191,36,.25); animation: nodeRunPulse 1.1s ease-in-out infinite; }
+  @keyframes nodeRunPulse {
+    0%, 100% { box-shadow: 0 0 0 1px #fbbf24, 0 0 12px rgba(251,191,36,.16); }
+    50% { box-shadow: 0 0 0 2px #fbbf24, 0 0 28px rgba(251,191,36,.45); }
+  }
+  .nhead { display: flex; align-items: center; gap: 7px; padding: 10px 12px 4px 14px; }
+  .nic { font-size: 13px; line-height: 1; }
+  .nttl { font-size: 13px; font-weight: bold; color: #e9edf6; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: text; }
+  .nst { font-size: 10px; padding: 1px 7px; border-radius: 8px; display: none; white-space: nowrap; }
+  .nst.run { display: block; background: #3a2c0d; color: #fbbf24; }
+  .nst.ok { display: block; background: #12301e; color: #4ade80; }
+  .nst.err { display: block; background: #351a1a; color: #f87171; }
+  .nbody { padding: 0 12px 9px 14px; }
+  .nmeta { font-size: 10px; color: #6b7590; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nnote { font-size: 11px; color: #9aa3b8; line-height: 1.55; max-height: 76px; overflow: hidden; white-space: pre-wrap; word-break: break-word; }
+  .nnote.dim { color: #4f5768; font-style: italic; }
+  /* 生成节点：进度条 + 结果预览 */
+  .gbar { height: 3px; border-radius: 2px; background: #1b2334; margin: 6px 0 4px; overflow: hidden; }
+  .gbar i { display: block; height: 100%; background: linear-gradient(90deg, #22c55e, #4f8cff); transition: width .4s; }
+  .gthumb { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 6px 0 4px; }
+  .gthumb img { width: 100%; height: 66px; object-fit: cover; border-radius: 6px; background: #0d131f; display: block; }
+  .gvideo { width: 100%; max-height: 130px; border-radius: 6px; margin: 6px 0 4px; background: #000; display: block; }
+  .gaudio { width: 100%; height: 32px; margin: 6px 0 4px; }
+  .gerr { font-size: 10px; color: #fca5a5; line-height: 1.5; margin-top: 4px; }
+  .ntags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 7px; }
+  .ntag { font-size: 9px; padding: 1px 6px; border-radius: 6px; background: #182031; color: #7c86a0; }
+  .ntag.cross { background: #2a1c33; color: #d8b4fe; }
+  .nfoot { display: flex; gap: 2px; padding: 0 8px 8px 12px; opacity: .5; transition: opacity .12s; flex-wrap: wrap; }
+  .node:hover .nfoot, .node.sel .nfoot { opacity: 1; }
+  .nfoot button {
+    background: #182031; border: none; color: #9aa3b8; font-size: 10px;
+    padding: 4px 8px; border-radius: 6px; cursor: pointer; white-space: nowrap;
+  }
+  .nfoot button:hover { background: #24314a; color: #fff; }
+  .nfoot button:disabled { opacity: .55; cursor: default; }
+  .nfoot button[data-act="run"] { color: #93c5fd; background: #16233a; }
+  .nfoot button[data-act="run"]:hover { background: #1d4ed8; color: #fff; }
+  .node.flashhit { animation: nodeFlash .55s ease-in-out 2; }
+  @keyframes nodeFlash {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(79,140,255,0); }
+    50% { box-shadow: 0 0 0 3px rgba(79,140,255,.85), 0 0 26px rgba(79,140,255,.4); }
+  }
+  .node.off .nbody, .node.off .nfoot { display: none; }
+  .node.off .nhead { padding-bottom: 10px; }
+  .node.locked { border-style: dashed; }
+  .node.locked::after { content: "🔒"; position: absolute; right: 8px; top: 7px; font-size: 9px; opacity: .7; }
+
+  /* 分组（泳道） */
+  .node.t-group {
+    background: rgba(90,110,150,.07); border: 1px dashed #33405a; border-radius: 14px;
+    box-shadow: none; z-index: 1;
+  }
+  .node.t-group::before { display: none; }
+  .node.t-group.sel { box-shadow: 0 0 0 1px #4f8cff; }
+  .ghead { display: flex; align-items: center; gap: 8px; padding: 9px 12px; cursor: move; }
+  .gdot { width: 8px; height: 8px; border-radius: 50%; background: var(--c, #4f8cff); flex: 0 0 auto; }
+  .gttl { font-size: 12px; font-weight: bold; color: #b8c4da; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gmeta { font-size: 10px; color: #5d6a83; white-space: nowrap; }
+  .gline { height: 1px; background: #1f2a3d; margin: 0 10px; }
+
+  .port {
+    position: absolute; width: 12px; height: 12px; border-radius: 50%;
+    background: #0b1018; border: 2px solid #3a475f; top: 50%; margin-top: -6px;
+    cursor: crosshair; opacity: 0; transition: opacity .12s, transform .12s; z-index: 4;
+  }
+  .node:hover .port, .node.sel .port { opacity: 1; }
+  .port:hover { border-color: #4f8cff; transform: scale(1.25); }
+  .port.in { left: -7px; }
+  .port.out { right: -7px; border-color: #4f8cff; }
+  .t-group .port { display: none; }
+
+  .selbox {
+    position: absolute; border: 1px solid #4f8cff; background: rgba(79,140,255,.12);
+    display: none; z-index: 5; pointer-events: none; border-radius: 2px;
+  }
+
+  .mini {
+    position: absolute; right: 14px; bottom: 32px; width: 180px; height: 118px;
+    background: rgba(8,11,17,.94); border: 1px solid #1e2738; border-radius: 9px;
+    overflow: hidden; display: none; cursor: pointer;
+  }
+  .mini.on { display: block; }
+  .mini canvas { width: 100%; height: 100%; display: block; }
+  .zoombar {
+    position: absolute; right: 14px; bottom: 158px; display: flex; gap: 2px;
+    background: rgba(8,11,17,.94); border: 1px solid #1e2738; border-radius: 8px; padding: 3px;
+  }
+  .zoombar button { background: none; border: none; color: #9aa3b8; cursor: pointer; font-size: 12px; padding: 4px 8px; border-radius: 5px; }
+  .zoombar button:hover { background: #1c2434; color: #fff; }
+  .zoombar .zl { font-size: 10px; color: #7c86a0; padding: 5px 5px; min-width: 40px; text-align: center; cursor: pointer; }
+
+  .statusbar {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 24px; display: flex; align-items: center;
+    gap: 14px; padding: 0 12px; font-size: 10px; color: #4f5768;
+    background: rgba(7,10,16,.92); border-top: 1px solid #121826; pointer-events: none;
+  }
+  .statusbar b { color: #8b93a7; font-weight: normal; }
+
+  .emptyhint {
+    position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%);
+    text-align: center; color: #3f4859; font-size: 12px; line-height: 2; pointer-events: none; width: 80%;
+  }
+  .emptyhint b { display: block; font-size: 15px; color: #566078; margin-bottom: 6px; }
+  .emptyhint .sub { color: #3f4859; font-size: 11px; }
+  .toolgrid {
+    pointer-events: auto; display: grid; grid-template-columns: repeat(4, 148px);
+    gap: 10px; justify-content: center; margin: 16px auto 12px; width: fit-content;
+  }
+  .toolcard {
+    background: #0d1420; border: 1px solid #1b2436; border-radius: 11px;
+    padding: 13px 8px 11px; cursor: pointer; text-align: center; transition: border-color .15s, transform .15s;
+  }
+  .toolcard:hover { border-color: #3b6fd4; transform: translateY(-2px); }
+  .toolcard .ti { font-size: 22px; line-height: 1; margin-bottom: 7px; }
+  .toolcard .tn { font-size: 12.5px; color: #c6cede; margin-bottom: 3px; }
+  .toolcard .ts { font-size: 10px; color: #4d5670; line-height: 1.4; }
+
+  /* 右侧检查器 */
+  .inspector {
+    width: 296px; flex: 0 0 296px; border-left: 1px solid #141a26; background: #0a0e16;
+    padding: 13px; overflow-y: auto; display: none;
+  }
+  .inspector.on { display: block; }
+  /* 搭台抽屉：跟 AI 对话，让它自动搭项目/节点/连线 */
+  .bdrawer {
+    width: 340px; flex: 0 0 340px; border-left: 1px solid #141a26; background: #0a0e16;
+    display: none; flex-direction: column;
+  }
+  .bdrawer.on { display: flex; }
+  .bdrawer .bh {
+    display: flex; align-items: center; gap: 7px; padding: 12px 13px 10px;
+    border-bottom: 1px solid #141a26; font-size: 12.5px; color: #e6ebf5;
+  }
+  .bdrawer .bh .sub { font-size: 10px; color: #616c85; }
+  .bdrawer .bh .x { margin-left: auto; cursor: pointer; color: #4f5768; font-size: 13px; }
+  .bdrawer .bh .x:hover { color: #fff; }
+  .bdrawer .msgs { flex: 1; overflow-y: auto; padding: 12px 13px; display: flex; flex-direction: column; gap: 9px; }
+  .bdrawer .m { font-size: 12px; line-height: 1.65; border-radius: 9px; padding: 8px 10px; max-width: 92%; white-space: pre-wrap; word-break: break-word; }
+  .bdrawer .m.me { align-self: flex-end; background: #1d4ed8; color: #fff; border-bottom-right-radius: 3px; }
+  .bdrawer .m.ai { align-self: flex-start; background: #131a25; border: 1px solid #1b2334; color: #cfd6e4; border-bottom-left-radius: 3px; }
+  .bdrawer .m.err { align-self: flex-start; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.35); color: #ffc9c9; }
+  .bdrawer .m .ok { color: #7fd6a0; font-weight: 600; }
+  .bdrawer .m .warn { color: #f2d19b; }
+  .bdrawer .m .runrow { margin-top: 8px; display: flex; gap: 6px; }
+  .bdrawer .m .runrow button {
+    height: 26px; padding: 0 10px; border-radius: 7px; border: 1px solid rgba(34,197,94,.45);
+    background: rgba(34,197,94,.12); color: #b7f0c9; font-size: 11px; cursor: pointer;
+  }
+  .bdrawer .m .runrow button:hover { background: rgba(34,197,94,.22); }
+  .bdrawer .hint { padding: 0 13px 8px; font-size: 10.5px; color: #5b6478; line-height: 1.6; }
+  .bdrawer .inputrow { display: flex; gap: 7px; padding: 10px 13px 13px; border-top: 1px solid #141a26; }
+  .bdrawer .inputrow textarea {
+    flex: 1; min-height: 44px; max-height: 110px; resize: none; border-radius: 8px;
+    border: 1px solid #232d40; background: #101725; color: var(--tx); padding: 8px 9px;
+    font-size: 12px; line-height: 1.5; outline: none; font-family: inherit;
+  }
+  .bdrawer .inputrow textarea:focus { border-color: var(--acc); }
+  .bdrawer .inputrow button {
+    flex: 0 0 auto; width: 58px; border: none; border-radius: 8px; background: #1d4ed8;
+    color: #fff; font-size: 12px; cursor: pointer;
+  }
+  .bdrawer .inputrow button:disabled { background: #273245; color: #6b7789; cursor: default; }
+  .bdimgs { display: flex; gap: 6px; padding: 8px 13px 0; flex-wrap: wrap; }
+  .bdimgs .im { position: relative; width: 64px; height: 44px; border-radius: 6px; overflow: hidden; border: 1px solid #232d40; }
+  .bdimgs .im img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .bdimgs .im .x { position: absolute; top: 1px; right: 1px; width: 15px; height: 15px; line-height: 13px; text-align: center;
+    background: rgba(0,0,0,.65); color: #fff; font-size: 10px; border-radius: 50%; cursor: pointer; }
+  .bdrawer .m.me img.att { max-width: 200px; max-height: 120px; border-radius: 6px; display: block; margin-bottom: 5px; }
+
+  /* 点节点上的「设置」时，右边这块闪两下，指明"要改的就是它" */
+  .inspector.flash2 { animation: inspFlash .62s ease-in-out 2; }
+  @keyframes inspFlash {
+    0%, 100% { box-shadow: inset 0 0 0 0 rgba(79,140,255,0), inset 0 0 0 rgba(79,140,255,0); }
+    50% { box-shadow: inset 0 0 0 2px #4f8cff, inset 0 0 34px rgba(79,140,255,.22); }
+  }
+  .inspector h4 { font-size: 11px; color: #6b7590; font-weight: normal; letter-spacing: 1px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .inspector h4 .htl { color: #e6ebf5; font-size: 12px; letter-spacing: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 112px; }
+  .inspector h4 .hty { font-size: 9px; color: #616c85; border: 1px solid #1b2334; border-radius: 4px; padding: 1px 5px; white-space: nowrap; letter-spacing: 0; }
+  .inspector h4 .x { margin-left: auto; cursor: pointer; color: #4f5768; font-size: 13px; }
+  .inspector h4 .x:hover { color: #fff; }
+  .inspector .ownbar {
+    display: flex; align-items: center; gap: 6px; margin: -2px 0 10px;
+    background: rgba(79,140,255,.09); border: 1px solid rgba(79,140,255,.22);
+    color: #9dc0ff; font-size: 10px; line-height: 1.5; border-radius: 7px; padding: 6px 8px;
+  }
+  .inspector .fld { margin-bottom: 10px; }
+  .inspector label { display: block; font-size: 10px; color: #6b7590; margin-bottom: 4px; }
+  .inspector input[type=text], .inspector input[type=number], .inspector textarea, .inspector select {
+    width: 100%; background: #10151f; border: 1px solid #232d40; color: #dfe4ee;
+    font-size: 12px; padding: 7px 9px; border-radius: 7px; outline: none;
+  }
+  .inspector input:focus, .inspector textarea:focus, .inspector select:focus { border-color: #4f8cff; }
+  .inspector textarea { resize: vertical; min-height: 66px; line-height: 1.5; }
+  .inspector .row { display: flex; gap: 6px; align-items: center; }
+  .inspector .row input { flex: 1; }
+  .inspector .mini-btn {
+    background: #182031; border: 1px solid #263042; color: #9aa3b8; font-size: 11px;
+    padding: 6px 9px; border-radius: 7px; cursor: pointer; white-space: nowrap;
+  }
+  .inspector .mini-btn:hover { border-color: #4f8cff; color: #fff; }
+  .inspector .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .inspector .chip {
+    font-size: 10px; background: #141b28; border: 1px solid #232d40; color: #8b93a7;
+    padding: 3px 8px; border-radius: 12px; cursor: pointer; max-width: 100%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .inspector .chip:hover { border-color: #4f8cff; color: #dfe4ee; }
+  .inspector .chip.on { background: rgba(29,78,216,.25); border-color: #2f6bff; color: #cfe0ff; }
+  .inspector .acts { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .inspector .acts button { flex: 1; border: none; font-size: 12px; padding: 8px 0; border-radius: 8px; cursor: pointer; min-width: 62px; }
+  .inspector .acts .go { background: #1d4ed8; color: #fff; }
+  .inspector .acts .go:hover { background: #2563eb; }
+  .inspector .acts .del { background: #2a1414; color: #f87171; }
+  .inspector .acts .del:hover { background: #3b1a1a; }
+  .inspector .acts .gray { background: #1a2130; color: #b6bfd2; }
+  .inspector .acts .gray:hover { background: #242e42; }
+  .inspector .sep { height: 1px; background: #161d2a; margin: 11px 0; }
+  .inspector .tip { font-size: 10px; color: #4f5768; line-height: 1.7; }
+  /* 生成节点：按模型参数动态生成的输入区（每个模型的素材/比例/秒数都不同） */
+  .inspector .pcaps { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; }
+  .inspector .pcaps span {
+    font-size: 9px; color: #7fd3a8; background: rgba(34,197,94,.09);
+    border: 1px solid rgba(34,197,94,.24); border-radius: 9px; padding: 2px 6px; white-space: nowrap;
+  }
+  .inspector .pblock { border: 1px solid #1a2231; border-radius: 9px; padding: 8px; margin-bottom: 9px; background: #0c111a; }
+  .inspector .pblock .pbtl { font-size: 10px; color: #8ea0bd; margin-bottom: 7px; display: flex; align-items: center; gap: 5px; }
+  .inspector .pblock .pbtl b { color: #4f8cff; font-weight: normal; }
+  .inspector .pfld { margin-bottom: 9px; }
+  .inspector .pfld:last-child { margin-bottom: 0; }
+  .inspector .plabel { font-size: 10px; color: #8b93a7; margin-bottom: 4px; display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; }
+  .inspector .plabel .req { color: #f59e0b; }
+  .inspector .plabel .cap { font-size: 9px; color: #566178; }
+  .inspector .prefs { display: flex; flex-direction: column; gap: 4px; margin-bottom: 5px; }
+  .inspector .pref {
+    display: flex; align-items: center; gap: 6px; background: #111826;
+    border: 1px solid #202b3d; border-radius: 7px; padding: 4px 5px;
+  }
+  .inspector .pref img { width: 34px; height: 34px; object-fit: cover; border-radius: 5px; flex: 0 0 34px; background: #070b12; }
+  .inspector .pref .pico {
+    width: 34px; height: 34px; flex: 0 0 34px; border-radius: 5px; background: #0a1018;
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .inspector .pref .pnm { flex: 1; min-width: 0; font-size: 10px; color: #9aa3b8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .inspector .pref .x {
+    width: 17px; height: 17px; line-height: 15px; text-align: center; border-radius: 50%;
+    background: #1c2434; color: #8b93a7; font-size: 10px; cursor: pointer; flex: 0 0 17px;
+  }
+  .inspector .pref .x:hover { background: #3b1a1a; color: #f87171; }
+  .inspector .prow { display: flex; gap: 5px; align-items: center; }
+  .inspector .prow input { flex: 1; min-width: 0; }
+  .inspector .phint {
+    font-size: 9px; color: #4f5768; line-height: 1.5; margin-top: 4px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .inspector .pwarn { font-size: 9px; color: #c08a3e; line-height: 1.5; margin-top: 3px; }
+  .inspector .pmore summary { font-size: 10px; color: #6b7590; cursor: pointer; margin: 2px 0 7px; }
+  .inspector .pmore summary:hover { color: #9dc0ff; }
+  .node .nparam { font-size: 9px; color: #7f8da6; margin-top: 2px; line-height: 1.4; }
+  .swatches { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }  .swatches i { width: 20px; height: 20px; border-radius: 5px; cursor: pointer; border: 1px solid rgba(255,255,255,.14); }
+  .swatches i.on { outline: 2px solid #fff; }
+  .chkrow { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #9aa3b8; margin-bottom: 7px; cursor: pointer; }
+  .chkrow input { width: auto; }
+  .alignbar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .alignbar button {
+    background: #141b28; border: 1px solid #232d40; color: #9aa3b8; font-size: 11px;
+    padding: 6px 0; border-radius: 6px; cursor: pointer;
+  }
+  .alignbar button:hover { border-color: #4f8cff; color: #fff; }
+
+  /* 右键菜单 */
+  .ctxmenu {
+    position: fixed; background: #10151f; border: 1px solid #263042; border-radius: 9px;
+    padding: 5px; z-index: 90; display: none; box-shadow: 0 12px 34px rgba(0,0,0,.6);
+    min-width: 176px; max-height: 76vh; overflow-y: auto;
+  }
+  .ctxmenu.on { display: block; }
+  .ctxmenu div {
+    font-size: 12px; color: #cdd3e0; padding: 6px 10px; border-radius: 6px; cursor: pointer;
+    display: flex; gap: 8px; align-items: center; white-space: nowrap;
+  }
+  .ctxmenu div:hover { background: #1e283a; }
+  .ctxmenu .hr { height: 1px; background: #1c2434; margin: 4px 2px; padding: 0; cursor: default; }
+  .ctxmenu .hr:hover { background: #1c2434; }
+  .ctxmenu .lbl { font-size: 10px; color: #4f5768; padding: 3px 10px; cursor: default; }
+  .ctxmenu .lbl:hover { background: none; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%) translateY(12px);
+    background: #16233a; border: 1px solid #2c4166; color: #cfe0ff; font-size: 12px;
+    padding: 9px 17px; border-radius: 9px; opacity: 0; transition: .2s; pointer-events: none; z-index: 99;
+    max-width: 70vw; text-align: center;
+  }
+  .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.err { background: #331a1a; border-color: #6b2b2b; color: #ffd7d7; }
+
+  /* 执行记录：每次运行都留一条，run 完不怕"没反应"看不出来 */
+  .runlog {
+    position: fixed; right: 316px; bottom: 84px; width: 306px; z-index: 60;
+    display: flex; flex-direction: column; gap: 4px; pointer-events: none;
+  }
+  .runlog .rl {
+    background: rgba(13,18,28,.95); border: 1px solid #202a3c; border-left: 3px solid #22c55e;
+    border-radius: 7px; padding: 6px 9px; font-size: 11px; color: #b7bfd2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    animation: rlIn .16s ease-out;
+  }
+  .runlog .rl.err { border-left-color: #ef4444; color: #fecaca; }
+  .runlog .rl .t { color: #5c6579; font-size: 10px; margin-right: 5px; }
+  @keyframes rlIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* 帮助 */
+  .help {
+    position: fixed; inset: 0; background: rgba(4,6,11,.86); z-index: 95;
+    display: none; align-items: center; justify-content: center;
+  }
+  .help.on { display: flex; }
+  .helpbox {
+    width: 640px; max-width: 92vw; max-height: 82vh; overflow-y: auto;
+    background: #0c111a; border: 1px solid #263042; border-radius: 14px; padding: 22px 24px;
+  }
+  .helpbox h3 { font-size: 14px; color: #e9edf6; margin-bottom: 14px; font-weight: bold; }
+  .helpgrid { display: grid; grid-template-columns: auto 1fr; gap: 7px 16px; font-size: 12px; color: #9aa3b8; }
+  .helpgrid kbd {
+    background: #182031; border: 1px solid #2a3345; border-radius: 5px; padding: 2px 7px;
+    font-size: 11px; color: #cdd3e0; font-family: Consolas, monospace; white-space: nowrap;
+  }
+  .helpbox .close { margin-top: 18px; text-align: right; }
+  .helpbox .close button { background: #1d4ed8; color: #fff; border: none; padding: 8px 22px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: #2a3040; border-radius: 3px; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="brand">FDE <b>工作台</b></span>
+    <div class="vtabs">
+      <button data-view="cards" class="on">桌面</button>
+      <button data-view="canvas">工作流画布</button>
+    </div>
+    <span class="now">当前：<b id="nowName">—</b></span>
+    <button class="tb" id="closeBtn" title="关闭（Esc）">✕ 关闭</button>
+  </div>
+
+  <!-- ================= 卡片视图 ================= -->
+  <div class="view on" id="viewCards">
+    <div class="hint">点击卡片或按数字键切换 · ← → 选择 · Enter 进入 · Esc / 点空白处关闭</div>
+    <div class="grid" id="grid"></div>
+    <div class="footer">切换后，不属于该桌面的应用会被隐藏（仍在后台运行）· 总览会在切换完成后自动关闭</div>
+  </div>
+
+  <!-- ================= 画布视图 ================= -->
+  <div class="view" id="viewCanvas">
+    <div class="cbar">
+      <div class="grp">
+        <button data-add="project" title="项目桌面节点">＋项目</button>
+        <button data-add="window" title="应用窗口节点">＋窗口</button>
+        <button data-add="url" title="网页节点">＋网页</button>
+        <button data-add="script" title="脚本节点">＋脚本</button>
+        <button data-add="file" title="文件节点">＋文件</button>
+        <button data-add="folder" title="文件夹节点">＋文件夹</button>
+        <button data-add="note" title="笔记节点">＋笔记</button>
+        <button data-add="ai" title="聊天模型节点：用对话/写作/分析模型跑，结果写回节点（可多选模型对比）">＋聊天</button>
+        <button data-add="gen" data-modal="image" class="genbtn" title="图片生成：文生图 / 图生图（选模型 → 写提示词 → 跑）">＋图片</button>
+        <button data-add="gen" data-modal="video" class="genbtn" title="视频生成：文生视频 / 图生视频（异步任务，几分钟出片）">＋视频</button>
+        <button data-add="gen" data-modal="audio" class="genbtn" title="音乐 / 语音：Suno 音乐、TTS 配音、音色克隆">＋音乐</button>
+        <button data-add="group" title="分组 / 阶段 / 泳道">＋分组</button>
+      </div>
+      <div class="grp">
+        <button class="run" id="runAllBtn" title="从头到尾执行整张画布（Ctrl+Enter）">▶ 运行全部</button>
+        <button id="runSelBtn" title="从选中节点开始，按连线顺序执行">▶ 运行选中</button>
+      </div>
+      <div class="grp">
+        <button id="laneBtn" title="按项目自动生成泳道（多项目管理）">▤ 项目泳道</button>
+        <button id="layoutBtn" title="按连线自动从左到右排列">⇥ 整理</button>
+        <button id="fitBtn" title="缩放到能看见全部内容（Ctrl+1）">⤢ 适应</button>
+      </div>
+      <div class="srch">
+        <input id="searchInput" placeholder="搜索节点  Ctrl+F" />
+        <div class="searchpop" id="searchPop"></div>
+      </div>
+      <span class="sp"></span>
+      <div class="grp">
+        <button id="aiBtn" title="接算力：填密钥后，画布里的 AI 节点会直接用模型跑">⚡ 模型</button>
+        <button id="bdBtn" title="搭台助手：说一句话，自动搭好项目、脚本和画布流程">🤖 搭台</button>
+        <button id="tplBtn" title="载入模板">✨ 模板</button>
+        <button id="ioBtn" title="导入 / 导出画布">⇅ 导出</button>
+        <button id="helpBtn" title="快捷键与用法（?）">?</button>
+      </div>
+    </div>
+
+    <div class="cbody">
+      <div class="stage" id="stage">
+        <div class="world" id="world">
+          <svg id="edges" width="100000" height="100000">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#3d4a63"></path>
+              </marker>
+              <marker id="arrowA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#4f8cff"></path>
+              </marker>
+              <marker id="arrowH" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#a855f7"></path>
+              </marker>
+            </defs>
+            <g id="edgeLayer" transform="translate(50000,50000)"></g>
+          </svg>
+          <div id="nodes"></div>
+          <div class="selbox" id="selbox"></div>
+          <svg id="guides" width="100000" height="100000"><g transform="translate(50000,50000)"></g></svg>
+        </div>
+
+        <!-- data-no-drag：工具卡在 stage 里，不能让 stage 的 pointerdown 框选/抢占指针，
+             否则 setPointerCapture 会把 click 重定向到 stage，工具卡永远点不着 -->
+        <div class="emptyhint" id="emptyHint" data-no-drag>
+          <b>画布为空 · 点一个工具直接开始</b>
+          <div class="toolgrid" id="toolGrid">
+            <div class="toolcard" data-tool="t2i"><div class="ti">✍️</div><div class="tn">文字生图片</div><div class="ts">提示词 → 图片</div></div>
+            <div class="toolcard" data-tool="i2i"><div class="ti">🖼️</div><div class="tn">图片生图片</div><div class="ts">参考图 → 新图</div></div>
+            <div class="toolcard" data-tool="article"><div class="ti">📝</div><div class="tn">文章+配图</div><div class="ts">AI 写文 → 配图</div></div>
+            <div class="toolcard" data-tool="compare"><div class="ti">🆚</div><div class="tn">多图对比</div><div class="ts">同提示 · 3 模型比</div></div>
+            <div class="toolcard" data-tool="t2v"><div class="ti">🎬</div><div class="tn">文字生视频</div><div class="ts">提示词 → 视频</div></div>
+            <div class="toolcard" data-tool="a2v"><div class="ti">🎵</div><div class="tn">音频生视频</div><div class="ts">音频驱动画面</div></div>
+            <div class="toolcard" data-tool="i2v"><div class="ti">🎞️</div><div class="tn">生图转视频</div><div class="ts">图 → 动起来</div></div>
+            <div class="toolcard" data-tool="director"><div class="ti">🎥</div><div class="tn">导演台</div><div class="ts">AI 分镜 → 多镜头</div></div>
+          </div>
+          <div class="sub">也可以用上方「＋聊天 / ＋图片 / ＋视频 / ＋音乐」自己加，或「🤖 搭台」说一句话自动搭</div>
+        </div>
+
+        <div class="zoombar">
+          <button id="zoomOut" title="缩小">−</button>
+          <span class="zl" id="zoomLbl" title="点击重置为 100%">100%</span>
+          <button id="zoomIn" title="放大">＋</button>
+          <button id="zoomFit" title="适应视图">⤢</button>
+        </div>
+        <div class="mini" id="mini"><canvas id="miniCv" width="360" height="236"></canvas></div>
+        <div class="statusbar" id="statusbar"></div>
+      </div>
+      <aside class="inspector" id="inspector"></aside>
+      <aside class="bdrawer" id="bdrawer">
+        <div class="bh">
+          <span>🤖 搭台助手</span>
+          <span class="sub">说需求，它自动搭项目 / 脚本 / 画布</span>
+          <span class="x" id="bdX">✕</span>
+        </div>
+        <div class="msgs" id="bdMsgs"></div>
+        <div class="hint">例：「搭一个亚马逊美国站：卖家后台+ERP，订单脚本，AI 每天汇总」——它会建好项目、写好脚本骨架、摆好画布并连好线。</div>
+        <div class="bdimgs" id="bdImgs" style="display:none;"></div>
+        <div class="inputrow">
+          <button id="bdShot" title="截取屏幕发给 AI（看图搭台）；也支持直接 Ctrl+V 粘贴截图" style="width:34px;flex:0 0 34px;background:#131a25;border:1px solid #232d40;color:#cfd6e4;">📷</button>
+          <textarea id="bdInput" placeholder="想搭什么，直接说…（可先 📷 截图或 Ctrl+V 贴图）"></textarea>
+          <button id="bdSend">搭</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="ctxmenu" id="ctxmenu"></div>
+  <div class="toast" id="toast"></div>
+  <div class="runlog" id="runlog"></div>
+
+  <div class="help" id="help">
+    <div class="helpbox">
+      <h3>工作流画布 · 用法与快捷键</h3>
+      <div class="helpgrid">
+        <kbd>拖动空白</kbd><span>框选多个节点（Shift 加选）</span>
+        <kbd>空格 + 拖动 / 中键拖动</kbd><span>平移画布</span>
+        <kbd>滚轮</kbd><span>以鼠标为中心缩放 · Shift+滚轮 横向滚动</span>
+        <kbd>双击空白</kbd><span>快速新建笔记节点</span>
+        <kbd>拖右侧圆点</kbd><span>连线；拖到空白处可新建节点并连接</span>
+        <kbd>双击节点标题</kbd><span>重命名</span>
+        <kbd>双击连线</kbd><span>编辑连线（标签 / 类型 / 删除）</span>
+        <kbd>Ctrl + C / V / D</kbd><span>复制 / 粘贴 / 克隆选中节点</span>
+        <kbd>Ctrl + Z / Shift+Z</kbd><span>撤销 / 重做</span>
+        <kbd>Ctrl + A</kbd><span>全选</span>
+        <kbd>Delete</kbd><span>删除选中节点或连线</span>
+        <kbd>方向键</kbd><span>微移（Shift 为 10px）</span>
+        <kbd>Ctrl + Enter</kbd><span>运行整张画布</span>
+        <kbd>Ctrl + 1 / 0</kbd><span>适应视图 / 重置缩放</span>
+        <kbd>Ctrl + F</kbd><span>搜索节点并跳转</span>
+        <kbd>Alt + 拖动</kbd><span>临时关闭网格吸附</span>
+      </div>
+      <div class="helpbox-close close"><button id="helpClose">知道了</button></div>
+    </div>
+  </div>
+
+<script>
+/* 哨兵：任何脚本错误立刻在页面上可见，并写进飞行记录仪（renderer.log），不再静默失败 */
+window.__fdeBootErrs = [];
+function __fdeLog(t) { try { if (window.fde && typeof window.fde.logLine === 'function') window.fde.logLine(t); } catch (x) {} }
+window.addEventListener('error', (e) => {
+  const m = '页面脚本错误：' + e.message + '（第 ' + e.lineno + ' 行）';
+  window.__fdeBootErrs.push(m);
+  __fdeLog('boot-error: ' + m);
+  try { if (typeof toast === 'function') toast(m, true, 6000); } catch (x) {}
+});
+window.addEventListener('unhandledrejection', (e) => {
+  const m = '后台任务错误：' + ((e.reason && e.reason.message) || e.reason || '未知');
+  window.__fdeBootErrs.push(m);
+  __fdeLog('boot-rejection: ' + m);
+  try { if (typeof toast === 'function') toast(m, true, 6000); } catch (x) {}
+});
+__fdeLog('sentinel-ok');
+/* 输入打点：记录真实鼠标按下 —— 区分"点击没进窗口"和"进了但被页面吃掉" */
+window.addEventListener('pointerdown', (e) => {
+  __fdeLog('input-down x=' + Math.round(e.clientX) + ',y=' + Math.round(e.clientY) +
+    ' target=' + ((e.target && (e.target.className || e.target.id)) || e.target && e.target.tagName || '?'));
+}, true);
+</script>
+<script>
+/* ============================================================
+   FDE 工作台总览：桌面卡片 + 工作流画布
+   ============================================================ */
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+const STATUS = {
+  stopped:    { t: '空桌面',   c: ''  },
+  running:    { t: '当前桌面', c: 'g' },
+  background: { t: '后台隐藏', c: 'b' },
+  task:       { t: '待处理',   c: 'y' },
+  error:      { t: '报错',     c: 'r' }
+};
+
+const TYPES = {
+  project: { ic: '🖥', name: '项目桌面', c: '#4f8cff' },
+  window:  { ic: '🪟', name: '应用窗口', c: '#22c55e' },
+  url:     { ic: '🌐', name: '网页',     c: '#14b8a6' },
+  script:  { ic: '⚙',  name: '脚本',     c: '#f59e0b' },
+  file:    { ic: '📄', name: '文件',     c: '#a855f7' },
+  folder:  { ic: '📁', name: '文件夹',   c: '#a855f7' },
+  note:    { ic: '📝', name: '笔记',     c: '#94a3b8' },
+  ai:      { ic: '💬', name: '聊天模型', c: '#ec4899' },
+  gen:     { ic: '🖼', name: '生成',     c: '#22c55e' },
+  group:   { ic: '▤',  name: '分组',     c: '#64748b' }
+};
+// 生成节点按模态换图标/名字/配色：图片绿、视频橙、音乐紫
+const MODAL_META = {
+  image: { ic: '🖼', name: '图片生成', c: '#22c55e' },
+  video: { ic: '🎬', name: '视频生成', c: '#f59e0b' },
+  audio: { ic: '🎵', name: '音乐生成', c: '#a855f7' }
+};
+function modalOf(n) { return (n && n.ref && MODAL_META[n.ref.modal]) ? n.ref.modal : 'image'; }
+function typeMeta(n) {
+  if (n && n.type === 'gen') return MODAL_META[modalOf(n)];
+  return TYPES[n && n.type] || TYPES.note;
+}
+
+/* ================= 模型目录：聊天 / 图片 / 视频 / 音乐 =================
+ * 平台一次返回全部模型（带类型和参数定义），这里只管缓存和挑选：
+ *   MODELSTATE.groups.image / video / audio / chat
+ * 生成节点的模型下拉、参数表单、模型库列表都从这份数据来。
+ */
+let MODELSTATE = { models: [], groups: { chat: [], image: [], video: [], audio: [] }, counts: {}, loaded: false, error: '' };
+
+async function loadCatalog(force) {
+  let r = null;
+  try { r = await window.fde.modelsCatalog(!!force); } catch (e) { r = { ok: false, error: e.message }; }
+  if (!r || !r.ok) {
+    MODELSTATE = Object.assign({}, MODELSTATE, { error: (r && r.error) || '读不到模型目录', loaded: false });
+    return MODELSTATE;
+  }
+  MODELSTATE = {
+    models: r.models || [],
+    groups: r.groups || { chat: [], image: [], video: [], audio: [] },
+    counts: r.counts || {},
+    loaded: true,
+    error: ''
+  };
+  return MODELSTATE;
+}
+/** 聊天模型列表：优先用模型目录的 chat 组（带中文名），没有就过滤掉明显的图片/视频/音乐模型 */
+function chatModelOptions() {
+  const g = (MODELSTATE.groups && MODELSTATE.groups.chat) || [];
+  if (g.length) return g.map(m => ({ id: m.name, name: m.displayName || m.name }));
+  const list = (AISTATE && AISTATE.models) || [];
+  return list
+    .filter(m => !/(suno|udio|tts|speech|voice|whisper|seedance|kling|vidu|video|image|flux|banana|seedream|hailuo|runway|veo)/i.test(String(m.id || '')))
+    .map(m => ({ id: m.id, name: m.name || m.id }));
+}
+
+function modelsOf(modal) {
+  const g = MODELSTATE.groups || {};
+  return Array.isArray(g[modal]) ? g[modal] : [];
+}
+function modelByName(name) {
+  const all = MODELSTATE.models || [];
+  const hit = all.find(m => m.name === name);
+  if (hit) return hit;
+  // 目录只回分组、没回扁平列表时，也要能按名字找到（参数表单靠它）
+  const g = MODELSTATE.groups || {};
+  for (const k of Object.keys(g)) {
+    const m = (g[k] || []).find(x => x.name === name);
+    if (m) return m;
+  }
+  return null;
+}
+function pickModel(modal) {
+  const list = modelsOf(modal).filter(m => m.available !== false);
+  if (!list.length) return null;
+  // 优先：名字不带 token / 官转 / 按秒 的（通常是最便宜的那档）
+  return list.find(m => !/token|官转|按秒/i.test(m.name + m.displayName)) || list[0];
+}
+function defaultParams(m) {
+  const out = {};
+  for (const p of ((m && m.params) || [])) {
+    if (p.name === 'prompt') continue;
+    if ((p.type === 'select' || p.type === 'radio' || p.type === 'segment') && p.options && p.options.length) {
+      if (p.required) out[p.name] = p.options[0].value;
+    } else if (p.type === 'switch' && p.required) {
+      out[p.name] = 'false';
+    }
+  }
+  return out;
+}
+function modelLabel(m) {
+  if (!m) return '';
+  return m.displayName || m.name;
+}
+function fmtCost(v) {
+  const n = Number(v || 0);
+  if (!n) return '';
+  if (n < 0.01) return '¥' + n.toFixed(4);
+  if (n < 1) return '¥' + n.toFixed(3);
+  return '¥' + n.toFixed(2);
+}
+const PALETTE = ['#4f8cff', '#22c55e', '#f59e0b', '#ef4444', '#a855f7', '#14b8a6', '#ec4899', '#64748b'];
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function hexA(hex, a) {
+  const h = String(hex || '#4f8cff').replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16) || 79, g = parseInt(h.slice(2, 4), 16) || 140, b = parseInt(h.slice(4, 6), 16) || 255;
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+}
+let toastTimer = null;
+function toast(msg, isErr, ms) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.className = 'toast on' + (isErr ? ' err' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = 'toast'; }, ms || (isErr ? 3600 : 2400));
+}
+function uid(p) { return p + Date.now().toString(36) + Math.floor(Math.random() * 9000); }
+
+// 画布右下角的执行记录：谁跑了、成没成、几点跑的，都留痕
+function pushRunLog(title, ok, msg) {
+  const box = $('#runlog');
+  if (!box) return;
+  const d = new Date();
+  const hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  const row = document.createElement('div');
+  row.className = 'rl' + (ok ? '' : ' err');
+  row.innerHTML = '<span class="t">' + hm + '</span>' + (ok ? '✓ ' : '✗ ') +
+    esc(String(title || '节点')) + (msg ? ' · ' + esc(String(msg).slice(0, 60)) : '');
+  row.title = String(msg || title || '');
+  box.insertBefore(row, box.firstChild);
+  while (box.children.length > 4) box.removeChild(box.lastChild);
+  setTimeout(() => { if (row.parentNode) row.remove(); }, 15000);
+}
+
+/* ================= 视图切换 ================= */
+let view = 'cards';
+let viewSwitchLoad = null;   // 切进画布时的 loadCanvas 进行中标记（点工具卡要先等它完成）
+$$('.vtabs button').forEach(b => { b.onclick = () => setView(b.dataset.view); });
+function setView(v) {
+  view = v;
+  $$('.vtabs button').forEach(b => b.classList.toggle('on', b.dataset.view === v));
+  $('#viewCards').classList.toggle('on', v === 'cards');
+  $('#viewCanvas').classList.toggle('on', v === 'canvas');
+  if (v === 'canvas') {
+    viewSwitchLoad = loadCanvas(true);
+    if (!MODELSTATE.loaded) loadCatalog().then(() => { renderAll(); renderInspector(); });
+    setTimeout(() => { applyView(); drawMini(); }, 60);
+  }
+}
+
+/* ================= 卡片视图 ================= */
+const grid = $('#grid');
+let desks = [];
+let idx = 0;
+let lastDataStr = '';
+
+async function loadCards(keepPos) {
+  const d = await window.fde.getData();
+  const wt = d.windowTitles || {};
+  desks = [{
+    id: 'original', name: '原电脑桌面', color: '#6d7589',
+    count: d.originalCount || 0, titles: d.originalTitles || [],
+    autorunN: 0, ctxN: 0,
+    statusText: '真实桌面', statusCls: 'b', active: d.activeId === null
+  }].concat((d.projects || []).map(p => {
+    const st = STATUS[p.status] || STATUS.stopped;
+    return {
+      id: p.id, name: p.name, color: p.color || '#4f8cff',
+      count: p.windowsCount || 0, titles: wt[p.id] || [],
+      autorunN: (p.autorun || []).length,
+      ctxN: (p.context || []).length,
+      statusText: st.t + (p.statusMsg ? ' · ' + p.statusMsg : ''),
+      statusCls: st.c, active: d.activeId === p.id,
+      unread: (d.inbox && d.inbox[p.id] || []).length,
+      isError: p.status === 'error'
+    };
+  }));
+  if (!keepPos) idx = Math.max(0, desks.findIndex(x => x.active));
+  const cur = desks.find(x => x.active);
+  $('#nowName').textContent = cur ? cur.name : '—';
+  renderCards();
+}
+
+function renderCards() {
+  grid.innerHTML = '';
+  desks.forEach((d, i) => {
+    const div = document.createElement('div');
+    div.className = 'card' + (d.active ? ' active' : '') + (i === idx ? ' sel' : '');
+    div.dataset.id = d.id; div.dataset.idx = i;
+    let winsHtml = '';
+    if (d.titles.length) {
+      winsHtml = d.titles.slice(0, 4).map(t => '<div class="w" title="' + esc(t) + '">' + esc(t) + '</div>').join('') +
+        (d.count > 4 ? '<div class="more">… 等 ' + d.count + ' 个窗口</div>' : '');
+    } else if (d.count) {
+      winsHtml = '<div class="none">有 ' + d.count + ' 个窗口（标题不可见）</div>';
+    } else {
+      winsHtml = '<div class="none">空桌面 · 打开程序会自动归入</div>';
+    }
+    div.innerHTML =
+      '<div class="wall" style="background:linear-gradient(135deg,' + hexA(d.color, .85) + ',' + hexA(d.color, .25) + ');">' +
+        '<span class="cn">' + (i + 1) + '</span><span class="nm">' + esc(d.name) + '</span></div>' +
+      '<div class="strow"><span class="pill ' + d.statusCls + '">' + esc(d.statusText) + '</span>' +
+        '<span class="cnt">' + (d.count ? d.count + ' 个窗口' : '无窗口') + '</span></div>' +
+      '<div class="wins">' + winsHtml + '</div>' +
+      '<div class="meta">' +
+        (d.autorunN ? '<span>🚀 自动打开 ' + d.autorunN + '</span>' : '') +
+        (d.ctxN ? '<span class="cx">◫ 上下文 ' + d.ctxN + ' 条</span>' : '') +
+        (d.unread ? '<span class="u">✉ ' + d.unread + ' 条待处理</span>' : '') +
+        (d.active ? '<span style="color:#22c55e;">● 正在使用</span>' : '') +
+      '</div>' +
+      '<div class="ops">' +
+        '<button class="go" data-act="switch">' + (d.active ? '● 当前桌面' : '🖥 进入此桌面') + '</button>' +
+        (d.isError ? '<button data-act="panel" title="查看报错详情">⚠ 设置</button>'
+                   : '<button data-act="panel" title="打开项目控制面板">⚙ 设置</button>') +
+      '</div>';
+    grid.appendChild(div);
+  });
+}
+
+grid.addEventListener('click', async (e) => {
+  const card = e.target.closest('.card');
+  if (!card) return;
+  const act = e.target.closest('[data-act]');
+  const id = card.dataset.id;
+  if (act && act.dataset.act === 'panel') {
+    let r = null;
+    try { r = await window.fde.openProjectPanel(id); } catch (err) { r = { ok: false, error: err.message }; }
+    if (r && r.ok === false) toast('打不开设置面板：' + (r.error || '项目不存在'), true);
+    else toast('⚙ 设置已在右侧打开（就是闪两下的那个窗口）', false, 3200);
+    return;
+  }
+  choose(id);
+});
+
+document.addEventListener('mousedown', (e) => {
+  if (view !== 'cards') return;
+  if (e.target.closest('.card') || e.target.closest('.topbar')) return;
+  window.fde.closeOverview();
+});
+$('#closeBtn').onclick = () => window.fde.closeOverview();
+
+async function choose(id) {
+  try { await window.fde.switchDesktop(id); } catch (err) {}
+  window.fde.closeOverview();
+}
+
+/* ================= 画布状态 ================= */
+let C = { nodes: [], edges: [], view: { x: 0, y: 0, z: 1 } };
+let live = { projects: [], windows: [], activeId: null };
+let sel = new Set();
+let selEdge = null;
+let saveTimer = null;
+let dirty = false;
+let clip = null;
+
+const stage = $('#stage');
+const world = $('#world');
+const nodesBox = $('#nodes');
+const edgeSvg = $('#edges');
+const edgeLayer = $('#edgeLayer');
+const guidesSvg = $('#guides');
+const guideLayer = guidesSvg.querySelector('g');
+const inspector = $('#inspector');
+const selbox = $('#selbox');
+
+/* ---- 坐标 / 视图 ---- */
+function applyView() {
+  const v = C.view;
+  world.style.transform = 'translate(' + v.x + 'px,' + v.y + 'px) scale(' + v.z + ')';
+  $('#zoomLbl').textContent = Math.round(v.z * 100) + '%';
+  const g = 24 * v.z;
+  stage.style.backgroundSize = g + 'px ' + g + 'px, ' + (g * 5) + 'px ' + (g * 5) + 'px, ' + (g * 5) + 'px ' + (g * 5) + 'px';
+  stage.style.backgroundPosition = v.x + 'px ' + v.y + 'px';
+  drawMini();
+}
+function stageRect() { return stage.getBoundingClientRect(); }
+function screenToWorld(sx, sy) {
+  const r = stageRect();
+  return { x: (sx - r.left - C.view.x) / C.view.z, y: (sy - r.top - C.view.y) / C.view.z };
+}
+function worldToScreen(wx, wy) {
+  const r = stageRect();
+  return { x: r.left + wx * C.view.z + C.view.x, y: r.top + wy * C.view.z + C.view.y };
+}
+function centerOn(wx, wy, z) {
+  const r = stageRect();
+  if (z) C.view.z = z;
+  C.view.x = r.width / 2 - wx * C.view.z;
+  C.view.y = r.height / 2 - wy * C.view.z;
+  applyView();
+  queueSave();
+}
+
+/**
+ * 从项目设置/面板跳过来时，把视角对准这个项目的节点并选中它。
+ * 找不到节点就什么都不做（项目可能还没上画布），不打扰用户当前视角。
+ */
+async function focusProject(pid) {
+  if (!pid) return false;
+  if (view !== 'canvas') {
+    setView('canvas');
+    await new Promise(r => setTimeout(r, 260));   // 等画布数据加载完再定位
+  }
+  const n = C.nodes.find(x => x.type === 'project' && x.ref && x.ref.projectId === pid);
+  if (!n) return false;
+  sel = new Set([n.id]);
+  selEdge = null;
+  centerOn(n.x + 120, n.y + 40, Math.max(0.75, Math.min(C.view.z || 1, 1.2)));
+  renderAll();
+  renderInspector();
+  return true;
+}
+
+/* ---- 加载 / 保存 ---- */
+async function loadCanvas(fresh) {
+  try {
+    const d = await window.fde.canvasGet();
+    if (!d || !d.ok) return;
+    live.projects = d.projects || [];
+    live.windows = d.windows || [];
+    live.activeId = d.activeId;
+    if (fresh) {
+      C = d.canvas || { nodes: [], edges: [], view: { x: 0, y: 0, z: 1 } };
+      if (!C.view) C.view = { x: 0, y: 0, z: 1 };
+      if (!C.nodes.length) C.view = { x: 80, y: 80, z: 1 };
+      history = []; histIdx = -1; pushHistory(true);
+      renderAll();
+    }
+  } catch (e) {}
+}
+async function refreshLive() {
+  try {
+    const d = await window.fde.canvasGet();
+    if (!d || !d.ok) return;
+    live.projects = d.projects || [];
+    live.windows = d.windows || [];
+    live.activeId = d.activeId;
+    if ((sel.size === 1 || selEdge) && !inspectorHot()) renderInspector();
+  } catch (e) {}
+}
+function queueSave() {
+  dirty = true;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(save, 450);
+}
+async function save() {
+  if (!dirty) return;
+  dirty = false;
+  try { await window.fde.canvasSave({ nodes: C.nodes, edges: C.edges, view: C.view }); } catch (e) {}
+}
+
+/* ---- 撤销 / 重做 ---- */
+let history = [];
+let histIdx = -1;
+function snap() { return JSON.stringify({ n: C.nodes, e: C.edges }); }
+function pushHistory(force) {
+  const s = snap();
+  if (!force && history[histIdx] === s) return;
+  history = history.slice(0, histIdx + 1);
+  history.push(s);
+  if (history.length > 60) history.shift();
+  histIdx = history.length - 1;
+}
+function restoreSnap(s) {
+  try {
+    const o = JSON.parse(s);
+    C.nodes = o.n || [];
+    C.edges = o.e || [];
+    if (selEdge) selEdge = null;
+    const ids = new Set(C.nodes.map(n => n.id));
+    sel = new Set(Array.from(sel).filter(id => ids.has(id)));
+    renderAll(); renderInspector(); queueSave();
+  } catch (e) {}
+}
+function undo() {
+  if (histIdx <= 0) { toast('没有可撤销的操作'); return; }
+  histIdx--;
+  restoreSnap(history[histIdx]);
+  toast('已撤销');
+}
+function redo() {
+  if (histIdx >= history.length - 1) { toast('没有可重做的操作'); return; }
+  histIdx++;
+  restoreSnap(history[histIdx]);
+  toast('已重做');
+}
+
+/* ---- 渲染 ---- */
+function nodeEls() { return Array.from(nodesBox.children); }
+function nodeById(id) { return C.nodes.find(n => n.id === id); }
+
+function renderAll() {
+  renderNodes();
+  renderEdges();
+  applyView();
+  $('#emptyHint').style.display = C.nodes.length ? 'none' : 'block';
+  $('#mini').classList.toggle('on', C.nodes.length > 0);
+  updateStatus();
+}
+
+function projectOf(n) { return live.projects.find(p => p.id === (n.ref && n.ref.projectId)); }
+
+function nodeMeta(n) {
+  const p = projectOf(n);
+  switch (n.type) {
+    case 'project': return p ? (p.name + ' · ' + (p.windowsCount || 0) + ' 窗口') : '未绑定项目';
+    case 'window': return (p ? p.name : '未绑定') + (n.ref.match ? ' · ' + n.ref.match : ' · 任意窗口');
+    case 'url': return (n.ref.url || '未填网址') + (n.ref.browserName ? ' · ' + n.ref.browserName : '');
+    case 'script': return n.ref.path ? n.ref.path.split(/[\\/]/).pop() : (n.ref.itemId ? '已绑定脚本项' : '未绑定脚本');
+    case 'file': case 'folder': return (n.ref.path || '未选择路径').split(/[\\/]/).slice(-2).join('/');
+    case 'ai': {
+      if (Array.isArray(n.models) && n.models.length) return '多模型对比 · ' + n.models.length + ' 个';
+      if (String(n.model || '') === 'auto') return '聊天 · 🪄 自动挑模型';
+      if (n.model) return '模型：' + n.model;
+      return '用全局默认模型跑';
+    }
+    case 'gen': {
+      const m = modelByName(n.ref && n.ref.model);
+      let t = m ? modelLabel(m) : ((n.ref && n.ref.model) || '未选模型');
+      if (n.ref && n.ref.status) {
+        t += ' · ' + n.ref.status;
+        const pr = Number(n.ref.progress || 0);
+        if (pr > 0 && pr < 100) t += ' ' + pr + '%';
+      }
+      if (n.ref && n.ref.cost) t += ' · ' + fmtCost(n.ref.cost);
+      return t;
+    }
+    case 'note': return '上下文笔记';
+    case 'group': return '分组 / 阶段';
+    default: return '';
+  }
+}
+
+function renderNodes() {
+  nodesBox.innerHTML = '';
+  // group 先渲染，保证普通节点压在它上面
+  const list = C.nodes.slice().sort((a, b) => (a.type === 'group' ? 0 : 1) - (b.type === 'group' ? 0 : 1));
+  for (const n of list) {
+    const t = typeMeta(n);
+    const el = document.createElement('div');
+    el.className = 'node t-' + n.type + (sel.has(n.id) ? ' sel' : '') + (n.collapsed ? ' off' : '') + (n.locked ? ' locked' : '');
+    el.dataset.id = n.id;
+    el.style.left = n.x + 'px';
+    el.style.top = n.y + 'px';
+    el.style.width = (n.w || 240) + 'px';
+    el.style.setProperty('--c', n.color || t.c);
+
+    if (n.type === 'group') {
+      el.style.height = (n.h || 300) + 'px';
+      const members = groupMembers(n);
+      const p = projectOf(n);
+      el.innerHTML =
+        '<div class="ghead"><span class="gdot"></span><span class="gttl">' + esc(n.title) + '</span>' +
+        '<span class="gmeta">' + (p ? '项目 · ' : '') + members.length + ' 节点</span></div>' +
+        '<div class="gline"></div>';
+      nodesBox.appendChild(el);
+      continue;
+    }
+
+    const noteCls = n.note ? 'nnote' : 'nnote dim';
+    const noteTxt = n.note ? esc(n.note.slice(0, 260)) : '（无说明）';
+    const tags = (n.tags || []).slice(0, 4).map(x => '<span class="ntag">' + esc(x) + '</span>');
+    const p = projectOf(n);
+    if (p) tags.unshift('<span class="ntag" style="background:' + hexA(p.color || '#4f8cff', .18) + ';color:' + (p.color || '#4f8cff') + '">' + esc(p.name) + '</span>');
+    if (n.ref && n.ref.continueOnError) tags.push('<span class="ntag cross">失败继续</span>');
+
+    // 生成节点：进度条 + 结果预览（图 / 视频 / 音频）直接贴在卡片上
+    let mediaHtml = '';
+    if (n.type === 'gen') {
+      const urls = Array.isArray(n.ref.urls) ? n.ref.urls : [];
+      const kind = n.ref.resultKind || modalOf(n);
+      const gsch = schemaOf(n.ref && n.ref.model);
+      const gsum = gsch ? pSummary(gsch.fields, n.ref.params || {}, 3) : '';
+      if (gsum) mediaHtml += '<div class="nparam">' + esc(gsum) + '</div>';
+      const pr = Math.max(0, Math.min(100, Number(n.ref.progress || 0)));
+      if (n.ref.status && pr < 100 && !urls.length) {
+        mediaHtml += '<div class="gbar"><i style="width:' + pr + '%"></i></div>';
+      }
+      if (urls.length) {
+        if (kind === 'image') {
+          mediaHtml += '<div class="gthumb">' + urls.slice(0, 4).map(u => '<img src="' + esc(u) + '" loading="lazy" />').join('') + '</div>';
+        } else if (kind === 'video') {
+          mediaHtml += '<video class="gvideo" src="' + esc(urls[0]) + '" controls preload="metadata"></video>';
+        } else {
+          mediaHtml += '<audio class="gaudio" src="' + esc(urls[0]) + '" controls preload="metadata"></audio>';
+        }
+      }
+      if (n.ref.error) mediaHtml += '<div class="gerr">' + esc(String(n.ref.error).slice(0, 90)) + '</div>';
+    }
+
+    el.innerHTML =
+      '<div class="nhead"><span class="nic">' + t.ic + '</span>' +
+        '<span class="nttl" title="双击重命名">' + esc(n.title) + '</span><span class="nst"></span></div>' +
+      '<div class="nbody"><div class="nmeta">' + esc(nodeMeta(n)) + '</div>' + mediaHtml +
+        '<div class="' + noteCls + '">' + noteTxt + '</div>' +
+        (tags.length ? '<div class="ntags">' + tags.join('') + '</div>' : '') +
+      '</div>' +
+      '<div class="nfoot">' +
+        '<button data-act="run" title="运行此节点">▶ 运行</button>' +
+        (n.type === 'ai' ? '<button data-act="prompt" title="生成上下文提示词">✨ 生成</button>' : '') +
+        '<button data-act="settings" title="打开这个节点自己的设置（右侧面板）">⚙ 设置</button>' +
+        '<button data-act="dup" title="克隆此节点">⧉</button>' +
+        '<button data-act="fold" title="折叠 / 展开">▾</button>' +
+        '<button data-act="del" title="删除节点">✕</button>' +
+      '</div>' +
+      '<div class="port in" data-port="in"></div><div class="port out" data-port="out"></div>';
+    nodesBox.appendChild(el);
+  }
+  renderEdges();
+}
+
+function geom(n) {
+  if (!n) return { x: 0, y: 0, w: 240, h: 90 };
+  const el = nodesBox.querySelector('[data-id="' + n.id + '"]');
+  const h = n.type === 'group' ? (n.h || 300) : (el ? el.offsetHeight : 96);
+  return { x: n.x, y: n.y, w: n.w || 240, h };
+}
+
+function edgeGeo(a, b) {
+  const ga = geom(a), gb = geom(b);
+  const fwd = (gb.x + gb.w / 2) >= (ga.x + ga.w / 2);
+  const p1 = fwd ? { x: ga.x + ga.w, y: ga.y + ga.h / 2 } : { x: ga.x, y: ga.y + ga.h / 2 };
+  const p2 = fwd ? { x: gb.x, y: gb.y + gb.h / 2 } : { x: gb.x + gb.w, y: gb.y + gb.h / 2 };
+  return { p1, p2, fwd };
+}
+function edgePath(x1, y1, x2, y2, fwd) {
+  const dx = Math.max(40, Math.min(180, Math.abs(x2 - x1) * 0.55)) * (fwd === false ? -1 : 1);
+  return 'M ' + x1 + ' ' + y1 + ' C ' + (x1 + dx) + ' ' + y1 + ', ' + (x2 - dx) + ' ' + y2 + ', ' + x2 + ' ' + y2;
+}
+
+function renderEdges() {
+  const map = new Map(C.nodes.map(n => [n.id, n]));
+  let html = '';
+  for (const e of C.edges) {
+    const a = map.get(e.from), b = map.get(e.to);
+    if (!a || !b) continue;
+    const { p1, p2, fwd } = edgeGeo(a, b);
+    const d = edgePath(p1.x, p1.y, p2.x, p2.y, fwd);
+    const on = selEdge === e.id;
+    let stroke = '#2c3850', marker = 'arrow';
+    if (e.kind === 'handoff') { stroke = '#7c3aed'; marker = 'arrowH'; }
+    if (e.kind === 'ref') { stroke = '#394a63'; }
+    if (on) { stroke = '#4f8cff'; marker = 'arrowA'; }
+    const dash = (e.dashed || e.kind === 'ref') ? ' stroke-dasharray="6 5"' : '';
+    html += '<path class="hit" data-edge="' + e.id + '" d="' + d + '"></path>';
+    html += '<path data-evis="' + e.id + '" d="' + d + '" fill="none" stroke="' + stroke + '" stroke-width="' +
+      (on ? 2.4 : 1.7) + '"' + dash + ' marker-end="url(#' + marker + ')"></path>';
+    if (e.label) {
+      const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+      html += '<text class="elabel" x="' + mx + '" y="' + (my - 6) + '">' + esc(e.label.slice(0, 24)) + '</text>';
+    }
+  }
+  edgeLayer.innerHTML = html;
+}
+
+/* ---- 选择 / 检查器 ---- */
+function refreshSelUI() {
+  nodeEls().forEach(el => el.classList.toggle('sel', sel.has(el.dataset.id)));
+  renderInspector(); updateStatus();
+}
+function selectOnly(id) {
+  sel.clear();
+  if (id) sel.add(id);
+  selEdge = null;
+  refreshSelUI();
+}
+function updateStatus() {
+  const bar = $('#statusbar');
+  if (!bar) return;
+  const selTxt = selEdge ? '1 条连线' : (sel.size ? sel.size + ' 个节点' : '无选择');
+  bar.innerHTML = '<span>节点 <b>' + C.nodes.length + '</b></span>' +
+    '<span>连线 <b>' + C.edges.length + '</b></span>' +
+    '<span>选择 <b>' + selTxt + '</b></span>' +
+    '<span>缩放 <b>' + Math.round(C.view.z * 100) + '%</b></span>' +
+    '<span style="margin-left:auto">空格拖动平移 · 拖空白框选 · Ctrl+Z 撤销 · ? 帮助</span>';
+}
+
+function projectOptions(cur, emptyLabel) {
+  return '<option value="">' + (emptyLabel || '（未绑定）') + '</option>' + live.projects.map(p =>
+    '<option value="' + p.id + '"' + (cur === p.id ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('');
+}
+function swatches(cur, dflt) {
+  return '<div class="swatches">' + PALETTE.map(c =>
+    '<i data-color="' + c + '" class="' + ((cur || dflt) === c ? 'on' : '') + '" style="background:' + c + '"></i>').join('') +
+    '<i data-color="" style="background:#1b2334;display:flex;align-items:center;justify-content:center;font-size:9px;color:#7c86a0;">默</i></div>';
+}
+
+function renderInspector() {
+  if (selEdge) return renderEdgeInspector();
+  if (sel.size > 1) return renderMultiInspector();
+  if (sel.size === 1) return renderNodeInspector();
+  inspector.classList.remove('on');
+  inspector.innerHTML = '';
+}
+
+/** 用户正在右侧面板里输入/选择（尤其展开着下拉）时，别整体重绘面板 ——
+ *  否则正在开的模型下拉会被收走、输入光标会跳走。轮询/广播先忍一忍。 */
+function inspectorHot() {
+  const ae = document.activeElement;
+  return !!(ae && inspector.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName));
+}
+
+/** 节点卡片防抖重绘：打字/点选项时不用每敲一下就全量重建所有卡片 */
+let rnTimer = 0;
+function renderNodesSoon() { clearTimeout(rnTimer); rnTimer = setTimeout(renderNodes, 250); }
+
+function renderNodeInspector() {
+  const n = nodeById(Array.from(sel)[0]);
+  if (!n) { inspector.classList.remove('on'); return; }
+  const t = TYPES[n.type] || TYPES.note;
+  inspector.classList.add('on');
+
+  let refHtml = '';
+  if (['project', 'window', 'script', 'group'].includes(n.type)) {
+    refHtml += '<div class="fld"><label>绑定项目桌面</label><select data-f="projectId">' +
+      projectOptions(n.ref.projectId) + '</select></div>';
+  }
+  if (n.type === 'project') {
+    refHtml += '<label class="chkrow"><input type="checkbox" data-f="autoRun"' + (n.ref.autoRun ? ' checked' : '') + ' /> 进入桌面后自动打开该项目的应用</label>';
+  }
+  if (n.type === 'ai' && chatModelOptions().length) {
+    const cur = String(n.model || '');
+    const g = String(AISTATE.model || '');
+    const gAuto = !g || g === 'auto';
+    refHtml += '<div class="fld"><label>本节点用哪个聊天模型</label>' +
+      '<select data-f="model">' +
+      '<option value=""' + (cur === '' ? ' selected' : '') + '>（跟全局：' + (gAuto ? '🪄 自动' : esc(g)) + '）</option>' +
+      '<option value="auto"' + (cur === 'auto' ? ' selected' : '') + '>🪄 自动（按任务挑：带图→看图的，写脚本→强的，闲聊→快的）</option>' +
+      chatModelOptions().map(m => '<option value="' + esc(m.id) + '"' + (cur === m.id ? ' selected' : '') + '>' + esc(m.name || m.id) + '</option>').join('') +
+      '</select>' +
+      '<div class="tip" style="margin-top:5px">选了「自动」，每次运行会按任务类型自动挑最合适的模型；模型报错/输出空会自动换下一个，不会一次失败就卡住。</div></div>';
+    const multi = Array.isArray(n.models) ? n.models : [];
+    refHtml += '<div class="fld"><label>多模型对比（点选 2~6 个，运行时逐个跑、结果分段写回节点）</label>' +
+      '<div class="chips">' +
+      chatModelOptions().slice(0, 12).map(m =>
+        '<span class="chip' + (multi.includes(m.id) ? ' on' : '') + '" data-mm="' + esc(m.id) + '">' +
+        (multi.includes(m.id) ? '✓ ' : '') + esc(m.id) + '</span>').join('') +
+      '</div></div>';
+  }
+  if (n.type === 'gen') {
+    refHtml += genFormHtml(n);
+  }
+  if (n.type === 'window') {
+    refHtml += '<div class="fld"><label>窗口匹配（标题或进程名包含）</label>' +
+      '<input type="text" data-f="match" value="' + esc(n.ref.match || '') + '" placeholder="留空 = 该项目任意窗口" />';
+    const wins = live.windows.filter(w => w.owner === n.ref.projectId);
+    if (wins.length) {
+      refHtml += '<div class="chips">' + wins.slice(0, 12).map(w =>
+        '<span class="chip" data-win="' + esc(w.title) + '">' + esc(w.title || w.proc) + '</span>').join('') + '</div>';
+    }
+    refHtml += '</div>';
+  }
+  if (n.type === 'url') {
+    refHtml += '<div class="fld"><label>网址</label><input type="text" data-f="url" value="' + esc(n.ref.url || '') + '" placeholder="https://" /></div>';
+    refHtml += '<div class="fld"><label>用哪个浏览器（留空 = 系统默认）</label><select data-f="browserPath"><option value="">系统默认浏览器</option></select></div>';
+  }
+  if (n.type === 'script') {
+    const p = projectOf(n);
+    const items = (p && p.items) || [];
+    refHtml += '<div class="fld"><label>绑定项目里的脚本</label><select data-f="itemId"><option value="">（直接指定下面路径）</option>' +
+      items.map(i => '<option value="' + i.id + '"' + (n.ref.itemId === i.id ? ' selected' : '') + '>' + esc(i.name) + '</option>').join('') +
+      '</select></div>';
+    refHtml += '<div class="fld"><label>或脚本文件路径</label><div class="row">' +
+      '<input type="text" data-f="path" value="' + esc(n.ref.path || '') + '" placeholder=".ps1 / .py / .bat" />' +
+      '<button class="mini-btn" data-act="pick-script">浏览</button></div></div>';
+  }
+  if (n.type === 'file' || n.type === 'folder') {
+    refHtml += '<div class="fld"><label>路径</label><div class="row">' +
+      '<input type="text" data-f="path" value="' + esc(n.ref.path || '') + '" />' +
+      '<button class="mini-btn" data-act="pick-' + n.type + '">浏览</button></div></div>';
+  }
+
+  inspector.innerHTML =
+    '<h4><span>' + t.ic + '</span>' +
+      '<span class="htl" title="' + esc(n.title) + '">' + esc(n.title) + '</span>' +
+      '<span class="hty">' + t.name + '</span>' +
+      '<span class="x" data-act="close-insp">✕</span></h4>' +
+    '<div class="ownbar">⚙ 这是这个节点自己的设置（改完立刻生效）</div>' +
+    '<div class="fld"><label>标题</label><input type="text" data-f="title" value="' + esc(n.title) + '" /></div>' +
+    refHtml +
+    '<div class="fld"><label>说明 / 上下文内容</label>' +
+      '<textarea data-f="note" placeholder="这里写的内容会进入 AI 上下文提示词">' + esc(n.note) + '</textarea></div>' +
+    '<div class="fld"><label>标签（逗号分隔）</label><input type="text" data-f="tags" value="' + esc((n.tags || []).join(', ')) + '" /></div>' +
+    '<div class="fld"><div class="row">' +
+      '<div style="flex:1"><label>宽度</label><input type="number" data-f="w" value="' + (n.w || 240) + '" min="140" max="900" /></div>' +
+      (n.type === 'group' ? '<div style="flex:1"><label>高度</label><input type="number" data-f="h" value="' + (n.h || 300) + '" min="120" max="1400" /></div>' : '') +
+    '</div></div>' +
+    '<div class="fld"><label>颜色</label>' + swatches(n.color, t.c) + '</div>' +
+    '<label class="chkrow"><input type="checkbox" data-f="collapsed"' + (n.collapsed ? ' checked' : '') + ' /> 折叠卡片内容</label>' +
+    '<label class="chkrow"><input type="checkbox" data-f="locked"' + (n.locked ? ' checked' : '') + ' /> 锁定位置（不可拖动）</label>' +
+    (n.type === 'note' || n.type === 'group' ? '' :
+      '<label class="chkrow"><input type="checkbox" data-f="continueOnError"' + (n.ref.continueOnError ? ' checked' : '') + ' /> 失败后继续执行后续节点</label>') +
+    '<div class="acts">' +
+      '<button class="go" data-act="run">▶ 运行</button>' +
+      '<button class="gray" data-act="run-from">从这运行</button>' +
+      (n.type === 'gen' ? '<button class="gray" data-act="gen-refresh">↻ 查结果</button>' : '') +
+      (n.type === 'ai' ? '<button class="go" data-act="prompt" style="background:#9d174d">✨ 提示词</button>' : '') +
+      (n.type === 'project' && n.ref.projectId ? '<button class="gray" data-act="open-proj">🖥 项目面板</button>' : '') +
+      '<button class="del" data-act="del">删除</button>' +
+    '</div>' +
+    '<div class="sep"></div>' +
+    '<div class="tip">' +
+      (n.type === 'project' ? '运行时切换到这个项目桌面，其它项目自动收起。要改项目里的应用 / 脚本 / 上下文，点上面的「🖥 项目面板」。'
+        : n.type === 'window' ? '运行时先进入该项目，再把匹配的窗口前置。'
+        : n.type === 'script' ? '运行时后台执行脚本，输出写入项目运行日志。'
+        : n.type === 'ai' ? '运行时把上游说明与项目上下文汇总成提示词，直接用接好的模型跑，结果写回节点备注。可在上面给本节点选模型，或点选多个模型做对比。'
+        : n.type === 'gen' ? '选模型 → 写提示词 → ▶ 运行。任务在平台异步跑，卡片上会显示进度；图片直接出缩略图，视频/音乐给播放器。连了上游节点时，上游的说明会作为上下文一起发过去。'
+        : n.type === 'url' ? '运行时用指定浏览器打开这个网址。'
+        : n.type === 'group' ? '分组可以当"阶段/泳道"用：拖动分组会带走组内节点；从分组运行会按从左到右执行组内节点。'
+        : '双击标题可快速改名；拖右侧圆点连到其它节点定义顺序。') +
+    '</div>';
+
+  if (n.type === 'gen') bindGenForm(n);
+
+  if (n.type === 'url') {
+    window.fde.listBrowsers().then(r => {
+      const list = r && Array.isArray(r.list) ? r.list : [];
+      const selEl = inspector.querySelector('select[data-f="browserPath"]');
+      if (!selEl) return;
+      for (const b of list) {
+        const o = document.createElement('option');
+        o.value = b.path; o.textContent = b.name;
+        if (n.ref.browserPath === b.path) o.selected = true;
+        selEl.appendChild(o);
+      }
+    }).catch(() => {});
+  }
+}
+
+/* ================= 模型参数：每个模型的输入项都不一样 =================
+ * 平台目录只给"有哪些模型"，每个模型能传什么（图片/视频/音频）、能调什么
+ * （比例/秒数/质量/音色…）在 /v1/skills/models/<name> 里，所以选中模型后
+ * 再拉一次参数定义，按定义动态画表单 —— 不再用一个通用输入框糊过去。
+ */
+const SCHEMAS = new Map();   // 模型名 → { loading, fields, caps, defaults, note, error }
+
+function schemaState(name) { return name ? (SCHEMAS.get(name) || null) : null; }
+function schemaOf(name) { const s = schemaState(name); return s && s.fields ? s : null; }
+function pVal(v) {
+  if (Array.isArray(v)) return v.filter(x => String(x == null ? '' : x).trim()).length > 0;
+  return v !== undefined && v !== null && String(v).trim() !== '';
+}
+function pRefs(v) {
+  if (Array.isArray(v)) return v.filter(x => String(x == null ? '' : x).trim());
+  return pVal(v) ? [String(v)] : [];
+}
+function pVisible(f, vals) {
+  const when = f && f.when;
+  if (!when) return true;
+  for (const k of Object.keys(when)) {
+    const want = (Array.isArray(when[k]) ? when[k] : [when[k]]).map(String);
+    if (k === '需上传') { if (!want.some(n => pVal(vals[n]))) return false; continue; }
+    if (!want.includes(String(vals[k] === undefined || vals[k] === null ? '' : vals[k]))) return false;
+  }
+  return true;
+}
+function pSummary(fields, values, max) {
+  const v = values || {};
+  const out = [];
+  for (const f of (fields || [])) {
+    if (!pVisible(f, v)) continue;
+    const val = v[f.name];
+    if (!pVal(val)) continue;
+    if (f.widget === 'upload') out.push(f.label + ' ' + pRefs(val).length + (f.upload && f.upload.kind === 'image' ? ' 张' : ' 个'));
+    else if (f.widget === 'choice') {
+      const o = (f.options || []).find(x => String(x.value) === String(val));
+      out.push(o ? o.label : String(val));
+    } else if (f.widget === 'switch') { if (String(val) === 'true') out.push(f.label); }
+    else if (f.widget === 'number') out.push(f.label.replace(/[（(].*?[)）]/g, '') + ' ' + val + (f.unit || ''));
+    else { const s = String(val).replace(/\s+/g, ' '); out.push(f.label + ' ' + (s.length > 12 ? s.slice(0, 12) + '…' : s)); }
+  }
+  const lim = max || 4;
+  return out.length > lim ? out.slice(0, lim).join(' · ') + ' …' : out.join(' · ');
+}
+
+/** 拉这个模型的参数定义（只拉一次，30 分钟内在主进程也有缓存） */
+async function ensureSchema(name, nodeId) {
+  if (!name) return null;
+  const hit = schemaState(name);
+  if (hit && !hit.loading) return hit;
+  if (hit && hit.loading) return hit;
+  SCHEMAS.set(name, { loading: true, fields: null, caps: [], error: '' });
+  let r = null;
+  try { r = await window.fde.modelDetail(name); } catch (e) { r = { ok: false, error: e.message }; }
+  if (!r || !r.ok) {
+    SCHEMAS.set(name, { loading: false, fields: null, caps: [], error: (r && r.error) || '读不到这个模型的输入项' });
+  } else {
+    SCHEMAS.set(name, {
+      loading: false,
+      fields: r.fields || [],
+      caps: r.caps || [],
+      defaults: r.defaults || {},
+      note: r.note || '',
+      constraints: r.constraints || [],
+      error: ''
+    });
+    const m = modelByName(name);
+    if (m) { if (r.params) m.params = r.params; m.caps = r.caps || []; }
+    const n = nodeById(nodeId);
+    if (n && n.ref && n.ref.model === name) {
+      let changed = false;
+      for (const k of Object.keys(r.defaults || {})) {
+        if (!(k in (n.ref.params || {}))) {
+          n.ref.params = Object.assign({}, n.ref.params || {}, { [k]: r.defaults[k] });
+          changed = true;
+        }
+      }
+      if (changed) queueSave();
+    }
+  }
+  // 用户正在输入时不抢焦点重建
+  // 用户正在输入时不抢焦点（否则光标会跳走）：只把参数区那一块换掉
+  const ae = document.activeElement;
+  const typing = ae && inspector.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
+  const node = nodeById(nodeId);
+  const rec = SCHEMAS.get(name) || {};
+  if (typing && node && sel.size === 1 && sel.has(nodeId)) {
+    const box = inspector.querySelector('#genSchemaBox');
+    const capsEl = inspector.querySelector('#genCaps');
+    if (capsEl) capsEl.innerHTML = (rec.caps || []).map(c => '<span>' + esc(c) + '</span>').join('');
+    if (box) {
+      box.innerHTML = rec.error
+        ? '<div class="fld"><div class="tip">读不到它的输入项：' + esc(rec.error) + ' <button class="mini-btn" data-act="gen-schema-reload">重试</button></div></div>'
+        : paramsHtml(rec.fields || [], node.ref.params || {});
+      bindParamControls(node, box);
+      renderNodes();
+    }
+  } else if (!typing && node && sel.size === 1 && sel.has(nodeId)) {
+    renderInspector(); renderNodes();
+  }
+  return SCHEMAS.get(name);
+}
+
+/** 参数说明：太长就截断，鼠标悬停能看全文 */
+function pDesc(f, n) {
+  const t = String((f && f.desc) || '').replace(/\s+/g, ' ').trim();
+  if (!t) return '';
+  const lim = n || 110;
+  return t.length > lim ? t.slice(0, lim) + '…' : t;
+}
+
+function pUploadCap(f) {
+  const u = f.upload || {};
+  const bits = [];
+  bits.push(u.maxCount ? (u.multiple ? '0~' + u.maxCount + ' 个' : '1 个') : (u.multiple ? '可多个' : '1 个'));
+  if (u.formats && u.formats.length) bits.push(u.formats.slice(0, 4).join('/'));
+  if (u.maxMB) bits.push('≤' + u.maxMB + 'MB');
+  if (u.maxSeconds) bits.push('≤' + u.maxSeconds + '秒');
+  return bits.join(' · ');
+}
+
+function pFileIcon(kind) { return kind === 'image' ? '🖼' : kind === 'audio' ? '🎵' : kind === 'video' ? '🎬' : '📄'; }
+
+/** 一个上传参数：已传的素材（缩略图/文件名 + 删除）、选文件按钮、粘贴直链 */
+function pUploadHtml(f, val) {
+  const u = f.upload || {};
+  const list = pRefs(val);
+  let h = '<div class="pfld"><div class="plabel">' + esc(f.label) + (f.required ? '<span class="req">*</span>' : '') +
+    '<span class="cap">' + esc(pUploadCap(f)) + '</span></div>';
+  if (list.length) {
+    h += '<div class="prefs">' + list.map((u2, i) =>
+      '<div class="pref">' +
+      (u.kind === 'image'
+        ? '<img src="' + esc(u2) + '" loading="lazy" onerror="this.style.display=\'none\'" />'
+        : '<span class="pico">' + pFileIcon(u.kind) + '</span>') +
+      '<span class="pnm" title="' + esc(u2) + '">' + esc(pRefs(u2)[0].split('/').pop().split('?')[0].slice(0, 34) || (u.kind === 'image' ? '图片 ' + (i + 1) : '素材 ' + (i + 1))) + '</span>' +
+      '<span class="x" data-grm="' + esc(f.name) + '" data-gidx="' + i + '" title="移除">✕</span></div>').join('') + '</div>';
+  }
+  h += '<div class="prow">' +
+    '<button class="mini-btn" data-gpick="' + esc(f.name) + '">＋ ' +
+      (u.kind === 'image' ? '选图片' : u.kind === 'audio' ? '选音频' : u.kind === 'video' ? '选视频' : '选文件') + '</button>' +
+    '<input type="text" data-gurl="' + esc(f.name) + '" placeholder="' +
+      (u.kind === 'video' ? '或粘贴视频直链，回车添加' : '或粘贴公网直链，回车添加') + '" /></div>' +
+    '</div>' + (pDesc(f) ? '<div class="phint">' + esc(pDesc(f)) + '</div>' : '');
+  return h;
+}
+
+/** 普通参数：选项（≤6 用胶囊，多了用下拉）、数字、开关、长文本、短文本 */
+function pFieldHtml(f, val) {
+  const v = val === undefined || val === null ? '' : String(val);
+  const lbl = esc(f.label) + (f.required ? '<span class="req">*</span>' : '');
+  const desc = pDesc(f);
+  const hint = desc ? '<div class="phint">' + esc(desc) + '</div>' : '';
+  const warn = (f.constraints && f.constraints.length) ? '<div class="pwarn">⚠ ' + esc(f.constraints[0].slice(0, 110)) + '</div>' : '';
+  let body = '';
+  if (f.widget === 'choice') {
+    if (f.options.length && f.options.length <= 6) {
+      body = '<div class="chips">' + f.options.map(o =>
+        '<span class="chip' + (v === String(o.value) ? ' on' : '') + '" data-gparam="' + esc(f.name) + '" data-gval="' + esc(o.value) + '" title="' + esc(o.label) + '">' + esc(o.label) + '</span>').join('') + '</div>';
+    } else {
+      body = '<select data-f="gp:' + esc(f.name) + '">' + '<option value="">（平台默认）</option>' +
+        f.options.map(o => '<option value="' + esc(o.value) + '"' + (v === String(o.value) ? ' selected' : '') + '>' + esc(o.label) + '</option>').join('') + '</select>';
+    }
+  } else if (f.widget === 'switch') {
+    body = '<label class="chkrow" style="margin:0"><input type="checkbox" data-f="gp:' + esc(f.name) + '"' + (v === 'true' ? ' checked' : '') + ' /> ' + (desc ? esc(desc) : '开启') + '</label>';
+    return '<div class="pfld"><div class="plabel">' + lbl + '</div>' + body + '</div>';
+  } else if (f.widget === 'number') {
+    body = '<input type="number" data-f="gp:' + esc(f.name) + '" value="' + esc(v) + '"' +
+      (f.min !== null && f.min !== undefined ? ' min="' + f.min + '"' : '') +
+      (f.max !== null && f.max !== undefined ? ' max="' + f.max + '"' : '') +
+      ' placeholder="填数字' + (f.unit ? '（' + f.unit + '）' : '') + '" />';
+  } else if (f.widget === 'longtext') {
+    body = '<textarea data-f="gp:' + esc(f.name) + '" placeholder="可留空" style="min-height:52px">' + esc(v) + '</textarea>';
+  } else {
+    body = '<input type="text" data-f="gp:' + esc(f.name) + '" value="' + esc(v) + '" placeholder="' +
+      (/voice|音色/i.test(f.name + f.label) ? '音色 ID（可留空用默认）' : /size|尺寸/i.test(f.name) ? '如 1536x864 或 auto' : '可留空') + '" />';
+  }
+  return '<div class="pfld"><div class="plabel">' + lbl + '</div>' + body + hint + warn + '</div>';
+}
+
+/** 参数区分成两块：素材（上传）先放，其余按平台顺序；超过 6 项折进"更多设置" */
+function paramsHtml(fields, values) {
+  const list = (fields || []).filter(f => pVisible(f, values));
+  if (!list.length) return '<div class="fld"><div class="tip">这个模型没有额外输入项：写提示词就能跑。</div></div>';
+  const ups = list.filter(f => f.widget === 'upload');
+  const rest = list.filter(f => f.widget !== 'upload');
+  let h = '';
+  if (ups.length) {
+    h += '<div class="pblock"><div class="pbtl">📎 素材 <b>' + ups.length + ' 项</b></div>' +
+      ups.map(f => pUploadHtml(f, values[f.name])).join('') + '</div>';
+  }
+  const primary = [], more = [];
+  rest.forEach((f, i) => { (i < 6 || f.required ? primary : more).push(f); });
+  if (primary.length) {
+    h += '<div class="pblock"><div class="pbtl">🎛 生成设置 <b>' + primary.length + ' 项</b></div>' +
+      primary.map(f => pFieldHtml(f, values[f.name])).join('') + '</div>';
+  }
+  if (more.length) {
+    h += '<details class="pmore"><summary>更多设置（' + more.length + ' 项）</summary>' +
+      '<div class="pblock">' + more.map(f => pFieldHtml(f, values[f.name])).join('') + '</div></details>';
+  }
+  return h;
+}
+
+/** 生成节点表单：模型下拉 + 提示词 + 这个模型自己的输入框（按平台参数定义动态画） */
+function genFormHtml(n) {
+  const modal = modalOf(n);
+  const list = modelsOf(modal);
+  const cur = String((n.ref && n.ref.model) || '');
+  const m = modelByName(cur);
+  let h = '';
+  h += '<div class="fld"><label>生成类型</label><div class="chips">' +
+    ['image', 'video', 'audio'].map(k =>
+      '<span class="chip' + (modal === k ? ' on' : '') + '" data-gmodal="' + k + '">' +
+      MODAL_META[k].ic + ' ' + MODAL_META[k].name + '</span>').join('') + '</div></div>';
+
+  if (!MODELSTATE.loaded) {
+    h += '<div class="fld"><div class="tip">' + esc(MODELSTATE.error || '正在读模型目录…') +
+      (MODELSTATE.error ? ' <button class="mini-btn" data-act="gen-reload">重新读</button>' : '') + '</div></div>';
+  }
+  if (list.length) {
+    const usable = list.filter(x => x.available !== false).length;
+    h += '<div class="fld"><label>模型（' + MODAL_META[modal].name + ' · 可用 ' + usable + ' 个）</label>' +
+      '<select data-f="genmodel">' + (cur ? '' : '<option value="">（先选一个模型）</option>') +
+      list.map(x => '<option value="' + esc(x.name) + '"' + (cur === x.name ? ' selected' : '') + '>' +
+        esc(modelLabel(x)) + (x.available === false ? '（本密钥不可用）' : '') + '</option>').join('') + '</select></div>';
+  } else if (MODELSTATE.loaded) {
+    h += '<div class="fld"><div class="tip">这一类暂时没有可用模型。</div></div>';
+  }
+  if (m && m.desc) h += '<div class="tip" style="margin:-4px 0 6px">' + esc(String(m.desc).slice(0, 200)) + '</div>';
+  const st = schemaState(cur);
+  h += '<div class="pcaps" id="genCaps">' + ((st && st.caps) || []).map(c => '<span>' + esc(c) + '</span>').join('') + '</div>';
+
+  h += '<div class="fld"><label>提示词</label><textarea data-f="genprompt" placeholder="' +
+    (modal === 'image' ? '主体 + 场景 + 风格 + 光线' : modal === 'video' ? '描述画面、动作、镜头和氛围' : '音乐：风格/情绪/乐器；语音：要朗读的文本') +
+    '">' + esc((n.ref && n.ref.prompt) || '') + '</textarea></div>';
+
+  h += '<div id="genSchemaBox">';
+  if (!cur) {
+    h += '<div class="fld"><div class="tip">先选一个模型：每个模型能填的东西不一样（能不能传参考图/视频/音频，有没有比例、秒数、质量、音色）。</div></div>';
+  } else if (!st || st.loading) {
+    h += '<div class="fld"><div class="tip">正在读「' + esc(modelLabel(m) || cur) + '」的输入项…</div></div>';
+    if (!st) ensureSchema(cur, n.id);
+  } else if (st.error) {
+    h += '<div class="fld"><div class="tip">读不到它的输入项：' + esc(st.error) +
+      ' <button class="mini-btn" data-act="gen-schema-reload">重试</button></div>' +
+      '<div class="tip">也可以只写提示词直接跑，平台会用这个模型自己的默认参数。</div></div>';
+  } else {
+    h += paramsHtml(st.fields, (n.ref && n.ref.params) || {});
+    if (st.note) h += '<div class="fld"><div class="phint">' + esc(String(st.note).slice(0, 400)) + '</div></div>';
+  }
+  h += '</div>';
+
+  const urls = (n.ref && n.ref.urls) || [];
+  if (n.ref && (n.ref.status || n.ref.error || urls.length)) {
+    h += '<div class="fld"><label>运行状态</label><div class="tip">' +
+      esc(n.ref.status || '') + (n.ref.progress ? ' · ' + n.ref.progress + '%' : '') +
+      (n.ref.cost ? ' · ' + fmtCost(n.ref.cost) : '') +
+      (n.ref.taskId ? ' · 任务 ' + n.ref.taskId : '') + '</div>';
+    if (urls.length) {
+      const kind = n.ref.resultKind || modal;
+      if (kind === 'image') h += '<div class="gthumb">' + urls.slice(0, 4).map(u => '<img src="' + esc(u) + '" />').join('') + '</div>';
+      else if (kind === 'video') h += '<video class="gvideo" src="' + esc(urls[0]) + '" controls preload="metadata"></video>';
+      else h += '<audio class="gaudio" src="' + esc(urls[0]) + '" controls preload="metadata"></audio>';
+      h += '<div class="chips">' + urls.slice(0, 4).map((u, i) =>
+        '<span class="chip" data-gopen="' + esc(u) + '">打开结果 ' + (i + 1) + '</span>').join('') + '</div>';
+    }
+    if (n.ref.error) h += '<div class="gerr">' + esc(String(n.ref.error).slice(0, 160)) + '</div>';
+    h += '</div>';
+  }
+  return h;
+}
+
+/** 生成节点表单的交互（切换类型/模型/参数/打开结果） */
+function bindGenForm(n) {
+  const pick = (modal) => {
+    n.ref.modal = modal;
+    const m = pickModel(modal);
+    n.ref.model = m ? m.name : '';
+    n.ref.params = m ? defaultParams(m) : {};
+    n.ref.status = ''; n.ref.progress = 0; n.ref.urls = []; n.ref.error = ''; n.ref.taskId = 0;
+    if (m) n.title = m.displayName;
+    renderAll(); renderInspector(); queueSave(); pushHistory();
+  };
+  inspector.querySelectorAll('[data-gmodal]').forEach(el => {
+    el.onclick = () => { if (el.dataset.gmodal !== modalOf(n)) pick(el.dataset.gmodal); };
+  });
+  const modelSel = inspector.querySelector('select[data-f="genmodel"]');
+  if (modelSel) modelSel.onchange = () => {
+    const m = modelByName(modelSel.value);
+    n.ref.model = modelSel.value;
+    n.ref.params = m ? defaultParams(m) : {};
+    n.ref.status = ''; n.ref.progress = 0; n.ref.urls = []; n.ref.error = ''; n.ref.taskId = 0;
+    if (m) n.title = m.displayName;
+    renderAll(); renderInspector(); queueSave(); pushHistory();
+  };
+  const ta = inspector.querySelector('[data-f="genprompt"]');
+  if (ta) ta.oninput = () => { n.ref.prompt = ta.value; queueSave(); };
+
+  bindParamControls(n, inspector);
+
+  inspector.querySelectorAll('[data-gopen]').forEach(el => {
+    el.onclick = () => window.fde.openExternalUrl(el.dataset.gopen);
+  });
+  const rl = inspector.querySelector('[data-act="gen-reload"]');
+  if (rl) rl.onclick = async () => { await loadCatalog(true); renderInspector(); };
+}
+
+/** 参数区的交互：选项、数字、开关、上传、移除、粘贴直链、重试 */
+function bindParamControls(n, root) {
+  const scope = root || inspector;
+  const fields = ((schemaOf(n.ref && n.ref.model) || {}).fields) || [];
+  const fieldByName = (nm) => fields.find(f => f.name === nm) || null;
+  /** 切换模式后，把"当前不可见"的旧值删掉，别把首尾帧参数混进参考生请求里 */
+  const prune = () => {
+    if (!fields.length) return;
+    const cur = n.ref.params || {};
+    const keep = {};
+    for (const f of fields) if (pVisible(f, cur) && cur[f.name] !== undefined) keep[f.name] = cur[f.name];
+    n.ref.params = keep;
+  };
+  /** 胶囊点下去立刻高亮自己（不等下一次整体重绘，那要等 2.5 秒轮询） */
+  const flashChip = (el) => {
+    const wrap = el && el.closest ? el.closest('.chips') : null;
+    if (wrap) wrap.querySelectorAll('.chip[data-gparam]').forEach(c => c.classList.toggle('on', c === el));
+  };
+  const afterSet = (name, el) => {
+    flashChip(el);
+    const trigger = fields.some(f => f.when && Object.keys(f.when).includes(name));
+    if (trigger) { prune(); renderInspector(); }
+    renderNodesSoon(); queueSave(); pushHistory();
+  };
+
+  scope.querySelectorAll('[data-gparam]').forEach(el => {
+    el.onclick = () => {
+      n.ref.params = Object.assign({}, n.ref.params || {}, { [el.dataset.gparam]: el.dataset.gval });
+      afterSet(el.dataset.gparam, el);
+    };
+  });
+  scope.querySelectorAll('[data-f^="gp:"]').forEach(el => {
+    const name = el.dataset.f.slice(3);
+    const set = (hist) => {
+      const v = el.type === 'checkbox' ? String(!!el.checked) : el.value;
+      n.ref.params = Object.assign({}, n.ref.params || {}, { [name]: v });
+      const trigger = fields.some(f => f.when && Object.keys(f.when).includes(name));
+      if (trigger) { prune(); renderInspector(); }
+      renderNodesSoon(); queueSave();
+      if (hist) pushHistory();
+    };
+    el.onchange = () => set(true);
+    el.oninput = () => { if (el.tagName !== 'SELECT') set(false); };
+  });
+
+  // 选本地文件 → 主进程上传到平台换直链 → 填进对应参数
+  scope.querySelectorAll('[data-gpick]').forEach(el => {
+    el.onclick = async () => {
+      const name = el.dataset.gpick;
+      const f = fieldByName(name);
+      if (!f || !f.upload) return;
+      const old = el.textContent;
+      el.disabled = true;
+      el.textContent = '上传中…';
+      let r = null;
+      try { r = await window.fde.mediaPick({ kind: f.upload.kind, exts: f.upload.formats }); } catch (e) { r = { ok: false, error: e.message }; }
+      if (!r || r.canceled) { el.disabled = false; el.textContent = old; return; }
+      if (!r.ok) {
+        toast('上传失败：' + ((r && r.error) || '未知原因'), true);
+        el.disabled = false; el.textContent = old;
+        return;
+      }
+      const urls = (r.files || []).map(x => x.url).filter(Boolean);
+      const cur = pRefs((n.ref.params || {})[name]);
+      let next = f.upload.multiple ? cur.concat(urls) : urls.slice(-1);
+      if (f.upload.multiple && f.upload.maxCount && next.length > f.upload.maxCount) {
+        next = next.slice(0, f.upload.maxCount);
+        toast('「' + f.label + '」最多 ' + f.upload.maxCount + ' 个，多的没加进去', true);
+      }
+      n.ref.params = Object.assign({}, n.ref.params || {}, { [name]: f.upload.multiple ? next : next[0] });
+      if (r.failed && r.failed.length) toast('有 ' + r.failed.length + ' 个没传上：' + r.failed[0].error, true);
+      else toast('已上传 ' + urls.length + ' 个 · 可以直接运行', false);
+      renderInspector(); renderNodes(); queueSave(); pushHistory();
+    };
+  });
+
+  scope.querySelectorAll('[data-grm]').forEach(el => {
+    el.onclick = () => {
+      const name = el.dataset.grm;
+      const idx = Number(el.dataset.gidx) || 0;
+      const f = fieldByName(name);
+      const arr = pRefs((n.ref.params || {})[name]);
+      arr.splice(idx, 1);
+      const next = Object.assign({}, n.ref.params || {});
+      if (!arr.length) delete next[name];
+      else next[name] = f && f.upload && f.upload.multiple ? arr : arr[0];
+      n.ref.params = next;
+      renderInspector(); renderNodes(); queueSave(); pushHistory();
+    };
+  });
+
+  scope.querySelectorAll('[data-gurl]').forEach(el => {
+    const name = el.dataset.gurl;
+    const add = () => {
+      const v = String(el.value || '').trim();
+      if (!v) return;
+      if (!/^(https?:\/\/|data:)/i.test(v)) { toast('要填 http(s) 直链（本机文件请点左边按钮上传）', true); return; }
+      const f = fieldByName(name);
+      const cur = pRefs((n.ref.params || {})[name]);
+      let next = f && f.upload && f.upload.multiple ? cur.concat([v]) : [v];
+      if (f && f.upload && f.upload.multiple && f.upload.maxCount && next.length > f.upload.maxCount) {
+        next = next.slice(0, f.upload.maxCount);
+      }
+      n.ref.params = Object.assign({}, n.ref.params || {}, { [name]: f && f.upload && f.upload.multiple ? next : next[0] });
+      el.value = '';
+      renderInspector(); renderNodes(); queueSave(); pushHistory();
+    };
+    el.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
+  });
+
+  const sr = scope.querySelector('[data-act="gen-schema-reload"]');
+  if (sr) sr.onclick = async () => {
+    const name = n.ref && n.ref.model;
+    if (!name) return;
+    SCHEMAS.delete(name);
+    renderInspector();
+    await ensureSchema(name, n.id);
+  };
+}
+
+/** 手动查一次生成结果（视频/音乐要几分钟，先干别的，回来点这里就行） */
+async function refreshGenNode(n) {
+  const id = n.ref && n.ref.taskId;
+  if (!id) { toast('这个节点还没提交过任务', true); return; }
+  let r = null;
+  try { r = await window.fde.mediaStatus(id); } catch (e) { r = { ok: false, error: e.message }; }
+  if (!r || !r.ok) { toast('查不到：' + ((r && r.error) || '网络问题'), true); return; }
+  const st = r.status || {};
+  n.ref.status = st.failed ? '失败' : (st.ok ? '完成' : (st.statusText || '进行中'));
+  n.ref.progress = st.ok ? 100 : (st.progress || 0);
+  if (st.urls && st.urls.length) n.ref.urls = st.urls;
+  n.ref.error = st.error || '';
+  n.ref.cost = st.cost || n.ref.cost || 0;
+  if (st.ok) n.ref.resultKind = n.ref.resultKind || modalOf(n);
+  renderNodes(); renderInspector(); queueSave();
+  toast(st.ok ? '结果已更新' : ('状态：' + n.ref.status + (st.progress ? ' ' + st.progress + '%' : '')));
+}
+
+function renderEdgeInspector() {
+  const e = C.edges.find(x => x.id === selEdge);
+  if (!e) { inspector.classList.remove('on'); return; }
+  inspector.classList.add('on');
+  const a = nodeById(e.from), b = nodeById(e.to);
+  const pa = a && projectOf(a), pb = b && projectOf(b);
+  const cross = !!(pa && pb && pa.id !== pb.id);
+  inspector.innerHTML =
+    '<h4>🔗 连线<span class="x" data-act="close-insp">✕</span></h4>' +
+    '<div class="fld"><label>从 → 到</label><div class="tip">' +
+      esc((a && a.title) || '?') + ' → ' + esc((b && b.title) || '?') +
+      (cross ? '<br><span style="color:#c084fc">跨项目交接：' + esc(pa.name) + ' → ' + esc(pb.name) + '</span>' : '') +
+    '</div></div>' +
+    '<div class="fld"><label>标签（显示在连线上）</label><input type="text" data-ef="label" value="' + esc(e.label) + '" placeholder="如：交付物 / 依赖 / 数据" /></div>' +
+    '<div class="fld"><label>类型</label><select data-ef="kind">' +
+      '<option value="flow"' + (e.kind === 'flow' ? ' selected' : '') + '>顺序（参与流程执行）</option>' +
+      '<option value="handoff"' + (e.kind === 'handoff' ? ' selected' : '') + '>项目间交接（参与执行）</option>' +
+      '<option value="ref"' + (e.kind === 'ref' ? ' selected' : '') + '>仅参考（不参与执行）</option>' +
+    '</select></div>' +
+    '<label class="chkrow"><input type="checkbox" data-ef="dashed"' + (e.dashed ? ' checked' : '') + ' /> 虚线显示</label>' +
+    (cross ?
+      '<div class="fld"><label>交接消息 · ' + esc(pa.name) + ' → ' + esc(pb.name) + '</label>' +
+        '<textarea id="handoffText" placeholder="要交接什么：数据在哪、下一步做什么（直接进对方项目的「消息」）"></textarea>' +
+        '<div class="acts"><button class="go" data-act="send-handoff">📨 发送到「' + esc(pb.name) + '」</button></div>' +
+      '</div>' : '') +
+    '<div class="acts"><button class="del" data-act="del-edge">删除连线</button></div>' +
+    '<div class="sep"></div>' +
+    '<div class="tip">反向连线（回到上游）会让流程成环，运行时会跳过已执行的节点。</div>';
+}
+
+function renderMultiInspector() {
+  inspector.classList.add('on');
+  inspector.innerHTML =
+    '<h4>▦ 已选 ' + sel.size + ' 个节点<span class="x" data-act="close-insp">✕</span></h4>' +
+    '<div class="fld"><label>对齐</label><div class="alignbar">' +
+      '<button data-al="left">左对齐</button><button data-al="cx">水平居中</button><button data-al="right">右对齐</button>' +
+      '<button data-al="top">顶对齐</button><button data-al="cy">垂直居中</button><button data-al="bottom">底对齐</button>' +
+      '<button data-al="dist-x">水平等距</button><button data-al="dist-y">垂直等距</button><button data-al="pack">紧凑排列</button>' +
+    '</div></div>' +
+    '<div class="fld"><label>批量颜色</label>' + swatches('', '#4f8cff') + '</div>' +
+    '<div class="fld"><label>批量操作</label><div class="acts">' +
+      '<button class="gray" data-act="group-sel">成组</button>' +
+      '<button class="gray" data-act="dup-sel">克隆</button>' +
+      '<button class="del" data-act="del-sel">删除</button>' +
+    '</div></div>' +
+    '<div class="sep"></div><div class="tip">拖动任一选中节点会带动全部；Ctrl+C / V 复制粘贴。</div>';
+}
+
+/* 检查器事件 */
+inspector.addEventListener('input', (e) => {
+  const f = e.target.dataset.f;
+  const ef = e.target.dataset.ef;
+  if (ef) {
+    const e2 = C.edges.find(x => x.id === selEdge);
+    if (!e2) return;
+    if (ef === 'label') e2.label = e.target.value;
+    if (ef === 'kind') e2.kind = e.target.value;
+    if (ef === 'dashed') e2.dashed = e.target.checked;
+    renderEdges(); queueSave(); pushHistory();
+    return;
+  }
+  if (!f) return;
+  const n = nodeById(Array.from(sel)[0]);
+  if (!n) return;
+  if (f === 'title') n.title = e.target.value;
+  else if (f === 'note') n.note = e.target.value;
+  else if (f === 'tags') n.tags = e.target.value.split(/[,，]/).map(s => s.trim()).filter(Boolean).slice(0, 8);
+  else if (f === 'w') n.w = Math.max(140, Math.min(900, parseInt(e.target.value, 10) || 240));
+  else if (f === 'h') n.h = Math.max(120, Math.min(1400, parseInt(e.target.value, 10) || 300));
+  else if (f === 'collapsed') n.collapsed = e.target.checked;
+  else if (f === 'locked') n.locked = e.target.checked;
+  else   if (f === 'continueOnError') n.ref.continueOnError = e.target.checked;
+  else if (f === 'autoRun') n.ref.autoRun = e.target.checked;
+  else if (f === 'model') { n.model = e.target.value; n.models = []; }
+  else if (f === 'projectId') n.ref.projectId = e.target.value;
+  else n.ref[f] = e.target.value;
+
+  // 局部更新（避免输入时失焦）
+  const el = nodesBox.querySelector('[data-id="' + n.id + '"]');
+  if (el) {
+    if (f === 'title') { const ttl = el.querySelector('.nttl'); if (ttl) ttl.textContent = n.title; }
+    if (f === 'w') el.style.width = n.w + 'px';
+    if (f === 'h' && n.type === 'group') el.style.height = n.h + 'px';
+    if (f === 'collapsed') el.classList.toggle('off', n.collapsed);
+    if (f === 'locked') el.classList.toggle('locked', n.locked);
+    if (f === 'note') {
+      const nt = el.querySelector('.nnote');
+      if (nt) { nt.textContent = n.note ? n.note.slice(0, 260) : '（无说明）'; nt.classList.toggle('dim', !n.note); }
+    }
+    const meta = el.querySelector('.nmeta');
+    if (meta) meta.textContent = nodeMeta(n);
+  }
+  if (f === 'note' || f === 'title') { renderEdges(); }
+  queueSave();
+  clearTimeout(inspector._hist);
+  inspector._hist = setTimeout(() => pushHistory(), 700);
+});
+inspector.addEventListener('change', (e) => {
+  const ef = e.target.dataset.ef;
+  if (ef === 'kind') {
+    const e2 = C.edges.find(x => x.id === selEdge);
+    if (e2) { e2.kind = e.target.value; renderEdges(); queueSave(); pushHistory(); }
+    return;
+  }
+  if (e.target.dataset.f === 'projectId') { renderNodes(); renderInspector(); pushHistory(); }
+});
+inspector.addEventListener('click', async (e) => {
+  const mm = e.target.closest('[data-mm]');
+  if (mm) {
+    const n = nodeById(Array.from(sel)[0]);
+    if (n) {
+      const list = Array.isArray(n.models) ? n.models.slice() : [];
+      const id = mm.dataset.mm;
+      const i = list.indexOf(id);
+      if (i >= 0) list.splice(i, 1); else if (list.length < 6) list.push(id);
+      n.models = list;
+      n.model = ''; // 单选与多选互斥
+      renderInspector();
+      const el = nodesBox.querySelector('[data-id="' + n.id + '"]');
+      if (el) { const meta = el.querySelector('.nmeta'); if (meta) meta.textContent = nodeMeta(n); }
+      queueSave(); pushHistory();
+    }
+    return;
+  }
+  const chip = e.target.closest('.chip');
+  if (chip && chip.dataset.win !== undefined) {
+    const n = nodeById(Array.from(sel)[0]);
+    if (n) { n.ref.match = chip.dataset.win; renderInspector(); renderNodes(); queueSave(); pushHistory(); }
+    return;
+  }
+  const sw = e.target.closest('[data-color]');
+  if (sw) {
+    const c = sw.dataset.color;
+    if (sel.size > 1) { sel.forEach(id => { const n = nodeById(id); if (n) n.color = c; }); }
+    else { const n = nodeById(Array.from(sel)[0]); if (n) n.color = c; }
+    renderNodes(); renderInspector(); queueSave(); pushHistory();
+    return;
+  }
+  const al = e.target.closest('[data-al]');
+  if (al) { alignSelected(al.dataset.al); return; }
+  const act = e.target.closest('[data-act]');
+  if (!act) return;
+  const a = act.dataset.act;
+  if (a === 'close-insp') { selectOnly(null); return; }
+  if (a === 'send-handoff') { sendHandoff(); return; }
+  if (a === 'del-edge') { deleteEdge(selEdge); return; }
+  if (a === 'del-sel') { deleteNodes(Array.from(sel)); return; }
+  if (a === 'dup-sel') { cloneSelected(); return; }
+  if (a === 'group-sel') { groupSelection(); return; }
+  const n = nodeById(Array.from(sel)[0]);
+  if (!n) return;
+  if (a === 'del') { deleteNodes([n.id]); return; }
+  if (a === 'run') { runOne(n.id); return; }
+  if (a === 'run-from') { $('#runSelBtn').onclick(); return; }
+  if (a === 'prompt') { genPrompt(n.id); return; }
+  if (a === 'gen-refresh') { refreshGenNode(n); return; }
+  if (a === 'open-proj') { openPanelFor(n); return; }
+  if (a.startsWith('pick-')) {
+    const kind = a.replace('pick-', '');
+    const r = await window.fde.canvasPick(kind === 'folder' ? 'folder' : 'file');
+    if (r && r.ok) {
+      n.ref.path = r.path;
+      if (!n.title || n.title === TYPES[n.type].name) n.title = r.path.split(/[\\/]/).pop();
+      renderInspector(); renderNodes(); queueSave(); pushHistory();
+    }
+  }
+});
+
+/* ---- 增删改 ---- */
+function addNode(type, at, opts) {
+  const r = stageRect();
+  const c = at || screenToWorld(r.left + r.width / 2, r.top + r.height / 2);
+  const cur = live.projects.find(p => p.id === live.activeId) || live.projects[0] || null;
+  const n = {
+    id: uid('n'), type, title: '', note: '', x: Math.round(c.x), y: Math.round(c.y),
+    w: type === 'group' ? 420 : 240, h: type === 'group' ? 320 : 0,
+    color: '', ref: {}, collapsed: false, locked: false, tags: [], z: 0
+  };
+  const t = TYPES[type] || TYPES.note;
+  n.title = t.name;
+  if (['project', 'window', 'script'].includes(type) && cur) {
+    n.ref.projectId = cur.id;
+    if (type === 'project') n.title = cur.name;
+  }
+  if (type === 'url') { n.ref.url = ''; n.title = '新网页'; }
+  if (type === 'file' || type === 'folder') { n.ref.path = ''; }
+  if (type === 'note') { n.title = '笔记'; n.note = ''; }
+  if (type === 'ai') { n.title = 'AI 上下文'; n.note = '请基于以上上下文，输出…'; }
+  if (type === 'group') { n.title = '新分组'; }
+  if (opts) Object.assign(n, opts);
+  if (type === 'gen') {
+    // 生成节点：按模态定图标，默认挑一个便宜好用的模型，参数先填必填项
+    const modal = (n.ref && MODAL_META[n.ref.modal]) ? n.ref.modal : 'image';
+    // 从「应用功能 → 模型库 → 加到画布」过来时，直接用用户点的那个模型
+    let wanted = '';
+    try { wanted = localStorage.getItem('fde.ml.pick') || ''; } catch (e) {}
+    const hit = wanted ? modelsOf(modal).find(x => x.name === wanted) : null;
+    const m = hit || pickModel(modal);
+    if (hit) { try { localStorage.removeItem('fde.ml.pick'); } catch (e) {} }
+    n.ref = {
+      modal,
+      model: m ? m.name : '',
+      prompt: '',
+      params: m ? defaultParams(m) : {},
+      status: '', progress: 0, urls: [], error: '', taskId: 0
+    };
+    n.title = m ? m.displayName : MODAL_META[modal].name;
+    n.note = '';
+  }
+  C.nodes.push(n);
+  sel.clear(); sel.add(n.id); selEdge = null;
+  renderAll(); renderInspector(); queueSave(); pushHistory();
+  if (type !== 'group') {
+    setTimeout(() => {
+      const inp = inspector.querySelector('input[data-f="title"]');
+      if (inp) { inp.focus(); inp.select(); }
+    }, 30);
+  }
+  return n;
+}
+
+function deleteNodes(ids) {
+  if (!ids.length) return;
+  const set = new Set(ids);
+  C.nodes = C.nodes.filter(n => !set.has(n.id));
+  C.edges = C.edges.filter(e => !set.has(e.from) && !set.has(e.to));
+  sel.clear(); selEdge = null;
+  renderAll(); renderInspector(); queueSave(); pushHistory();
+}
+function deleteEdge(id) {
+  if (!id) return;
+  C.edges = C.edges.filter(e => e.id !== id);
+  selEdge = null;
+  renderEdges(); renderInspector(); queueSave(); pushHistory();
+}
+
+// 分组内成员（与主进程同规则：节点中心点落在组框内）
+function groupMembers(g) {
+  return C.nodes.filter(n => {
+    if (n.id === g.id || n.type === 'group') return false;
+    const cx = n.x + (n.w || 240) / 2;
+    const cy = n.y + 40;
+    return cx >= g.x && cx <= g.x + (g.w || 420) && cy >= g.y && cy <= g.y + (g.h || 300);
+  });
+}
+
+function cloneSelected() {
+  const list = Array.from(sel).map(nodeById).filter(Boolean);
+  if (!list.length) return;
+  const map = new Map();
+  const addIdx = C.nodes.length;
+  for (const n of list) {
+    const copy = JSON.parse(JSON.stringify(n));
+    copy.id = uid('n');
+    copy.x += 28; copy.y += 28;
+    copy.z = addIdx;
+    map.set(n.id, copy.id);
+    C.nodes.push(copy);
+  }
+  for (const e of C.edges) {
+    if (map.has(e.from) && map.has(e.to)) {
+      C.edges.push({ id: uid('e'), from: map.get(e.from), to: map.get(e.to), label: e.label, kind: e.kind, dashed: e.dashed });
+    }
+  }
+  sel = new Set(map.values());
+  selEdge = null;
+  renderAll(); renderInspector(); queueSave(); pushHistory();
+  toast('已克隆 ' + list.length + ' 个节点');
+}
+
+function copySelected() {
+  const list = Array.from(sel).map(nodeById).filter(Boolean);
+  if (!list.length) return;
+  const ids = new Set(list.map(n => n.id));
+  clip = {
+    nodes: JSON.parse(JSON.stringify(list)),
+    edges: C.edges.filter(e => ids.has(e.from) && ids.has(e.to)).map(e => JSON.parse(JSON.stringify(e)))
+  };
+  toast('已复制 ' + list.length + ' 个节点');
+}
+function pasteClip(at) {
+  if (!clip || !clip.nodes.length) { toast('剪贴板为空', true); return; }
+  const map = new Map();
+  let minX = Infinity, minY = Infinity;
+  for (const n of clip.nodes) { minX = Math.min(minX, n.x); minY = Math.min(minY, n.y); }
+  const base = at || { x: minX + 36, y: minY + 36 };
+  for (const n of clip.nodes) {
+    const copy = JSON.parse(JSON.stringify(n));
+    copy.id = uid('n');
+    copy.x = base.x + (n.x - minX);
+    copy.y = base.y + (n.y - minY);
+    map.set(n.id, copy.id);
+    C.nodes.push(copy);
+  }
+  for (const e of clip.edges) {
+    if (!map.has(e.from) || !map.has(e.to)) continue;
+    C.edges.push({ id: uid('e'), from: map.get(e.from), to: map.get(e.to), label: e.label, kind: e.kind, dashed: e.dashed });
+  }
+  sel = new Set(map.values());
+  selEdge = null;
+  renderAll(); renderInspector(); queueSave(); pushHistory();
+  toast('已粘贴 ' + clip.nodes.length + ' 个节点');
+}
+
+function groupSelection() {
+  const list = Array.from(sel).map(nodeById).filter(Boolean);
+  if (list.length < 1) return;
+  let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+  for (const n of list) {
+    const g = geom(n);
+    l = Math.min(l, g.x); t = Math.min(t, g.y);
+    r = Math.max(r, g.x + g.w); b = Math.max(b, g.y + g.h);
+  }
+  const pad = 26;
+  const g = {
+    id: uid('n'), type: 'group', title: '新分组', note: '',
+    x: Math.round(l - pad), y: Math.round(t - pad - 24),
+    w: Math.round(r - l + pad * 2), h: Math.round(b - t + pad * 2 + 24),
+    color: '', ref: {}, collapsed: false, locked: false, tags: [], z: 0
+  };
+  C.nodes.unshift(g);
+  sel = new Set([g.id]);
+  renderAll(); renderInspector(); queueSave(); pushHistory();
+  toast('已把 ' + list.length + ' 个节点放入分组');
+}
+
+/* ---- 对齐 ---- */
+function alignSelected(mode) {
+  const list = Array.from(sel).map(nodeById).filter(Boolean);
+  if (list.length < 2) return;
+  const gs = list.map(n => ({ n, g: geom(n) }));
+  const L = Math.min(...gs.map(x => x.g.x));
+  const R = Math.max(...gs.map(x => x.g.x + x.g.w));
+  const T = Math.min(...gs.map(x => x.g.y));
+  const B = Math.max(...gs.map(x => x.g.y + x.g.h));
+  if (mode === 'left') gs.forEach(x => x.n.x = L);
+  if (mode === 'right') gs.forEach(x => x.n.x = R - x.g.w);
+  if (mode === 'cx') { const c = (L + R) / 2; gs.forEach(x => x.n.x = Math.round(c - x.g.w / 2)); }
+  if (mode === 'top') gs.forEach(x => x.n.y = T);
+  if (mode === 'bottom') gs.forEach(x => x.n.y = B - x.g.h);
+  if (mode === 'cy') { const c = (T + B) / 2; gs.forEach(x => x.n.y = Math.round(c - x.g.h / 2)); }
+  if (mode === 'dist-x') {
+    const sorted = gs.slice().sort((a, b) => a.g.x - b.g.x);
+    const total = sorted.reduce((s, x) => s + x.g.w, 0);
+    const gap = (R - L - total) / Math.max(1, sorted.length - 1);
+    let cur = L;
+    for (const x of sorted) { x.n.x = Math.round(cur); cur += x.g.w + gap; }
+  }
+  if (mode === 'dist-y') {
+    const sorted = gs.slice().sort((a, b) => a.g.y - b.g.y);
+    const total = sorted.reduce((s, x) => s + x.g.h, 0);
+    const gap = (B - T - total) / Math.max(1, sorted.length - 1);
+    let cur = T;
+    for (const x of sorted) { x.n.y = Math.round(cur); cur += x.g.h + gap; }
+  }
+  if (mode === 'pack') {
+    const cols = Math.ceil(Math.sqrt(list.length));
+    gs.forEach((x, i) => {
+      x.n.x = Math.round(L + (i % cols) * 280);
+      x.n.y = Math.round(T + Math.floor(i / cols) * 200);
+    });
+  }
+  renderAll(); queueSave(); pushHistory();
+}
+
+/* ================= 画布交互 ================= */
+let drag = null;
+let spaceDown = false;
+let panMode = false;
+let rafPending = false;
+
+function hideGuides() { guideLayer.innerHTML = ''; }
+
+// 吸附：网格 + 与其它节点/组的对齐线
+function snapMove(moving, others, snapGrid) {
+  let dx = 0, dy = 0, gx = null, gy = null;
+  const TH = 6 / C.view.z;
+  // 智能对齐（左中右 / 上中下）
+  let bestX = TH + 1, bestY = TH + 1;
+  for (const o of others) {
+    const og = geom(o);
+    const candidatesX = [
+      { a: moving.x, b: og.x },
+      { a: moving.x + moving.w / 2, b: og.x + og.w / 2 },
+      { a: moving.x + moving.w, b: og.x + og.w }
+    ];
+    for (const c of candidatesX) {
+      const d = c.b - c.a;
+      if (Math.abs(d) < Math.abs(bestX)) { bestX = d; gx = { at: c.b, o: og }; }
+    }
+    const candidatesY = [
+      { a: moving.y, b: og.y },
+      { a: moving.y + moving.h / 2, b: og.y + og.h / 2 },
+      { a: moving.y + moving.h, b: og.y + og.h }
+    ];
+    for (const c of candidatesY) {
+      const d = c.b - c.a;
+      if (Math.abs(d) < Math.abs(bestY)) { bestY = d; gy = { at: c.b, o: og }; }
+    }
+  }
+  if (Math.abs(bestX) <= TH) dx = bestX;
+  if (Math.abs(bestY) <= TH) dy = bestY;
+
+  let nx = Math.round((moving.x + dx) / 8) * 8;
+  let ny = Math.round((moving.y + dy) / 8) * 8;
+  if (snapGrid === false) { nx = Math.round(moving.x + (Math.abs(bestX) <= TH ? dx : 0)); ny = Math.round(moving.y); }
+
+  // 辅助线
+  let g = '';
+  if (gx && Math.abs(bestX) <= TH) {
+    const top = Math.min(moving.y, gx.o.y) - 40;
+    const bot = Math.max(moving.y + moving.h, gx.o.y + gx.o.h) + 40;
+    g += '<line x1="' + gx.at + '" y1="' + top + '" x2="' + gx.at + '" y2="' + bot + '" stroke="#4f8cff" stroke-width="1" stroke-dasharray="3 3" opacity=".8"/>';
+  }
+  if (gy && Math.abs(bestY) <= TH) {
+    const left = Math.min(moving.x, gy.o.x) - 40;
+    const right = Math.max(moving.x + moving.w, gy.o.x + gy.o.w) + 40;
+    g += '<line x1="' + left + '" y1="' + gy.at + '" x2="' + right + '" y2="' + gy.at + '" stroke="#4f8cff" stroke-width="1" stroke-dasharray="3 3" opacity=".8"/>';
+  }
+  guideLayer.innerHTML = g;
+  return { x: nx, y: ny, snapped: !!(g) };
+}
+
+stage.addEventListener('pointerdown', (e) => {
+  if (e.button === 2) return;
+  hideMenu();
+  // 节点上的按钮 / 输入框：不要抢指针。否则 setPointerCapture 会把指针事件重定向到画布，
+  // 按钮和输入框会时不时"点了没反应"。按钮所在的节点仍然跟随选中，行为与以前一致。
+  if (e.target.closest('button, input, textarea, select, a, [data-no-drag]')) {
+    const owner = e.target.closest('.node');
+    if (owner && !sel.has(owner.dataset.id)) selectOnly(owner.dataset.id);
+    return;
+  }
+  const port = e.target.closest('.port');
+  const nodeEl = e.target.closest('.node');
+
+  // 连线
+  if (port && port.dataset.port === 'out' && nodeEl) {
+    e.preventDefault();
+    const from = nodeEl.dataset.id;
+    const g = geom(nodeById(from));
+    const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    tmp.setAttribute('fill', 'none');
+    tmp.setAttribute('stroke', '#4f8cff');
+    tmp.setAttribute('stroke-width', '2');
+    tmp.setAttribute('stroke-dasharray', '5 4');
+    edgeLayer.appendChild(tmp);
+    drag = { mode: 'link', from, tmp, sx: g.x + g.w, sy: g.y + g.h / 2 };
+    stage.classList.add('linking');
+    stage.setPointerCapture(e.pointerId);
+    return;
+  }
+
+  // 平移（中键 / 空格 / 手型模式 / Alt）
+  if (e.button === 1 || spaceDown || panMode || (e.altKey && !nodeEl)) {
+    drag = { mode: 'pan', sx: e.clientX, sy: e.clientY, ox: C.view.x, oy: C.view.y, moved: false };
+    stage.classList.add('panning');
+    stage.setPointerCapture(e.pointerId);
+    return;
+  }
+
+  if (nodeEl) {
+    const id = nodeEl.dataset.id;
+    const n = nodeById(id);
+    if (e.shiftKey) {
+      if (sel.has(id)) sel.delete(id); else sel.add(id);
+      selEdge = null;
+      refreshSelUI();
+    } else if (!sel.has(id)) {
+      selectOnly(id);
+    }
+    if (n && n.locked) { drag = null; return; }
+    const start = screenToWorld(e.clientX, e.clientY);
+    const picks = Array.from(sel).map(sid => {
+      const sn = nodeById(sid);
+      if (!sn) return null;
+      // 拖动分组时连带组内节点
+      if (sn.type === 'group' && !e.shiftKey) {
+        const mem = groupMembers(sn).map(m => ({ id: m.id, ox: m.x, oy: m.y, locked: m.locked }));
+        return [{ id: sn.id, ox: sn.x, oy: sn.y, locked: sn.locked }].concat(mem).filter(x => !x.locked);
+      }
+      return [{ id: sn.id, ox: sn.x, oy: sn.y, locked: false }];
+    }).filter(Boolean).flat();
+    // 去重（分组与成员可能重复）
+    const seen = new Set();
+    const uniq = [];
+    for (const p of picks) { if (seen.has(p.id)) continue; seen.add(p.id); uniq.push(p); }
+    drag = { mode: 'node', start, picks: uniq, moved: false };
+    stage.setPointerCapture(e.pointerId);
+    return;
+  }
+
+  // 空白：框选
+  const start = screenToWorld(e.clientX, e.clientY);
+  drag = { mode: 'marquee', start, add: e.shiftKey, base: new Set(sel) };
+  stage.setPointerCapture(e.pointerId);
+});
+
+stage.addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  if (drag.mode === 'pan') {
+    C.view.x = drag.ox + (e.clientX - drag.sx);
+    C.view.y = drag.oy + (e.clientY - drag.sy);
+    if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) > 3) drag.moved = true;
+    if (!rafPending) { rafPending = true; requestAnimationFrame(() => { rafPending = false; applyView(); }); }
+    return;
+  }
+  if (drag.mode === 'node') {
+    const p = screenToWorld(e.clientX, e.clientY);
+    let dx = p.x - drag.start.x, dy = p.y - drag.start.y;
+    drag.moved = drag.moved || Math.abs(dx) + Math.abs(dy) > 2;
+    const snapGrid = !e.altKey;
+    // 分组整体拖动时不做单点智能吸附（会抖）
+    if (drag.picks.length === 1) {
+      const one = nodeById(drag.picks[0].id);
+      if (one) {
+        const g = geom(one);
+        const moving = { x: drag.picks[0].ox + dx, y: drag.picks[0].oy + dy, w: g.w, h: g.h };
+        const others = C.nodes.filter(n => n.id !== one.id);
+        const r = snapMove(moving, others, snapGrid);
+        dx = r.x - drag.picks[0].ox;
+        dy = r.y - drag.picks[0].oy;
+      }
+    }
+    for (const it of drag.picks) {
+      const n = nodeById(it.id);
+      if (!n) continue;
+      n.x = Math.round(it.ox + dx);
+      n.y = Math.round(it.oy + dy);
+      if (snapGrid && drag.picks.length > 1) { n.x = Math.round(n.x / 8) * 8; n.y = Math.round(n.y / 8) * 8; }
+      const el = nodesBox.querySelector('[data-id="' + n.id + '"]');
+      if (el) { el.style.left = n.x + 'px'; el.style.top = n.y + 'px'; }
+    }
+    renderEdges();
+    if (drag.picks.length > 1) hideGuides();
+    drawMini();
+    return;
+  }
+  if (drag.mode === 'link') {
+    const p = screenToWorld(e.clientX, e.clientY);
+    drag.tmp.setAttribute('d', edgePath(drag.sx, drag.sy, p.x, p.y, true));
+    return;
+  }
+  if (drag.mode === 'marquee') {
+    const p = screenToWorld(e.clientX, e.clientY);
+    const x = Math.min(p.x, drag.start.x), y = Math.min(p.y, drag.start.y);
+    const w = Math.abs(p.x - drag.start.x), h = Math.abs(p.y - drag.start.y);
+    selbox.style.display = 'block';
+    selbox.style.left = x + 'px'; selbox.style.top = y + 'px';
+    selbox.style.width = w + 'px'; selbox.style.height = h + 'px';
+    const hit = new Set(drag.add ? drag.base : []);
+    for (const n of C.nodes) {
+      if (n.type === 'group') continue;
+      const g = geom(n);
+      if (g.x + g.w > x && g.x < x + w && g.y + g.h > y && g.y < y + h) hit.add(n.id);
+    }
+    sel = hit;
+    nodeEls().forEach(el => el.classList.toggle('sel', sel.has(el.dataset.id)));
+    return;
+  }
+});
+
+stage.addEventListener('pointerup', (e) => {
+  if (!drag) return;
+  const mode = drag.mode;
+  if (mode === 'link') {
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const target = el && el.closest ? el.closest('.node') : null;
+    const isGroup = target && target.classList.contains('t-group');
+    if (target && target.dataset.id !== drag.from && !isGroup) {
+      const to = target.dataset.id;
+      const dup = C.edges.some(x => x.from === drag.from && x.to === to);
+      if (!dup) {
+        const a = nodeById(drag.from), b = nodeById(to);
+        const pa = a && a.ref.projectId, pb = b && b.ref.projectId;
+        const cross = pa && pb && pa !== pb;
+        C.edges.push({ id: uid('e'), from: drag.from, to, label: cross ? '交接' : '', kind: cross ? 'handoff' : 'flow', dashed: false });
+        queueSave(); pushHistory();
+      }
+    } else if (!target) {
+      // 拖到空白：在此新建节点并连接
+      const p = screenToWorld(e.clientX, e.clientY);
+      pendingLink = { from: drag.from, at: { x: p.x, y: p.y } };
+      showMenu(e.clientX, e.clientY, [
+        { lbl: '新建节点并连接' },
+        { t: '🖥 项目桌面', m: 'newlink:project' },
+        { t: '🪟 应用窗口', m: 'newlink:window' },
+        { t: '🌐 网页', m: 'newlink:url' },
+        { t: '⚙ 脚本', m: 'newlink:script' },
+        { t: '📄 文件', m: 'newlink:file' },
+        { t: '📝 笔记', m: 'newlink:note' },
+        { t: '✨ AI 上下文', m: 'newlink:ai' }
+      ]);
+    }
+    drag.tmp.remove();
+    stage.classList.remove('linking');
+    renderEdges();
+  }
+  if (mode === 'pan') {
+    stage.classList.remove('panning');
+    if (!drag.moved) selectOnly(null);
+    queueSave();
+  }
+  if (mode === 'node') {
+    hideGuides();
+    if (drag.moved) { pushHistory(); queueSave(); }
+  }
+  if (mode === 'marquee') {
+    selbox.style.display = 'none';
+    if (drag.add) sel = new Set([...drag.base, ...sel]);
+    if (!sel.size && !drag.add) sel.clear();
+    refreshSelUI();
+  }
+  drag = null;
+});
+
+stage.addEventListener('pointercancel', () => {
+  if (drag && drag.mode === 'link' && drag.tmp) drag.tmp.remove();
+  if (drag && drag.mode === 'marquee') selbox.style.display = 'none';
+  stage.classList.remove('panning', 'linking');
+  hideGuides();
+  drag = null;
+});
+
+// 缩放
+stage.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (e.shiftKey) {
+    C.view.x -= e.deltaY * 0.9;
+    applyView(); queueSave();
+    return;
+  }
+  const r = stageRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  const old = C.view.z;
+  const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  const z = Math.max(0.15, Math.min(2.5, old * factor));
+  if (z === old) return;
+  C.view.x = mx - ((mx - C.view.x) * z) / old;
+  C.view.y = my - ((my - C.view.y) * z) / old;
+  C.view.z = z;
+  applyView();
+  queueSave();
+}, { passive: false });
+
+// 双击空白 = 新建笔记（工具卡区 / 缩放条 / 小地图上双击不算空白）
+stage.addEventListener('dblclick', (e) => {
+  if (e.target.closest('.node') || e.target.closest('[data-edge]') ||
+      e.target.closest('#emptyHint, .zoombar, .mini, .statusbar')) return;
+  const p = screenToWorld(e.clientX, e.clientY);
+  addNode('note', { x: p.x - 120, y: p.y - 40 });
+});
+
+// 节点上的按钮 / 连线点击
+nodesBox.addEventListener('click', (e) => {
+  const el = e.target.closest('.node');
+  if (!el) return;
+  const id = el.dataset.id;
+  const act = e.target.closest('[data-act]');
+  if (!act) { selectOnly(id); return; }
+  const a = act.dataset.act;
+  const n = nodeById(id);
+  if (a === 'run') { runOne(id); return; }
+  if (a === 'prompt') { genPrompt(id); return; }
+  if (a === 'del') { deleteNodes([id]); return; }
+  if (a === 'dup') {
+    sel = new Set([id]); cloneSelected(); return;
+  }
+  if (a === 'fold' && n) {
+    n.collapsed = !n.collapsed;
+    el.classList.toggle('off', n.collapsed);
+    queueSave(); pushHistory();
+    return;
+  }
+  // 「设置」永远是"这个节点的设置"，不再一律弹项目设置窗口
+  if (a === 'settings' || a === 'panel') { openNodeSettings(id); return; }
+});
+
+nodesBox.addEventListener('dblclick', (e) => {
+  const ttl = e.target.closest('.nttl');
+  const el = e.target.closest('.node');
+  if (!ttl || !el) return;
+  e.stopPropagation();
+  const n = nodeById(el.dataset.id);
+  if (!n) return;
+  selectOnly(n.id);
+  setTimeout(() => {
+    const inp = inspector.querySelector('input[data-f="title"]');
+    if (inp) { inp.focus(); inp.select(); }
+  }, 30);
+});
+
+edgeSvg.addEventListener('click', (e) => {
+  const p = e.target.closest('[data-edge]');
+  if (!p) return;
+  selEdge = p.dataset.edge;
+  sel.clear();
+  nodeEls().forEach(el => el.classList.remove('sel'));
+  renderEdges(); renderInspector(); updateStatus();
+});
+edgeSvg.addEventListener('dblclick', (e) => {
+  const p = e.target.closest('[data-edge]');
+  if (p) { selEdge = p.dataset.edge; renderInspector(); }
+});
+edgeSvg.addEventListener('mousemove', (e) => {
+  const p = e.target.closest('[data-edge]');
+  const prev = edgeSvg.querySelector('path.ehover');
+  if (prev) prev.classList.remove('ehover');
+  if (p) {
+    const vis = edgeSvg.querySelector('[data-evis="' + p.dataset.edge + '"]');
+    if (vis) vis.classList.add('ehover');
+  }
+});
+
+/* ---- 右键菜单 ---- */
+const menu = $('#ctxmenu');
+let menuAt = null;
+let pendingLink = null;
+function showMenu(x, y, items) {
+  menu.innerHTML = items.map(it => it.hr ? '<div class="hr"></div>'
+    : it.lbl ? '<div class="lbl">' + it.lbl + '</div>'
+    : '<div data-m="' + it.m + '">' + it.t + '</div>').join('');
+  menu.classList.add('on');
+  menu.style.left = Math.min(x, window.innerWidth - 200) + 'px';
+  menu.style.top = Math.min(y, window.innerHeight - menu.offsetHeight - 12) + 'px';
+}
+function hideMenu() { menu.classList.remove('on'); }
+stage.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  const nodeEl = e.target.closest('.node');
+  const edgeEl = e.target.closest('[data-edge]');
+  if (edgeEl) {
+    selEdge = edgeEl.dataset.edge; sel.clear(); renderEdges(); renderInspector();
+    showMenu(e.clientX, e.clientY, [
+      { t: '✎ 编辑连线', m: 'edge-edit' },
+      { t: '⇄ 反向连线', m: 'edge-reverse' },
+      { t: '⤫ 改为参考线', m: 'edge-ref' },
+      { hr: true },
+      { t: '🗑 删除连线', m: 'edge-del' }
+    ]);
+    return;
+  }
+  if (nodeEl) {
+    const id = nodeEl.dataset.id;
+    if (!sel.has(id)) selectOnly(id);
+    const n = nodeById(id);
+    const items = [
+      { t: '⚙ 设置此节点…', m: 'node-settings' },
+      { t: '▶ 运行此节点', m: 'node-run' },
+      { t: '⏵ 从这里运行流程', m: 'node-runfrom' },
+      { hr: true },
+      { t: '⧉ 克隆', m: 'node-dup' },
+      { t: '📋 复制', m: 'node-copy' },
+      { t: '▲ 置于顶层', m: 'node-front' },
+      { t: '▼ 置于底层', m: 'node-back' },
+      { hr: true }
+    ];
+    if (n && n.type === 'note') items.push({ t: '📝 转为 AI 上下文节点', m: 'node-toai' });
+    if (n && n.type === 'group') items.push({ t: '🎨 用项目色', m: 'node-groupcolor' });
+    items.push({ t: '🗑 删除', m: 'node-del' });
+    showMenu(e.clientX, e.clientY, items);
+    return;
+  }
+  const p = screenToWorld(e.clientX, e.clientY);
+  menuAt = { x: p.x, y: p.y };
+  pendingLink = null;
+  showMenu(e.clientX, e.clientY, [
+    { lbl: '在此新建' },
+    { t: '🖥 项目桌面', m: 'new:project' },
+    { t: '🪟 应用窗口', m: 'new:window' },
+    { t: '🌐 网页', m: 'new:url' },
+    { t: '⚙ 脚本', m: 'new:script' },
+    { t: '📄 文件', m: 'new:file' },
+    { t: '📁 文件夹', m: 'new:folder' },
+    { t: '📝 笔记', m: 'new:note' },
+    { t: '✨ AI 上下文', m: 'new:ai' },
+    { t: '▤ 分组 / 泳道', m: 'new:group' },
+    { hr: true },
+    { t: '📋 粘贴到这里', m: 'paste' },
+    { t: '▤ 生成项目泳道', m: 'lanes' },
+    { t: '⇥ 自动整理', m: 'layout' },
+    { t: '⤢ 适应视图', m: 'fit' },
+    { t: '⊞ 全选', m: 'selectall' },
+    { hr: true },
+    { t: '⌫ 清空画布', m: 'clear' }
+  ]);
+});
+menu.addEventListener('click', (e) => {
+  const d = e.target.closest('[data-m]');
+  if (!d) return;
+  const m = d.dataset.m;
+  hideMenu();
+  if (m.startsWith('new:')) {
+    const type = m.slice(4);
+    const size = type === 'group' ? { w: 420, h: 320 } : {};
+    const n = addNode(type, menuAt, size);
+    if (pendingLink) {
+      C.edges.push({ id: uid('e'), from: pendingLink.from, to: n.id, label: '', kind: 'flow', dashed: false });
+      pendingLink = null;
+      renderEdges(); queueSave(); pushHistory();
+    }
+    return;
+  }
+  if (m.startsWith('newlink:')) {
+    const type = m.slice(8);
+    const n = addNode(type, pendingLink ? pendingLink.at : menuAt);
+    if (pendingLink) {
+      const a = nodeById(pendingLink.from);
+      const pa = a && a.ref.projectId, pb = n.ref.projectId;
+      C.edges.push({ id: uid('e'), from: pendingLink.from, to: n.id, label: (pa && pb && pa !== pb) ? '交接' : '',
+        kind: (pa && pb && pa !== pb) ? 'handoff' : 'flow', dashed: false });
+      pendingLink = null;
+      renderEdges(); queueSave(); pushHistory();
+    }
+    return;
+  }
+  if (m === 'paste') { pasteClip(menuAt); return; }
+  if (m === 'lanes') { makeLanes(); return; }
+  if (m === 'layout') { autoLayout(); return; }
+  if (m === 'fit') { fitView(); return; }
+  if (m === 'selectall') { sel = new Set(C.nodes.map(n => n.id)); selEdge = null; refreshSelUI(); return; }
+  if (m === 'clear') {
+    if (!C.nodes.length) return;
+    if (!confirm('清空整张画布？此操作可撤销。')) return;
+    C.nodes = []; C.edges = []; sel.clear(); selEdge = null;
+    renderAll(); renderInspector(); queueSave(); pushHistory();
+    return;
+  }
+  if (m === 'edge-edit') { renderInspector(); return; }
+  if (m === 'edge-delete' || m === 'edge-del') { deleteEdge(selEdge); return; }
+  if (m === 'edge-ref') {
+    const e2 = C.edges.find(x => x.id === selEdge);
+    if (e2) { e2.kind = e2.kind === 'ref' ? 'flow' : 'ref'; renderEdges(); queueSave(); pushHistory(); }
+    return;
+  }
+  if (m === 'edge-reverse') {
+    const e2 = C.edges.find(x => x.id === selEdge);
+    if (e2) { const t = e2.from; e2.from = e2.to; e2.to = t; renderEdges(); queueSave(); pushHistory(); }
+    return;
+  }
+  const ids = Array.from(sel);
+  if (m === 'node-settings') { if (ids[0]) openNodeSettings(ids[0]); return; }
+  if (m === 'node-run') { ids.forEach((id, i) => setTimeout(() => runOne(id), i * 250)); return; }
+  if (m === 'node-runfrom') { $('#runSelBtn').onclick(); return; }
+  if (m === 'node-dup') { cloneSelected(); return; }
+  if (m === 'node-copy') { copySelected(); return; }
+  if (m === 'node-front') { ids.forEach(id => { const n = nodeById(id); if (n) n.z = Date.now(); }); renderAll(); queueSave(); pushHistory(); return; }
+  if (m === 'node-back') { ids.forEach(id => { const n = nodeById(id); if (n) n.z = -Date.now(); }); renderAll(); queueSave(); pushHistory(); return; }
+  if (m === 'node-toai') {
+    const n = nodeById(ids[0]);
+    if (n) { n.type = 'ai'; n.title = n.title === '笔记' ? 'AI 上下文' : n.title; renderAll(); renderInspector(); queueSave(); pushHistory(); }
+    return;
+  }
+  if (m === 'node-groupcolor') {
+    const n = nodeById(ids[0]);
+    const p = n && projectOf(n);
+    if (n) { n.color = (p && p.color) || '#4f8cff'; }
+    renderAll(); renderInspector(); queueSave(); pushHistory();
+    return;
+  }
+  if (m === 'node-del') { deleteNodes(ids); return; }
+});
+document.addEventListener('pointerdown', (e) => {
+  if (!e.target.closest('.ctxmenu')) { hideMenu(); $('#searchPop').classList.remove('on'); }
+}, true);
+
+/* ---- 缩放条 ---- */
+$('#zoomIn').onclick = () => zoomBy(1.2);
+$('#zoomOut').onclick = () => zoomBy(1 / 1.2);
+$('#zoomFit').onclick = () => fitView();
+$('#zoomLbl').onclick = () => { const r = stageRect(); centerOn((r.width / 2 - C.view.x) / C.view.z, (r.height / 2 - C.view.y) / C.view.z, 1); };
+function zoomBy(f) {
+  const r = stageRect();
+  const mx = r.width / 2, my = r.height / 2;
+  const old = C.view.z;
+  const z = Math.max(0.15, Math.min(2.5, old * f));
+  C.view.x = mx - ((mx - C.view.x) * z) / old;
+  C.view.y = my - ((my - C.view.y) * z) / old;
+  C.view.z = z;
+  applyView(); queueSave();
+}
+
+/* ---- 自动整理 ---- */
+function autoLayout() {
+  if (!C.nodes.length) return;
+  const groups = C.nodes.filter(n => n.type === 'group');
+  const plain = C.nodes.filter(n => n.type !== 'group');
+  const indeg = new Map();
+  const out = new Map();
+  plain.forEach(n => { indeg.set(n.id, 0); out.set(n.id, []); });
+  for (const e of C.edges) {
+    if (e.kind === 'ref') continue;
+    if (!indeg.has(e.to) || !out.has(e.from)) continue;
+    indeg.set(e.to, indeg.get(e.to) + 1);
+    out.get(e.from).push(e.to);
+  }
+  const level = new Map();
+  const queue = plain.filter(n => indeg.get(n.id) === 0).map(n => n.id);
+  queue.forEach(id => level.set(id, 0));
+  let guard = 0;
+  while (queue.length && guard++ < 8000) {
+    const id = queue.shift();
+    for (const t of out.get(id) || []) {
+      const lv = Math.max(level.get(t) || 0, (level.get(id) || 0) + 1);
+      level.set(t, lv);
+      queue.push(t);
+    }
+  }
+  plain.forEach(n => { if (!level.has(n.id)) level.set(n.id, 0); });
+  const cols = new Map();
+  for (const n of plain) {
+    const lv = level.get(n.id);
+    if (!cols.has(lv)) cols.set(lv, []);
+    cols.get(lv).push(n);
+  }
+  const COL = 330, ROW = 210;
+  const baseX = 100 + groups.length * 40;
+  for (const [lv, arr] of cols) {
+    arr.forEach((n, i) => { n.x = baseX + lv * COL; n.y = 120 + i * ROW; });
+  }
+  // 分组跟着成员走（包住成员）
+  for (const g of groups) {
+    const mem = groupMembers(g);
+    if (!mem.length) continue;
+    let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+    for (const m of mem) {
+      const gg = geom(m);
+      l = Math.min(l, gg.x); t = Math.min(t, gg.y);
+      r = Math.max(r, gg.x + gg.w); b = Math.max(b, gg.y + gg.h);
+    }
+    g.x = Math.round(l - 26); g.y = Math.round(t - 50);
+    g.w = Math.round(r - l + 52); g.h = Math.round(b - t + 76);
+  }
+  renderAll(); queueSave(); pushHistory(); fitView();
+}
+
+function fitView() {
+  if (!C.nodes.length) { C.view = { x: 80, y: 80, z: 1 }; applyView(); return; }
+  let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+  for (const n of C.nodes) {
+    const g = geom(n);
+    l = Math.min(l, g.x); t = Math.min(t, g.y);
+    r = Math.max(r, g.x + g.w); b = Math.max(b, g.y + g.h);
+  }
+  const pad = 60;
+  const w = Math.max(1, r - l + pad * 2), h = Math.max(1, b - t + pad * 2);
+  const sw = stage.clientWidth, sh = stage.clientHeight;
+  const z = Math.max(0.15, Math.min(1.1, Math.min(sw / w, sh / h)));
+  C.view.z = z;
+  C.view.x = (sw - (r - l) * z) / 2 - l * z;
+  C.view.y = (sh - (b - t) * z) / 2 - t * z;
+  applyView(); queueSave();
+}
+$('#fitBtn').onclick = fitView;
+$('#layoutBtn').onclick = autoLayout;
+
+/* ---- 项目泳道（多项目分区） ---- */
+function makeLanes() {
+  if (!live.projects.length) { toast('还没有项目，先创建项目', true); return; }
+  if (C.nodes.length && !confirm('会按项目重建泳道（已有节点会被放入对应项目泳道，未绑定节点的位置可能调整）。继续？')) return;
+  // 先去掉旧泳道，避免反复点击堆叠
+  C.nodes = C.nodes.filter(n => n.type !== 'group');
+  const COLW = 360, GAP = 40, TOP = 110;
+  const groups = [];
+  live.projects.forEach((p, i) => {
+    const gx = 70 + i * (COLW + GAP);
+    // 已有属于该项目的节点，纵向排布
+    const members = C.nodes.filter(n => n.type !== 'group' && n.ref && n.ref.projectId === p.id && n.type !== 'project');
+    const projNode = C.nodes.find(n => n.type === 'project' && n.ref && n.ref.projectId === p.id);
+    let y = TOP + 66;
+    if (projNode) { projNode.x = gx + 24; projNode.y = y; projNode.w = Math.min(projNode.w || 240, COLW - 48); y += 130; }
+    else {
+      const pn = addNode('project', { x: gx + 24, y }, { title: p.name });
+      pn.ref.projectId = p.id;
+      pn.color = p.color || '#4f8cff';
+      y += 130;
+    }
+    for (const m of members) { m.x = gx + 24; m.y = y; y += Math.max(120, (geom(m).h || 100) + 24); }
+    const g = {
+      id: uid('n'), type: 'group', title: p.name, note: '项目泳道 · ' + ((p.context || []).length) + ' 条上下文',
+      x: gx, y: TOP, w: COLW, h: Math.max(300, y - TOP + 20),
+      color: p.color || '#4f8cff', ref: { projectId: p.id }, collapsed: false, locked: false, tags: [], z: 0
+    };
+    groups.push(g);
+  });
+  C.nodes = groups.concat(C.nodes);
+  renderAll(); queueSave(); pushHistory(); fitView();
+  toast('已生成 ' + groups.length + ' 条项目泳道');
+}
+$('#laneBtn').onclick = makeLanes;
+
+/* ---- 小地图 ---- */
+function miniGeom() {
+  let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+  for (const n of C.nodes) {
+    const g = geom(n);
+    l = Math.min(l, g.x); t = Math.min(t, g.y);
+    r = Math.max(r, g.x + g.w); b = Math.max(b, g.y + g.h);
+  }
+  if (!C.nodes.length) { l = 0; t = 0; r = 800; b = 600; }
+  const pad = 60;
+  l -= pad; t -= pad; r += pad; b += pad;
+  return { l, t, r, b };
+}
+function drawMini() {
+  const cv = $('#miniCv');
+  if (!cv || !C.nodes.length) return;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  const { l, t, r, b } = miniGeom();
+  const sc = Math.min(cv.width / (r - l), cv.height / (b - t));
+  const ox = (cv.width - (r - l) * sc) / 2, oy = (cv.height - (b - t) * sc) / 2;
+  const X = (x) => ox + (x - l) * sc;
+  const Y = (y) => oy + (y - t) * sc;
+  // 分组
+  for (const n of C.nodes.filter(x => x.type === 'group')) {
+    const g = geom(n);
+    ctx.fillStyle = 'rgba(90,110,150,.16)';
+    ctx.fillRect(X(g.x), Y(g.y), g.w * sc, g.h * sc);
+  }
+  ctx.strokeStyle = 'rgba(80,110,160,.45)';
+  ctx.lineWidth = 1;
+  const map = new Map(C.nodes.map(n => [n.id, n]));
+  for (const e of C.edges) {
+    const a = map.get(e.from), c = map.get(e.to);
+    if (!a || !c) continue;
+    const ga = geom(a), gc = geom(c);
+    ctx.beginPath();
+    ctx.moveTo(X(ga.x + ga.w), Y(ga.y + ga.h / 2));
+    ctx.lineTo(X(gc.x), Y(gc.y + gc.h / 2));
+    ctx.stroke();
+  }
+  for (const n of C.nodes) {
+    if (n.type === 'group') continue;
+    const g = geom(n);
+    const tt = TYPES[n.type] || TYPES.note;
+    ctx.fillStyle = hexA(n.color || tt.c, sel.has(n.id) ? .95 : .62);
+    ctx.fillRect(X(g.x), Y(g.y), Math.max(2, g.w * sc), Math.max(2, g.h * sc));
+  }
+  const v = C.view;
+  ctx.strokeStyle = 'rgba(120,170,255,.9)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(X(-v.x / v.z), Y(-v.y / v.z), (stage.clientWidth / v.z) * sc, (stage.clientHeight / v.z) * sc);
+}
+$('#mini').addEventListener('click', (e) => {
+  const cv = $('#miniCv');
+  const rc = cv.getBoundingClientRect();
+  const px = (e.clientX - rc.left) / rc.width * cv.width;
+  const py = (e.clientY - rc.top) / rc.height * cv.height;
+  const { l, t, r, b } = miniGeom();
+  const sc = Math.min(cv.width / (r - l), cv.height / (b - t));
+  const ox = (cv.width - (r - l) * sc) / 2, oy = (cv.height - (b - t) * sc) / 2;
+  const wx = (px - ox) / sc + l, wy = (py - oy) / sc + t;
+  centerOn(wx, wy);
+});
+window.addEventListener('resize', () => { applyView(); drawMini(); });
+
+/* ---- 搜索 ---- */
+const searchInput = $('#searchInput');
+const searchPop = $('#searchPop');
+function doSearch() {
+  const q = searchInput.value.trim().toLowerCase();
+  if (!q) { searchPop.classList.remove('on'); return; }
+  const hits = C.nodes.filter(n =>
+    (n.title || '').toLowerCase().includes(q) ||
+    (n.note || '').toLowerCase().includes(q) ||
+    (n.type || '').toLowerCase().includes(q)
+  ).slice(0, 12);
+  if (!hits.length) { searchPop.innerHTML = '<div class="it">没有匹配的节点</div>'; searchPop.classList.add('on'); return; }
+  searchPop.innerHTML = hits.map(n =>
+    '<div class="it" data-goto="' + n.id + '"><span>' + (TYPES[n.type] || TYPES.note).ic + '</span>' +
+    '<span>' + esc(n.title) + '</span><small>' + (TYPES[n.type] || TYPES.note).name + '</small></div>').join('');
+  searchPop.classList.add('on');
+}
+searchInput.addEventListener('input', doSearch);
+searchInput.addEventListener('focus', doSearch);
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const first = searchPop.querySelector('[data-goto]');
+    if (first) first.click();
+  }
+  if (e.key === 'Escape') { searchInput.blur(); searchPop.classList.remove('on'); }
+});
+searchPop.addEventListener('click', (e) => {
+  const it = e.target.closest('[data-goto]');
+  if (!it) return;
+  const n = nodeById(it.dataset.goto);
+  if (!n) return;
+  sel = new Set([n.id]); selEdge = null;
+  const g = geom(n);
+  centerOn(g.x + g.w / 2, g.y + g.h / 2, Math.max(0.85, C.view.z));
+  refreshSelUI();
+  searchPop.classList.remove('on');
+  searchInput.value = '';
+});
+
+/* ---- 运行 ---- */
+function setStatus(id, st, msg) {
+  const el = nodesBox.querySelector('[data-id="' + id + '"]');
+  if (!el) return;
+  const badge = el.querySelector('.nst');
+  if (badge) {
+    badge.className = 'nst' + (st ? ' ' + st : '');
+    badge.textContent = st === 'run' ? '运行中' : st === 'ok' ? '完成' : st === 'err' ? '失败' : '';
+    if (msg) badge.title = msg;
+  }
+  el.classList.toggle('running', st === 'run');
+}
+window.fde.on('fde:canvas-run', (p) => { if (p) setStatus(p.id, p.status, p.msg); });
+window.fde.on('fde:canvas', () => { loadCanvas(true); });
+
+async function runOne(id) {
+  const n = nodeById(id);
+  if (!n) return;
+  const el = nodesBox.querySelector('[data-id="' + id + '"]');
+  const btn = el ? el.querySelector('.nfoot [data-act="run"]') : null;
+  if (btn && btn.disabled) return; // 防止连点重复执行
+  if (btn) { btn.disabled = true; btn.textContent = '执行中…'; }
+  setStatus(id, 'run');
+  if (el) { el.classList.add('flashhit'); setTimeout(() => el.classList.remove('flashhit'), 1200); }
+  const slow = setTimeout(() => {
+    toast(n.type === 'project' || n.type === 'window'
+      ? '正在切换桌面，窗口会跟过去…'
+      : '正在执行「' + n.title + '」…', false, 2000);
+  }, 1100);
+  let r = null;
+  try {
+    r = await window.fde.canvasRunNode(id);
+  } catch (err) {
+    r = { ok: false, error: (err && err.message) || String(err) };
+  }
+  clearTimeout(slow);
+  if (btn) { btn.disabled = false; btn.textContent = '▶ 运行'; }
+  const ok = !!(r && r.ok);
+  const msg = (r && (r.msg || r.error)) || '';
+  setStatus(id, ok ? 'ok' : 'err', msg);
+  pushRunLog(n.title, ok, msg || (ok ? '已执行' : '执行失败'));
+  if (ok) toast('✓ ' + (r.msg || (n.title + ' 已执行')));
+  else toast('✗ ' + (msg || '执行失败'), true);
+  setTimeout(() => setStatus(id, ''), 3600);
+  // 单点「运行」是"我现在就要进这个桌面"：桌面切过去后把画布收起来，
+  // 否则画布盖在最上面，看起来像"点了没反应"。
+  if (ok && (n.type === 'project' || n.type === 'window')) {
+    const p = projectOf(n);
+    toast('✓ 已切换到「' + (p ? p.name : n.title) + '」桌面 · 画布已收起（面板可再打开）', false, 2600);
+    setTimeout(() => { try { window.fde.closeOverview(); } catch (e) {} }, 850);
+  }
+}
+
+// 点节点上的「设置」：打开的是"这个节点自己的设置"——就在画布右侧这块，
+// 而不是去弹项目设置窗口。面板和节点各闪两下，一眼看出改的是哪一个。
+function openNodeSettings(id) {
+  const n = nodeById(id);
+  if (!n) return;
+  selectOnly(id);                       // 会顺带渲染右侧设置面板
+  const el = nodesBox.querySelector('[data-id="' + id + '"]');
+  if (el) {
+    el.classList.remove('flashhit');
+    void el.offsetWidth;
+    el.classList.add('flashhit');
+    setTimeout(() => el.classList.remove('flashhit'), 1200);
+  }
+  // 面板可能刚从 display:none 变出来，强制重排一次，保证动画真的播
+  inspector.classList.remove('flash2');
+  void inspector.offsetWidth;
+  inspector.classList.add('flash2');
+  clearTimeout(openNodeSettings._t);
+  openNodeSettings._t = setTimeout(() => inspector.classList.remove('flash2'), 1500);
+  inspector.scrollTop = 0;
+  toast('⚙ 「' + n.title + '」的设置已在右侧打开（正在闪的那块）', false, 2600);
+}
+
+// 打开项目的「设置」面板：面板在屏幕右侧，离画布上的节点很远，
+// 所以点完让节点和面板各闪两下，谁都能看出是哪个窗口。
+async function openPanelFor(n, el) {
+  const p = projectOf(n);
+  if (el) { el.classList.add('flashhit'); setTimeout(() => el.classList.remove('flashhit'), 1200); }
+  let r = null;
+  try { r = await window.fde.openProjectPanel(n.ref.projectId); } catch (err) { r = { ok: false, error: err.message }; }
+  if (r && r.ok === false) { toast('打不开设置面板：' + (r.error || '项目不存在'), true); return; }
+  toast('🖥 已打开「' + (p ? p.name : n.title) + '」的项目面板（正在闪的那个窗口）', false, 3400);
+}
+// 交接线直接发提示：关系在画布上，消息也在画布上发，不用再去面板配流程
+async function sendHandoff() {
+  const e = C.edges.find(x => x.id === selEdge);
+  if (!e) return;
+  const a = nodeById(e.from), b = nodeById(e.to);
+  const pa = a && projectOf(a), pb = b && projectOf(b);
+  if (!pb) return toast('目标节点没有绑定项目，发不出去', true);
+  const ta = document.getElementById('handoffText');
+  const text = (ta && ta.value || '').trim();
+  if (!text) return toast('先写一句要交接的内容', true);
+  const r = await window.fde.sendHint(pa ? pa.id : null, pb.id, text);
+  if (r && r.ok) {
+    if (ta) ta.value = '';
+    toast('已发送到「' + pb.name + '」的项目消息');
+  } else {
+    toast((r && r.error) || '发送失败', true);
+  }
+}
+
+async function genPrompt(id) {
+  const r = await window.fde.canvasPrompt(id);  if (r && r.ok) {
+    toast('已复制 · ' + r.length + ' 字 ≈ ' + r.tokens + ' token' +
+      (r.cached ? '（缓存命中，没重复消耗）' : '') +
+      (r.budget === 'over' ? ' · 偏长，建议删掉无关节点' : ''));
+  } else toast('生成失败', true);
+}
+// ---- 搭台助手抽屉 ----
+// 向导带来的第一句话：自动开抽屉并预填
+try {
+  const ex = localStorage.getItem('fde.bdExample');
+  if (ex) {
+    localStorage.removeItem('fde.bdExample');
+    $('#bdrawer').classList.add('on');
+    $('#bdInput').value = ex;
+    $('#bdInput').focus();
+  }
+} catch (e) {}
+
+$('#bdBtn').onclick = () => {
+  $('#bdrawer').classList.toggle('on');
+  if ($('#bdrawer').classList.contains('on')) $('#bdInput').focus();
+};
+$('#bdX').onclick = () => $('#bdrawer').classList.remove('on');
+
+function bdMsg(cls, text) {
+  const box = $('#bdMsgs');
+  const d = document.createElement('div');
+  d.className = 'm ' + cls;
+  d.innerHTML = text;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+  return d;
+}
+
+// ---- 截图/贴图附件 ----
+let bdImgs = [];
+function bdRenderImgs() {
+  const box = $('#bdImgs');
+  box.style.display = bdImgs.length ? 'flex' : 'none';
+  box.innerHTML = bdImgs.map((u, i) =>
+    '<div class="im"><img src="' + u + '"><span class="x" data-bdimg="' + i + '">✕</span></div>').join('');
+}
+$('#bdImgs').addEventListener('click', (e) => {
+  const x = e.target.closest('[data-bdimg]');
+  if (!x) return;
+  bdImgs.splice(Number(x.dataset.bdimg), 1);
+  bdRenderImgs();
+});
+$('#bdShot').onclick = async () => {
+  const btn = $('#bdShot');
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const r = await window.fde.screenCapture();
+    if (r && r.ok && bdImgs.length < 3) { bdImgs.push(r.dataUrl); bdRenderImgs(); }
+    else if (r && !r.ok) bdMsg('err', esc(r.error || '截图失败'));
+    else if (bdImgs.length >= 3) bdMsg('err', '最多带 3 张图，先删掉一张');
+  } catch (e2) { bdMsg('err', esc(String(e2.message || e2))); }
+  btn.disabled = false; btn.textContent = '📷';
+};
+$('#bdInput').addEventListener('paste', (e) => {
+  const items = (e.clipboardData && e.clipboardData.items) || [];
+  for (const it of items) {
+    if (it.type && it.type.indexOf('image/') === 0) {
+      e.preventDefault();
+      const f = it.getAsFile();
+      if (!f || bdImgs.length >= 3) return;
+      const rd = new FileReader();
+      rd.onload = () => { if (bdImgs.length < 3) { bdImgs.push(String(rd.result)); bdRenderImgs(); } };
+      rd.readAsDataURL(f);
+      return;
+    }
+  }
+});
+
+let bdBusy = false;
+async function bdSendNow() {
+  if (bdBusy) return;
+  const input = $('#bdInput');
+  const request = input.value.trim();
+  if (!request && !bdImgs.length) return;
+  input.value = '';
+  const sending = bdImgs.slice();
+  bdImgs = []; bdRenderImgs();
+  const meEl = bdMsg('me', sending.map(u => '<img class="att" src="' + u + '">').join('') + esc(request || '（看图搭台）'));
+  bdBusy = true;
+  const btn = $('#bdSend');
+  btn.disabled = true; btn.textContent = '搭中…';
+  const busyEl = bdMsg('ai', '🤖 正在理解需求、设计方案…（最多两分半）');
+  try {
+    const r = await window.fde.builderChat(request, sending);
+    busyEl.remove();
+    if (!r || r.ok === false) {
+      bdMsg('err', esc((r && r.error) || '搭台失败'));
+    } else {
+      let html = '<span class="ok">✓ ' + esc(r.summary) + '</span>';
+      if (r.created && r.created.scripts && r.created.scripts.length) {
+        html += '<br>脚本：' + r.created.scripts.map(s =>
+          esc(s.name) + ' <a href="#" data-bdscript="' + esc(s.project) + '|' + esc(s.name) + '" style="color:#7db3e8;">✍️ AI 写完整</a>'
+        ).join('、');
+      }
+      if (r.errors && r.errors.length) {
+        html += '<br><span class="warn">待补：' + r.errors.slice(0, 4).map(e => esc(e)).join('；') + '</span>';
+      }
+      if (r.aiNote) html += '<br>' + esc(r.aiNote);
+      if (r.usage && r.usage.tokens) html += '<br><span style="color:#5b6478;">本次消耗 ' + r.usage.tokens + ' tokens</span>';
+      try { await loadCanvas(true); } catch (e2) {} // 先让画布拿到最新数据，避免用旧列表找节点
+      // 第一个项目/脚本节点给一个「开跑」按钮
+      const first = (C.nodes || []).find(n => (n.type === 'project' || n.type === 'script') && (n.tags || []).includes('搭台'));
+      if (first) {
+        html += '<div class="runrow"><button data-bdrun="' + esc(first.id) + '">▶ 从「' + esc(first.title) + '」开跑</button></div>';
+      }
+      bdMsg('ai', html);
+      renderNodes(); renderEdges(); renderInspector(); drawMini();
+    }
+  } catch (e) {
+    busyEl.remove();
+    bdMsg('err', esc(String(e && e.message || e)));
+  }
+  bdBusy = false;
+  btn.disabled = false; btn.textContent = '搭';
+}
+
+$('#bdSend').onclick = bdSendNow;
+$('#bdInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); bdSendNow(); }
+});
+$('#bdMsgs').addEventListener('click', async (e) => {
+  const sc = e.target.closest('[data-bdscript]');
+  if (sc) {
+    e.preventDefault();
+    const parts = sc.dataset.bdscript.split('|');
+    const need = prompt('「' + parts[1] + '」这个脚本要做什么？（说清楚输入、处理、输出）', '整理' + parts[1] + '：读源数据 → 清洗整理 → 输出结果并打印汇总');
+    if (!need) return;
+    sc.textContent = '✍️ 编写中…';
+    const r2 = await window.fde.builderScript(parts[0], parts[1], need);
+    if (r2 && r2.ok) {
+      sc.textContent = '✓ 已写好';
+      bdMsg('ai', '<span class="ok">✓ 脚本「' + esc(parts[1]) + '」已写完整</span>（' + r2.lines + ' 行' + (r2.tokens ? '，消耗 ' + r2.tokens + ' tokens' : '') + '）<br>文件：' + esc(r2.file) + '<br>跑之前建议先看一遍内容。');
+    } else {
+      sc.textContent = '✍️ AI 写完整';
+      bdMsg('err', esc((r2 && r2.error) || '脚本生成失败'));
+    }
+    return;
+  }
+  const b = e.target.closest('[data-bdrun]');
+  if (!b) return;
+  runOne(b.dataset.bdrun);
+});
+
+$('#aiBtn').onclick = () => window.fde.aiOpenSettings();
+
+// 顶部「⚡ 模型」显示当前接的是哪个模型，一眼看出有没有接上算力
+let AISTATE = null;
+async function refreshAiBtn() {
+  try { AISTATE = await window.fde.aiGet(); } catch (e) { return; }
+  const b = $('#aiBtn');
+  if (!b) return;
+  const st = (AISTATE && AISTATE.status) || { level: 'off', text: '' };
+  b.textContent = st.level === 'on' ? ('⚡ ' + (AISTATE.model || '模型')) : '⚡ 接算力';
+  b.title = (st.text || '') + '（点这里设置密钥与模型）';
+  b.style.borderColor = st.level === 'on' ? 'rgba(34,197,94,.45)' : st.level === 'half' ? 'rgba(245,158,11,.45)' : '';
+  b.style.color = st.level === 'on' ? '#7fd6a0' : st.level === 'half' ? '#f2d19b' : '';
+}
+refreshAiBtn();
+window.fde.on('fde:ai', () => refreshAiBtn());
+
+$('#runSelBtn').onclick = async () => {
+  const id = Array.from(sel)[0];
+  if (!id) { toast('先选中一个节点（从它开始执行）', true); return; }
+  const n = nodeById(id);
+  if (!n) return;
+  toast('正在执行流程…');
+  let r = null;
+  try { r = await window.fde.canvasRunFlow(id); } catch (err) { r = { ok: false, error: err.message }; }
+  const ok = !!(r && r.ok);
+  const bad = r && r.results ? r.results.find(x => !x.ok) : null;
+  const msg = ok ? ((r.results || []).filter(x => !x.skipped).length + ' 步完成')
+                 : ((bad && bad.msg) || (r && r.error) || '未知错误');
+  pushRunLog('流程：' + n.title + ' 起', ok, msg);
+  if (ok) toast('流程执行完成');
+  else toast('流程中断：' + msg, true);
+  setTimeout(() => { nodeEls().forEach(el => setStatus(el.dataset.id, '')); }, 5000);
+};
+$('#runAllBtn').onclick = async () => {
+  if (!C.nodes.length) { toast('画布是空的', true); return; }
+  toast('正在执行整张画布…');
+  let r = null;
+  try { r = await window.fde.canvasRunFlow('__all__'); } catch (err) { r = { ok: false, error: err.message }; }
+  const ok = !!(r && r.ok);
+  const bad = r && r.results ? r.results.find(x => !x.ok) : null;
+  const msg = ok ? ((r.results || []).filter(x => !x.skipped).length + ' 步完成')
+                 : ((bad && (bad.title || bad.msg)) || (r && r.error) || '未知错误');
+  pushRunLog('整张画布', ok, msg);
+  if (ok) toast('全部执行完成');
+  else toast('执行中断：' + msg, true);
+  setTimeout(() => { nodeEls().forEach(el => setStatus(el.dataset.id, '')); }, 6000);
+};
+
+/* ---- 模板 ---- */
+$('#tplBtn').onclick = (e) => {
+  const r = e.target.getBoundingClientRect();
+  showMenu(r.left, r.bottom + 6, [
+    { lbl: '模板（会替换当前画布）' },
+    { t: '👥 客户交付工作流', m: 'tpl:client' },
+    { t: '📊 数据分析工作流', m: 'tpl:data' },
+    { t: '💹 交易盯盘工作流', m: 'tpl:trade' },
+    { t: '🔁 多项目交接', m: 'tpl:cross' },
+    { hr: true },
+    { t: '🈳 空白画布', m: 'tpl:blank' }
+  ]);
+};
+function loadTemplate(name) {
+  if (C.nodes.length && !confirm('模板会替换当前画布内容，继续？')) return;
+  const p0 = live.projects.find(p => p.id === live.activeId) || live.projects[0];
+  const p1 = live.projects[1] || p0;
+  const pid = p0 ? p0.id : '';
+  const pid2 = p1 ? p1.id : pid;
+  const nm = p0 ? p0.name : '示例项目';
+  const nm2 = p1 ? p1.name : '第二个项目';
+  const mk = (type, title, x, y, ref, note) => ({
+    id: uid('n'), type, title, note: note || '', x, y, w: 240, h: 0, color: '', ref: ref || {},
+    collapsed: false, locked: false, tags: [], z: 0
+  });
+  let nodes = [], edges = [];
+  if (name === 'client') {
+    const n1 = mk('project', nm, 80, 240, { projectId: pid, autoRun: true }, '进入桌面：客户资料、工单系统、文档一并就位');
+    const n2 = mk('url', '客户工单系统', 400, 120, { url: 'https://' }, '常用后台');
+    const n3 = mk('folder', '客户资料文件夹', 400, 320, { path: '' }, '合同、需求、会议纪要');
+    const n4 = mk('ai', '生成客户上下文', 760, 220, {}, '汇总上面所有材料，生成一份可直接使用的上下文');
+    nodes = [n1, n2, n3, n4];
+    edges = [[n1, n2], [n1, n3], [n2, n4], [n3, n4]];
+  } else if (name === 'data') {
+    const n1 = mk('project', nm, 80, 240, { projectId: pid }, '进入分析桌面');
+    const n2 = mk('script', '拉取数据', 380, 140, { projectId: pid, path: '' }, '脚本：export_daily.py');
+    const n3 = mk('file', '分析模板', 380, 330, { path: '' }, 'Excel / Notebook');
+    const n4 = mk('script', '生成报表', 700, 240, { projectId: pid, path: '' }, '脚本：build_report.py');
+    const n5 = mk('ai', '今日分析结论', 1020, 240, {}, '基于数据与模板，输出结论与异常点');
+    nodes = [n1, n2, n3, n4, n5];
+    edges = [[n1, n2], [n1, n3], [n2, n4], [n3, n4], [n4, n5]];
+  } else if (name === 'trade') {
+    const n1 = mk('project', nm, 80, 260, { projectId: pid, autoRun: true }, '进入交易桌面，自动打开行情与下单');
+    const n2 = mk('window', '行情窗口', 400, 120, { projectId: pid, match: '行情' }, '前置行情主窗');
+    const n3 = mk('window', '下单窗口', 400, 300, { projectId: pid, match: '下单' }, '前置下单窗口');
+    const n4 = mk('script', '盘前检查', 700, 210, { projectId: pid, path: '' }, '检查数据源、网络、持仓');
+    const n5 = mk('note', '今日交易计划', 1010, 130, {}, '品种、方向、止损、仓位纪律');
+    const n6 = mk('ai', '盘前复盘提示词', 1010, 330, {}, '汇总计划与检查结果，生成盘前复盘');
+    nodes = [n1, n2, n3, n4, n5, n6];
+    edges = [[n1, n2], [n1, n3], [n2, n4], [n3, n4], [n4, n5], [n5, n6]];
+  } else if (name === 'cross') {
+    const g1 = { id: uid('n'), type: 'group', title: nm, note: '', x: 60, y: 90, w: 360, h: 340, color: '', ref: { projectId: pid }, collapsed: false, locked: false, tags: [], z: 0 };
+    const g2 = { id: uid('n'), type: 'group', title: nm2, note: '', x: 700, y: 90, w: 360, h: 340, color: '', ref: { projectId: pid2 }, collapsed: false, locked: false, tags: [], z: 0 };
+    const n1 = mk('project', nm, 90, 160, { projectId: pid }, '上游项目');
+    const n2 = mk('script', '产出交付物', 90, 290, { projectId: pid, path: '' }, '生成交接文件');
+    const n3 = mk('project', nm2, 730, 160, { projectId: pid2 }, '下游项目');
+    const n4 = mk('folder', '接收交付物', 730, 290, { path: '' }, '下游读取上游产物');
+    nodes = [g1, g2, n1, n2, n3, n4];
+    edges = [[n1, n2], [n1, n3], [n2, n4]];
+  } else {
+    C.nodes = []; C.edges = []; sel.clear(); selEdge = null;
+    renderAll(); renderInspector(); queueSave(); pushHistory();
+    return;
+  }
+  C.nodes = nodes;
+  C.edges = edges.map(([a, b]) => ({ id: uid('e'), from: a.id, to: b.id, label: '', kind: 'flow', dashed: false }));
+  if (name === 'cross') C.edges[1].kind = 'handoff', C.edges[1].label = '交接';
+  sel.clear(); selEdge = null;
+  renderAll(); renderInspector(); queueSave(); pushHistory(); fitView();
+  toast('模板已载入，按 ▶ 运行全部试试');
+}
+
+/* ---- 导入 / 导出 ---- */
+$('#ioBtn').onclick = (e) => {
+  const r = e.target.getBoundingClientRect();
+  showMenu(r.left - 60, r.bottom + 6, [
+    { lbl: '导出 / 导入（可换电脑、备份、分享）' },
+    { t: '⬇ 导出画布（JSON）', m: 'io:json' },
+    { t: '⬇ 导出说明书（Markdown）', m: 'io:md' },
+    { hr: true },
+    { t: '⬆ 导入并合并', m: 'io:import' },
+    { t: '⬆ 导入并替换', m: 'io:replace' }
+  ]);
+};
+document.addEventListener('click', async (e) => {
+  // 模板与导入导出的菜单项在这里统一处理（菜单点击也会冒泡到这里）
+  const d = e.target.closest('[data-m]');
+  if (!d) return;
+  const m = d.dataset.m;
+  if (m.startsWith('tpl:')) { loadTemplate(m.slice(4)); return; }
+  if (m === 'io:json') {
+    const r = await window.fde.canvasExportJson();
+    if (r && r.ok) toast('已导出到 ' + r.path);
+    else if (r && r.error) toast('导出失败: ' + r.error, true);
+    return;
+  }
+  if (m === 'io:md') {
+    const r = await window.fde.canvasExportMd();
+    if (r && r.ok) toast('已导出 Markdown 并复制到剪贴板');
+    else if (r && r.error) toast('导出失败: ' + r.error, true);
+    return;
+  }
+  if (m === 'io:import' || m === 'io:replace') {
+    const r = await window.fde.canvasImportJson(m === 'io:replace' ? 'replace' : 'merge');
+    if (r && r.ok) { await loadCanvas(true); fitView(); toast('已导入 ' + r.count + ' 个节点'); }
+    else if (r && r.error) toast('导入失败: ' + r.error, true);
+  }
+});
+
+/* ---- 键盘 ---- */
+document.addEventListener('keydown', (e) => {
+  const inField = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if (e.key === 'Escape') {
+    if ($('#help').classList.contains('on')) { $('#help').classList.remove('on'); return; }
+    if (inField) { document.activeElement.blur(); return; }
+    if (view === 'canvas' && (sel.size || selEdge)) { selectOnly(null); return; }
+    window.fde.closeOverview(); return;
+  }
+  if (inField) return;
+  if (view !== 'canvas') {
+    if (e.key === 'ArrowRight') { idx = Math.min(desks.length - 1, idx + 1); renderCards(); }
+    if (e.key === 'ArrowLeft') { idx = Math.max(0, idx - 1); renderCards(); }
+    if (e.key === 'Enter' && desks[idx]) choose(desks[idx].id);
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= desks.length) choose(desks[n - 1].id);
+    return;
+  }
+  const mod = e.ctrlKey || e.metaKey;
+  if (e.code === 'Space') { spaceDown = true; stage.classList.add('panmode'); }
+  if (e.key === '?' || e.key === 'F1') { $('#help').classList.add('on'); e.preventDefault(); return; }
+  if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if (mod && e.key.toLowerCase() === 'c') { e.preventDefault(); copySelected(); return; }
+  if (mod && e.key.toLowerCase() === 'v') { e.preventDefault(); pasteClip(); return; }
+  if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); cloneSelected(); return; }
+  if (mod && e.key.toLowerCase() === 'f') { e.preventDefault(); searchInput.focus(); return; }
+  if (mod && e.key === 'Enter') { e.preventDefault(); $('#runAllBtn').onclick(); return; }
+  if (mod && e.key === '1') { e.preventDefault(); fitView(); return; }
+  if (mod && e.key === '0') { e.preventDefault(); C.view.z = 1; applyView(); queueSave(); return; }
+  if (mod && e.key.toLowerCase() === 'a') {
+    e.preventDefault();
+    sel = new Set(C.nodes.map(n => n.id));
+    selEdge = null;
+    refreshSelUI();
+    return;
+  }
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (selEdge) deleteEdge(selEdge);
+    else if (sel.size) deleteNodes(Array.from(sel));
+    e.preventDefault();
+    return;
+  }
+  if (e.key === 'Enter' && sel.size === 1) { runOne(Array.from(sel)[0]); return; }
+  if (e.key.startsWith('Arrow') && sel.size) {
+    e.preventDefault();
+    const d = e.shiftKey ? 10 : 1;
+    const dx = e.key === 'ArrowLeft' ? -d : e.key === 'ArrowRight' ? d : 0;
+    const dy = e.key === 'ArrowUp' ? -d : e.key === 'ArrowDown' ? d : 0;
+    sel.forEach(id => { const n = nodeById(id); if (n && !n.locked) { n.x += dx; n.y += dy; } });
+    renderNodes(); queueSave();
+    clearTimeout(window._moveHist);
+    window._moveHist = setTimeout(pushHistory, 600);
+  }
+});
+document.addEventListener('keyup', (e) => {
+  if (e.code === 'Space') { spaceDown = false; stage.classList.remove('panmode'); }
+});
+$('#helpBtn').onclick = () => $('#help').classList.add('on');
+$('#helpClose').onclick = () => $('#help').classList.remove('on');
+$('#help').addEventListener('click', (e) => { if (e.target.id === 'help') $('#help').classList.remove('on'); });
+
+/* ---- 顶部新增按钮 ---- */
+$$('.cbar [data-add]').forEach(b => {
+  b.onclick = () => {
+    const r = stageRect();
+    const c = screenToWorld(r.left + r.width / 2, r.top + r.height / 2);
+    addNode(b.dataset.add, { x: c.x - 120 + (Math.random() * 40), y: c.y - 50 + (Math.random() * 40) }, b.dataset.modal ? { ref: { modal: b.dataset.modal } } : null);
+  };
+});
+
+/* ================= 空画布工具卡（学平台的「文字生图片 / 导演台…」） =================
+ * 点一张卡 = 切进画布，在中央摆好对应的节点组合并连好线，选中主节点直接写提示词就跑。
+ */
+function useModel(n, m) {
+  if (!m) return;
+  n.ref.model = m.name;
+  n.ref.params = defaultParams(m);
+  n.title = m.displayName || m.name;
+}
+async function spawnTool(kind) {
+  // 卡片页点卡：先真的切进画布，并等上次保存的画布数据加载完，再把节点摆上去
+  // （不然节点加进了数据、页面还停在卡片页，看起来就是"点了没反应"）
+  if (view !== 'canvas') setView('canvas');
+  if (viewSwitchLoad) { try { await viewSwitchLoad; } catch (e) {} viewSwitchLoad = null; }
+  // 目录没到就最多等 2.5 秒：网络慢/平台卡住时，节点先摆上，模型到了再自动补
+  if (!MODELSTATE.loaded) await Promise.race([loadCatalog(), wait(2500)]);
+  const r = stageRect();
+  const c = screenToWorld(r.left + r.width / 2, r.top + r.height / 2);
+  const at = (dx, dy) => ({ x: Math.round(c.x + dx - 120), y: Math.round(c.y + dy - 30) });
+  const link = (a, b, label) => C.edges.push({ id: uid('e'), from: a.id, to: b.id, label: label || '', kind: 'flow', dashed: false });
+  let primary = null;
+  try {
+    if (kind === 't2i' || kind === 'i2i') {
+      primary = addNode('gen', at(0, 0), { ref: { modal: 'image' } });
+      if (kind === 'i2i') {
+        useModel(primary, pickModel('image'));
+        primary.note = '点右侧「＋ 选图片」上传参考图（自动换成平台直链），再写提示词；想换模型就到右侧下拉挑';
+      } else {
+        primary.note = '文字生图片：右侧选模型、调比例/画质，写提示词点 ▶ 运行';
+      }
+    } else if (kind === 'article') {
+      const w = addNode('ai', at(-290, -20));
+      w.title = '写文章';
+      w.note = '让 AI 写正文，写完的结果会作为下方配图节点的上下文';
+      primary = addNode('gen', at(150, 0), { ref: { modal: 'image' } });
+      primary.note = '根据上游文章内容配图：在提示词里写「按上面的文章配一张主图：…」';
+      link(w, primary, '配图');
+    } else if (kind === 'compare') {
+      const list = modelsOf('image').filter(m => m.available !== false).slice(0, 3);
+      const made = [];
+      for (let i = 0; i < 3; i++) {
+        const g = addNode('gen', at((i - 1) * 300, 0), { ref: { modal: 'image' } });
+        if (list[i]) useModel(g, list[i]);
+        g.note = '三个节点用同一句提示词，跑完对比哪家效果好';
+        made.push(g);
+      }
+      primary = made[1] || made[0];
+    } else if (kind === 't2v' || kind === 'a2v') {
+      primary = addNode('gen', at(0, 0), { ref: { modal: 'video' } });
+      if (kind === 'a2v') {
+        useModel(primary, pickModel('video'));
+        primary.note = '点右侧「＋ 选音频」上传音频（自动换成平台直链），音频驱动视频；想换模型就到右侧下拉挑';
+      } else {
+        primary.note = '文字生视频：右侧选模型、调时长/比例，写提示词点 ▶ 运行';
+      }
+    } else if (kind === 'i2v') {
+      const g = addNode('gen', at(-250, -10), { ref: { modal: 'image' } });
+      g.note = '先生成一张图';
+      primary = addNode('gen', at(150, 0), { ref: { modal: 'video' } });
+      useModel(primary, pickModel('video'));
+      primary.note = '点右侧「＋ 选图片」上传首帧（也可贴左边生成图的链接），让图动起来';
+      link(g, primary, '首帧');
+    } else if (kind === 'director') {
+      const d = addNode('ai', at(-120, -250));
+      d.title = '导演 · 写分镜';
+      d.note = '让 AI 按题材写 3 条分镜提示词（每条一行），分别贴到下面三个视频节点';
+      const vs = [];
+      for (let i = 0; i < 3; i++) {
+        const v = addNode('gen', at((i - 1) * 300, 60), { ref: { modal: 'video' } });
+        v.note = '贴一条分镜提示词';
+        vs.push(v);
+        link(d, v, '分镜 ' + (i + 1));
+      }
+      primary = vs[1] || vs[0];
+    }
+  } catch (e) { toast('这组工具摆失败：' + ((e && e.message) || e), true, 6000); }
+  if (primary) {
+    sel.clear(); sel.add(primary.id);
+    renderAll(); renderInspector(); queueSave(); pushHistory();
+    __fdeLog('spawn-ok kind=' + kind + ' node=' + primary.id + ' nodes=' + C.nodes.length);
+    toast('已创建「' + (primary.title || kind) + '」· 在右侧写提示词就能跑', false, 3000);
+    setTimeout(() => {
+      const ta = inspector.querySelector('[data-f="genprompt"]');
+      if (ta) { ta.focus(); } else { try { const i2 = inspector.querySelector('input[data-f="title"]'); if (i2) i2.focus(); } catch (e) {} }
+    }, 80);
+  } else {
+    renderAll();   // 失败也要让画布动一下，绝不静悄悄
+  }
+}
+window.__fdeSpawnTool = spawnTool;   // 给末尾的兜底 script 用：主脚本即使部分报错，点卡也能用
+window.__fdeToast = toast;
+
+/* ================= 初始化 ================= */
+loadCards();
+try {
+  const q = new URLSearchParams(location.search);
+  if (q.get('view') === 'canvas') setView('canvas');
+  // 从项目设置的「在画布中查看」跳过来：等数据和画布都加载完再定位
+  const proj = q.get('proj');
+  if (proj) setTimeout(() => focusProject(proj), 500);
+} catch (e) {}
+window.fde.on('fde:setview', (v) => { if (v === 'canvas' || v === 'cards') setView(v); });
+window.fde.on('fde:focus-project', (pid) => { focusProject(pid); });
+// 模型目录（主进程缓存的四类模型）
+window.fde.on('fde:models', (v) => {
+  if (!v) return;
+  MODELSTATE = { models: v.models || [], groups: v.groups || {}, counts: v.counts || {}, loaded: true, error: '' };
+  renderAll();
+  if (!inspectorHot()) renderInspector();
+});
+// 生成任务进度：只更新这个节点的状态，不重载整张画布（避免打断正在编辑的内容）
+window.fde.on('fde:media', (p) => {
+  if (!p || !p.id) return;
+  const n = nodeById(p.id);
+  if (!n || !n.ref) return;
+  if (p.status) n.ref.status = p.status;
+  if (typeof p.progress === 'number') n.ref.progress = p.progress;
+  if (p.urls && p.urls.length) n.ref.urls = p.urls;
+  if (p.error !== undefined) n.ref.error = p.error || '';
+  if (p.cost) n.ref.cost = p.cost;
+  if (p.kind) n.ref.resultKind = p.kind;
+  if (p.taskId) n.ref.taskId = p.taskId;
+  renderNodes();
+  if (sel.size === 1 && sel.has(n.id) && !inspectorHot()) renderInspector();
+});
+// 窗口被系统隐藏过再显示时，rAF 期间没画过，补一次完整重绘（否则可能是白板）
+window.fde.on('fde:redraw', () => { try { if (view === 'cards') loadCards(true); else { renderAll(); renderInspector(); } } catch (e) {} });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  try { if (view === 'cards') loadCards(true); else { renderAll(); applyView(); } } catch (e) {}
+});
+
+setInterval(async () => {
+  if (view === 'cards') {
+    try {
+      const d = await window.fde.getData();
+      const s = JSON.stringify([d.activeId, d.projects, d.originalCount, d.windowTitles, d.inbox]);
+      if (s !== lastDataStr) { lastDataStr = s; loadCards(true); }
+    } catch (err) {}
+  } else {
+    refreshLive();
+  }
+}, 2500);
+
+__fdeLog('overview-js-ready · models=' + MODELSTATE.models.length + ' · nodes=' + C.nodes.length + ' · view=' + view);
+window.addEventListener('beforeunload', () => {
+  if (dirty) { try { window.fde.canvasSave({ nodes: C.nodes, edges: C.edges, view: C.view }); } catch (e) {} }
+});
+</script>
+<script>
+/* 兜底：工具卡点击只靠这一个委托，不依赖上面大脚本的绑定是否绑上。
+   大脚本哪怕中途报错，函数声明照样提升，spawnTool 依然可调 —— 点卡照样能创建。 */
+(function () {
+  let busy = false;
+  document.addEventListener('click', (e) => {
+    const t = e.target;
+    const card = t && t.closest ? t.closest('#toolGrid .toolcard') : null;
+    if (!card) return;
+    const kind = card.dataset.tool;
+    const say = (m, err) => {
+      try { (window.__fdeToast || toast)(m, err, 6000); }
+      catch (x) { try { __fdeLog('toast-fail: ' + m); alert(m); } catch (x2) { alert(m); } }
+    };
+    const fn = window.__fdeSpawnTool;
+    __fdeLog('toolcard-click kind=' + kind + ' fn=' + (typeof fn) + ' nodes=' + (typeof C !== 'undefined' && C.nodes ? C.nodes.length : '?') +
+      ' errs=' + ((window.__fdeBootErrs || []).slice(-2).join(' | ') || '无'));
+    if (typeof fn !== 'function') {
+      say('画布脚本没加载完整：' + (((window.__fdeBootErrs || []).join('；')) || '原因未知') + '。请重启软件再试。', true);
+      return;
+    }
+    if (busy) return;
+    busy = true;
+    setTimeout(() => { busy = false; }, 200);   // 只挡双击连击，别把"连点两张不同的卡"也吞了
+    try { Promise.resolve(fn(kind)).then(() => __fdeLog('toolcard-done kind=' + kind))
+      .catch((err) => say('工具卡出错：' + ((err && err.message) || err), true)); }
+    catch (err) { say('工具卡出错：' + ((err && err.message) || err), true); }
+  }, true);
+})();
+</script>
+</body>
+</html>

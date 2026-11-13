@@ -1,0 +1,18 @@
+{
+  "id": "com.fde.pack.trade-inquiry",
+  "name": "外贸询盘跟进",
+  "projectName": "外贸 · {{product}}（{{market}}）",
+  "version": "1.0.0",
+  "category": "外贸出海",
+  "author": "official",
+  "icon": "📩",
+  "color": "#14b8a6",
+  "desc": "询盘进来 → 客户画像 → 开发信 → 报价 → 跟进。把外贸业务员每天重复的判断沉淀成可复用的流程。",
+  "tags": ["外贸", "询盘", "开发信", "报价"],
+  "permissions": ["autorun", "script", "context", "canvas"],
+  "params": [
+    { "key": "product", "label": "产品线", "type": "text", "default": "五金配件" },
+    { "key": "market", "label": "主要市场", "type": "select", "options": ["欧洲", "北美", "中东", "东南亚"], "default": "欧洲" },
+    { "key": "moq", "label": "起订量 MOQ", "type": "text", "default": "500" }
+  ]
+}

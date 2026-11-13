@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>卖货台 · 选品到复盘</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: #0b0f17; color: #d7dee9;
+    font: 13px/1.6 system-ui, -apple-system, "Microsoft YaHei", sans-serif;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  header {
+    height: 50px; flex: 0 0 50px; display: flex; align-items: center; gap: 10px;
+    padding: 0 14px; border-bottom: 1px solid #1c2636; background: #0e1421;
+    -webkit-app-region: drag;
+  }
+  header .brand { font-weight: 500; font-size: 14px; letter-spacing: .5px; }
+  header .pipeline { display: flex; gap: 6px; margin-left: 14px; }
+  header .pipeline i {
+    font-style: normal; font-size: 11px; color: #5d6b80; padding: 2px 8px;
+    border-radius: 999px; border: 1px solid #1c2636;
+  }
+  header .pipeline i.on { color: #9ecbff; border-color: #2b4a72; background: #12233a; }
+  header .sp { flex: 1; }
+  header button {
+    -webkit-app-region: no-drag; background: #16202f; color: #b8c4d4;
+    border: 1px solid #223046; border-radius: 6px; padding: 5px 10px;
+    font-size: 12px; cursor: pointer;
+  }
+  header button:hover { background: #1c2a3d; color: #e6eef8; }
+  main { flex: 1; display: flex; min-height: 0; }
+  aside {
+    width: 272px; flex: 0 0 272px; border-right: 1px solid #1c2636;
+    display: flex; flex-direction: column; min-height: 0; background: #0d1320;
+  }
+  aside .ahead {
+    padding: 10px 12px 8px; display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid #182234;
+  }
+  aside .ahead b { font-size: 12px; font-weight: 500; color: #8b9ab0; flex: 1; }
+  .mini {
+    background: #13314a; color: #9ecbff; border: 1px solid #235a80;
+    border-radius: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer;
+  }
+  .mini:hover { background: #17405f; }
+  #plist { overflow: auto; flex: 1; padding: 8px; }
+  .pitem {
+    padding: 8px 10px; border-radius: 8px; border: 1px solid #1a2435;
+    background: #111a27; margin-bottom: 7px; cursor: pointer;
+  }
+  .pitem:hover { border-color: #2a3d57; }
+  .pitem.on { border-color: #2f6f9e; background: #12233a; }
+  .pitem .l1 { display: flex; align-items: center; gap: 6px; }
+  .pitem .nm { flex: 1; font-size: 12.5px; color: #dbe4f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pitem .sc { font-size: 11px; font-variant-numeric: tabular-nums; }
+  .pitem .star { flex: 0 0 auto; font-size: 10px; color: #07130c; background: #4ec97a; border-radius: 4px; padding: 1px 5px; }
+  .pitem .l2 { font-size: 11px; color: #6b7b91; margin-top: 2px; }
+  .badge { display: inline-block; font-size: 10.5px; padding: 1px 6px; border-radius: 999px; }
+  .badge.good { background: #12321f; color: #4ec97a; border: 1px solid #1d5233; }
+  .badge.mid { background: #33280f; color: #d6a53a; border: 1px solid #5c4718; }
+  .badge.bad { background: #331619; color: #e2696b; border: 1px solid #5c2629; }
+
+  .stage { flex: 1; overflow: auto; padding: 16px 20px 40px; min-width: 0; }
+  .view { display: none; }
+  .view.on { display: block; }
+  h3 { font-size: 13px; font-weight: 500; color: #93a3ba; margin: 0 0 10px; }
+  .card {
+    background: #101825; border: 1px solid #1a2435; border-radius: 10px;
+    padding: 14px 16px; margin-bottom: 12px;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+  .grid .full { grid-column: 1 / -1; }
+  label.f { display: block; }
+  label.f > span { display: block; font-size: 11px; color: #7c8ba1; margin-bottom: 4px; }
+  input[type=text], input[type=number], select, textarea {
+    width: 100%; background: #0b1220; color: #d7dee9; border: 1px solid #223046;
+    border-radius: 6px; padding: 6px 8px; font: inherit; font-size: 12.5px; outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: #2f6f9e; }
+  textarea { resize: vertical; min-height: 68px; line-height: 1.7; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .btn {
+    background: #17405f; color: #a9d6ff; border: 1px solid #26648c; border-radius: 6px;
+    padding: 6px 12px; font-size: 12.5px; cursor: pointer;
+  }
+  .btn:hover { background: #1b5077; }
+  .btn.ghost { background: #16202f; color: #a9b6c8; border-color: #223046; }
+  .btn.ghost:hover { background: #1c2a3d; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .total { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+  .total b { font-size: 30px; font-weight: 500; letter-spacing: -1px; }
+  .total b.good { color: #4ec97a; } .total b.mid { color: #d6a53a; } .total b.bad { color: #e2696b; }
+  .total small { color: #7c8ba1; font-size: 11.5px; }
+  .dim { display: grid; grid-template-columns: 92px 1fr 46px; align-items: center; gap: 10px; margin-bottom: 7px; }
+  .dim .k { font-size: 11.5px; color: #8b9ab0; }
+  .dim .bar { height: 6px; border-radius: 3px; background: #172232; overflow: hidden; }
+  .dim .bar i { display: block; height: 100%; border-radius: 3px; background: #3d7fb5; }
+  .dim .v { font-size: 11px; color: #6b7b91; text-align: right; font-variant-numeric: tabular-nums; }
+  .why { font-size: 11px; color: #6f8098; margin: 2px 0 0 102px; }
+  .note { font-size: 12px; padding: 8px 10px; border-radius: 7px; margin-bottom: 8px; }
+  .note.bad { background: #2a1417; color: #e79a9c; border: 1px solid #4a1f24; }
+  .note.warn { background: #2a2110; color: #d9b96a; border: 1px solid #4a3a17; }
+  .note.ok { background: #10281a; color: #7fd39b; border: 1px solid #1d4a2e; }
+  .empty { color: #5d6b80; font-size: 12.5px; padding: 26px 0; text-align: center; }
+  .ttl { display: flex; gap: 8px; align-items: flex-start; padding: 7px 9px; border: 1px solid #1a2435; border-radius: 7px; margin-bottom: 6px; background: #0d1421; }
+  .ttl span { flex: 1; font-size: 12.5px; color: #dbe4f0; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 11.5px; color: #8fb8e0; background: #12233a; border: 1px solid #22405c; border-radius: 999px; padding: 2px 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #182234; }
+  th { color: #7c8ba1; font-weight: 400; font-size: 11px; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .adv { font-size: 11.5px; color: #9fb0c6; }
+  .adv.flow { color: #d6a53a; } .adv.trust { color: #e2939a; } .adv.win { color: #4ec97a; }
+  .kpi { display: flex; gap: 22px; flex-wrap: wrap; }
+  .kpi div { min-width: 92px; }
+  .kpi b { display: block; font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .kpi span { font-size: 11px; color: #7c8ba1; }
+  .hint { font-size: 11.5px; color: #6b7b91; margin-top: 6px; }
+  .imp-mask { position: fixed; inset: 0; background: rgba(4,8,14,.72); display: none; align-items: center; justify-content: center; z-index: 90; }
+  .imp-mask.on { display: flex; }
+  .imp-box { width: min(640px, 92vw); background: #0e1622; border: 1px solid #1d2a3d; border-radius: 12px; padding: 16px 18px; }
+  .imp-box h3 { margin: 0 0 8px; }
+  .imp-box textarea { width: 100%; min-height: 150px; background: #0a111b; border: 1px solid #1c2940; border-radius: 8px; color: #dfe6f2; padding: 10px; font: 12px/1.6 Consolas, "Microsoft YaHei", monospace; resize: vertical; outline: none; }
+  .imp-box .tip { font-size: 11.5px; color: #6b7b91; margin: 8px 0; line-height: 1.7; }
+  .toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+    background: #1b2738; color: #dbe4f0; border: 1px solid #2b3d55;
+    padding: 8px 16px; border-radius: 8px; font-size: 12.5px; max-width: 70%;
+    opacity: 0; transition: opacity .18s; pointer-events: none; z-index: 99;
+  }
+  .toast.bad { background: #2a1417; border-color: #5c2629; color: #f0b3b5; }
+
+  /* ---------- 决策卡："先做这个" ---------- */
+  #decision { margin-bottom: 12px; }
+  #decision .dc {
+    background: linear-gradient(180deg, #122518 0%, #101a24 60%);
+    border: 1px solid #285c3a; border-radius: 10px; padding: 13px 16px;
+  }
+  .dc-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .dc-tag { font-size: 10.5px; color: #07130c; background: #4ec97a; border-radius: 999px; padding: 2px 9px; font-weight: 600; }
+  .dc-name { font-size: 15px; color: #e9f2fb; font-weight: 500; }
+  .dc-grade { font-size: 21px; font-variant-numeric: tabular-nums; color: #4ec97a; margin-left: auto; }
+  .dc-grade small { font-size: 11px; color: #6b8b78; margin-left: 4px; }
+  .dc-why { margin: 9px 0 0; padding: 0; list-style: none; }
+  .dc-why li { font-size: 12px; color: #9fb0c6; line-height: 1.9; }
+  .dc-why li::before { content: '·'; color: #4ec97a; margin-right: 7px; font-weight: 700; }
+  .dc-btns { margin-top: 11px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .alts { margin-top: 10px; padding-top: 9px; border-top: 1px dashed #24374a; display: none; }
+  .alts.on { display: block; }
+  .alts .a { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #9fb0c6; padding: 3px 0; }
+  .alts .a b { font-variant-numeric: tabular-nums; color: #7fd39b; width: 26px; }
+  .alts .a .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .skipbox { margin-top: 9px; font-size: 11.5px; color: #7a8899; line-height: 1.8; }
+  .skipbox b { color: #b98a8c; font-weight: 400; }
+
+  /* ---------- 比价表 ---------- */
+  .srctb td, .srctb th { padding: 6px 8px; }
+  .srctb tr.pick td { background: #10281a; }
+  .srctb tr.pick td:first-child { box-shadow: inset 2px 0 0 #4ec97a; }
+  .srctb .best-tag { font-size: 10px; color: #07130c; background: #4ec97a; border-radius: 999px; padding: 1px 6px; margin-left: 6px; }
+  .srctb .u { color: #7aa7c7; font-size: 11.5px; cursor: pointer; }
+
+  /* ---------- 底部"下一步"条 ---------- */
+  #nextBar {
+    position: fixed; left: 272px; right: 0; bottom: 0; z-index: 70;
+    display: flex; align-items: center; gap: 12px; padding: 8px 18px;
+    background: #0c1420f0; border-top: 1px solid #1f2d40; backdrop-filter: blur(6px);
+  }
+  #nextBar .dots { display: flex; gap: 4px; align-items: center; }
+  #nextBar .d { font-size: 10.5px; color: #55657a; border: 1px solid #1c2739; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+  #nextBar .d.done { color: #7fd39b; border-color: #1d4a2e; background: #10281a; }
+  #nextBar .d.cur { color: #a9d6ff; border-color: #2f6f9e; background: #12233a; }
+  #nextBar .tx { flex: 1; font-size: 12px; color: #a8b7c9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .stage { padding-bottom: 66px; }
+
+  /* ---------- 全自动流水线 ---------- */
+  #autoMask { position: fixed; inset: 0; background: rgba(4, 8, 14, .76); display: none; align-items: center; justify-content: center; z-index: 95; }
+  #autoMask.on { display: flex; }
+  .auto-box { width: min(680px, 94vw); background: #0e1622; border: 1px solid #1d2a3d; border-radius: 12px; padding: 16px 18px; }
+  .auto-box h3 { margin: 0 0 6px; color: #e2eaf4; font-size: 14px; }
+  .auto-sub { font-size: 11.5px; color: #6b7b91; line-height: 1.75; margin-bottom: 11px; }
+  .auto-sub b { color: #d6a53a; font-weight: 400; }
+  .astep { display: flex; gap: 9px; align-items: flex-start; padding: 4px 0; font-size: 12px; }
+  .astep .ic { flex: 0 0 15px; text-align: center; color: #45536a; }
+  .astep .lb { flex: 0 0 178px; color: #93a3ba; }
+  .astep .nt { flex: 1; color: #6b7b91; line-height: 1.6; }
+  .astep.run .ic { color: #9ecbff; } .astep.run .nt { color: #9ecbff; }
+  .astep.ok .ic { color: #4ec97a; } .astep.ok .nt { color: #7fd39b; }
+  .astep.warn .ic { color: #d6a53a; } .astep.warn .nt { color: #d9b96a; }
+  .astep.err .ic { color: #e2696b; } .astep.err .nt { color: #e79a9c; }
+  .astep.skip .ic, .astep.skip .nt { color: #55657a; }
+  .auto-out { margin-top: 10px; padding: 9px 11px; background: #0a111b; border: 1px solid #1a2435; border-radius: 8px; font-size: 11.5px; color: #9fb0c6; line-height: 1.95; max-height: 148px; overflow: auto; }
+  .auto-out b { color: #cfe0f2; font-weight: 500; }
+  .auto-out code { color: #7aa7c7; word-break: break-all; }
+  .auto-foot { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">卖货台</div>
+  <div class="pipeline">
+    <i data-step="pick" class="on">1 选品</i>
+    <i data-step="note">2 文案与配图</i>
+    <i data-step="post">3 发布</i>
+    <i data-step="review">4 复盘</i>
+  </div>
+  <div class="sp"></div>
+  <button id="autoBtn" title="选品→拿货校验→文案→合规→首图→配图→发布包，一次跑完">⚡ 全自动跑一轮</button>
+  <button id="aiCfg">⚡ 算力设置</button>
+  <button id="closeBtn">关闭</button>
+</header>
+
+<main>
+  <aside>
+    <div class="ahead">
+      <b>品池</b>
+      <button class="mini" id="agedBtn" title="已按无资质/全年可卖/退货低/客单合适筛过">适老精选</button>
+      <button class="mini" id="srcBtn" title="1688 调研的真实货源（2026-11 参考价），同名品自动进比价、自动换更优">1688 优选货源</button>
+      <button class="mini" id="importBtn" title="把选品工具/1688 采购车导出的货源表粘进来，一次进一批">导入货源</button>
+      <button class="mini" id="newBtn">+ 新建</button>
+    </div>
+    <div id="plist"></div>
+  </aside>
+
+  <div class="stage">
+    <!-- 1 选品 -->
+    <section class="view on" id="v-pick">
+      <div id="decision"></div>
+
+      <div class="card">
+        <h3>填 9 个字段，自动出结论</h3>
+        <div class="grid">
+          <label class="f full"><span>品名</span><input type="text" id="f-name" placeholder="例：免打孔浴室折叠洗澡椅" /></label>
+          <label class="f"><span>类目</span><select id="f-cat"></select></label>
+          <label class="f"><span>售价（元）</span><input type="number" id="f-price" placeholder="159" /></label>
+          <label class="f"><span>佣金率（%）</span><input type="number" id="f-comm" placeholder="25" /></label>
+          <label class="f"><span>拿货价（元，可空）</span><input type="number" id="f-cost" placeholder="45" /></label>
+          <label class="f"><span>竞争度</span><select id="f-comp"></select></label>
+          <label class="f"><span>搜索结果商品数（可空）</span><input type="number" id="f-compCount" placeholder="搜关键词看到的大致条数" /></label>
+          <label class="f"><span>季节性</span><select id="f-season"></select></label>
+          <label class="f"><span>退货风险</span><select id="f-ret"></select></label>
+          <label class="f"><span>资质门槛</span><select id="f-cert"></select></label>
+          <label class="f"><span>好不好拍（1–5）</span><input type="number" id="f-shoot" min="1" max="5" placeholder="4" /></label>
+          <label class="f full"><span>已知卖点 / 使用场景（写人话，越具体越好）</span><textarea id="f-note" placeholder="例：老人坐着洗澡，免打孔夹装，承重 150kg，折起来只占 15cm"></textarea></label>
+          <label class="f full"><span>货源链接（1688 / 拼多多 / 供应商微信发的链接，可空）</span><input type="text" id="f-src" placeholder="https://detail.1688.com/offer/xxxx.html" /></label>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn" id="saveBtn">保存到品池</button>
+          <button class="btn ghost" id="findSrc">找货源（1688）</button>
+          <button class="btn ghost" id="findTaobao">淘宝比价</button>
+          <button class="btn ghost" id="delBtn">删除</button>
+          <span class="hint" id="saveTip"></span>
+        </div>
+      </div>
+
+      <div class="card" id="scoreCard">
+        <div class="empty">填完上面的字段，这里会实时给出分数和结论。</div>
+      </div>
+
+      <div class="card" id="srcCard" style="display:none"></div>
+    </section>
+
+    <!-- 2 文案与配图 -->
+    <section class="view" id="v-note">
+      <div class="card">
+        <h3>选一个品，生成小红书笔记</h3>
+        <div class="row">
+          <select id="notePick" style="flex:1;max-width:320px"></select>
+          <button class="btn" id="genBtn">生成文案</button>
+          <span class="hint" id="genTip"></span>
+        </div>
+        <div class="hint">生成后逐条改：标题留 2–3 个 A/B 测，正文只改第一句。合规检查在本地跑，不花算力。</div>
+      </div>
+      <div id="noteOut"></div>
+    </section>
+
+    <!-- 3 发布 -->
+    <section class="view" id="v-post">
+      <div class="card">
+        <h3>发布前检查</h3>
+        <div id="postChk"></div>
+      </div>
+    </section>
+
+    <!-- 4 复盘 -->
+    <section class="view" id="v-review">
+      <div class="card">
+        <h3>记一条数据（发布 24 小时后再记）</h3>
+        <div class="grid">
+          <label class="f"><span>品</span><select id="r-prod"></select></label>
+          <label class="f"><span>日期</span><input type="text" id="r-date" placeholder="2026-11-08" /></label>
+          <label class="f full"><span>笔记标题</span><input type="text" id="r-title" /></label>
+          <label class="f"><span>曝光</span><input type="number" id="r-imp" /></label>
+          <label class="f"><span>点赞</span><input type="number" id="r-like" /></label>
+          <label class="f"><span>收藏</span><input type="number" id="r-fav" /></label>
+          <label class="f"><span>评论</span><input type="number" id="r-cmt" /></label>
+          <label class="f"><span>私信</span><input type="number" id="r-dm" /></label>
+          <label class="f"><span>成交单数</span><input type="number" id="r-ord" /></label>
+          <label class="f"><span>销售额（元）</span><input type="number" id="r-amount" /></label>
+        </div>
+        <div class="row" style="margin-top:12px"><button class="btn" id="rAdd">记下</button><span class="hint" id="rTip"></span></div>
+      </div>
+      <div class="card"><h3>逐条诊断</h3><div id="rList"></div></div>
+      <div class="card"><h3>按品汇总：继续还是换</h3><div id="rSum"></div></div>
+    </section>
+  </div>
+</main>
+
+<div id="autoMask">
+  <div class="auto-box">
+    <h3>⚡ 全自动跑一轮</h3>
+    <div class="auto-sub">选品 → 拿货校验 → 文案 → 合规 → 首图 → 配图 → 发布包，一次跑完，产物落在本地文件夹。<br>
+      <b>唯一必须你按的是最后那个「发布」</b>：小红书没给个人号开放发布接口，脚本代发属于违规操作，会封号。</div>
+    <div id="autoSteps"></div>
+    <div class="auto-out" id="autoOut">准备中…</div>
+    <div class="auto-foot" id="autoFoot"></div>
+  </div>
+</div>
+
+<div id="nextBar">
+  <div class="dots" id="nextDots"></div>
+  <div class="tx" id="nextTx">载入一批品，系统会直接告诉你先做哪个、下一步点哪里。</div>
+  <button class="btn" id="nextBtn" style="white-space:nowrap">下一步</button>
+</div>
+
+<div class="imp-mask" id="impMask">
+  <div class="imp-box">
+    <h3>导入货源表</h3>
+    <div class="tip">一行一个品/一家货。表头可选：<b>品名,售价,拿货价,货源链接,供应商</b>（没有表头就按这个顺序；逗号、中文逗号、制表符都认）。<br>
+      同一个品填多家 = 自动进比价：导入后直接告诉你哪家毛利最高、该用哪家。<br>
+      来源：1688 采购车 / 已买到的货 / 选品工具导出（店查查、生意参谋等）的表格，直接复制粘贴进来。</div>
+    <textarea id="impText" placeholder="马桶起身扶手,129,42,https://detail.1688.com/offer/123456.html"></textarea>
+    <div class="row" style="margin-top:10px;display:flex;gap:8px;align-items:center">
+      <button class="btn" id="impOk">导入</button>
+      <button class="btn ghost" id="impCancel">取消</button>
+      <span class="hint" id="impTip"></span>
+    </div>
+  </div>
+</div>
+
+<script src="ecom.js"></script>
+<script>
+(function () {
+  'use strict';
+  const E = window.ECOM;
+  const KEY = 'fde.ecom.v1';
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  let state = { products: [], notes: {}, rows: [] };
+  let curId = null;
+  let tab = 'pick';
+
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const d = JSON.parse(raw);
+      state.products = Array.isArray(d.products) ? d.products : [];
+      state.notes = d.notes && typeof d.notes === 'object' ? d.notes : {};
+      state.rows = Array.isArray(d.rows) ? d.rows : [];
+    }
+  } catch (e) {}
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+  const uid = () => 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const cur = () => state.products.find(p => p.id === curId) || null;
+
+  /** 页面内提示（不要用 alert：它会阻塞整个渲染进程，窗口会假死） */
+  let toastEl = null;
+  function toast(msg, bad) {
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.className = 'toast';
+      document.body.appendChild(toastEl);
+    }
+    toastEl.textContent = msg;
+    toastEl.className = 'toast' + (bad ? ' bad' : '');
+    toastEl.style.opacity = '1';
+    clearTimeout(toastEl._t);
+    toastEl._t = setTimeout(() => { toastEl.style.opacity = '0'; }, 2400);
+  }
+
+  /* ---------- 下拉填充 ---------- */
+  function fillSelect(el, opts, cur) {
+    el.innerHTML = opts.map(o => '<option value="' + o.v + '"' + (o.v === cur ? ' selected' : '') + '>' + esc(o.name) + '</option>').join('');
+  }
+  fillSelect($('#f-cat'), E.CATS.map(c => ({ v: c.id, name: c.name })), 'safety');
+  fillSelect($('#f-comp'), E.COMP_OPTS, 'mid');
+  fillSelect($('#f-season'), E.SEASON_OPTS, 'all');
+  fillSelect($('#f-ret'), E.RET_OPTS, 'low');
+  fillSelect($('#f-cert'), E.CERT_OPTS, 'none');
+
+  /* ---------- 表单读写 ---------- */
+  const FIELDS = ['name', 'cat', 'price', 'comm', 'cost', 'comp', 'compCount', 'season', 'ret', 'cert', 'shoot', 'note', 'src'];
+  function readForm() {
+    const o = {};
+    for (const k of FIELDS) {
+      const el = $('#f-' + k);
+      o[k] = el ? el.value.trim() : '';
+    }
+    o.price = Number(o.price) || 0;
+    o.comm = Number(o.comm) || 0;
+    o.cost = Number(o.cost) || 0;
+    o.shoot = Number(o.shoot) || 0;
+    o.compCount = o.compCount === '' ? '' : Number(o.compCount);
+    return o;
+  }
+  function writeForm(p) {
+    const d = p || { cat: 'safety', comp: 'mid', season: 'all', ret: 'low', cert: 'none' };
+    for (const k of FIELDS) {
+      const el = $('#f-' + k);
+      if (el) el.value = d[k] === undefined || d[k] === null ? '' : d[k];
+    }
+  }
+
+  /* ---------- 评分渲染 ---------- */
+  function renderScore() {
+    const d = readForm();
+    const box = $('#scoreCard');
+    if (!d.name) { box.innerHTML = '<div class="empty">填完上面的字段，这里会实时给出分数和结论。</div>'; return; }
+    const s = E.score(d);
+    let h = '<div class="total"><b class="' + s.tone + '">' + s.total + '</b><span class="badge ' + s.tone + '">' + s.verdict + '</span>';
+    h += '<small>满分 100 · ' + (s.verdict === '推荐' ? '可以做，先小批量测' : s.verdict === '可试' ? '能做但要盯紧退货' : '建议放弃，换品') + '</small></div>';
+    for (const p of s.parts) {
+      h += '<div class="dim"><span class="k">' + esc(p.name) + '</span><span class="bar"><i style="width:' + (p.score / 5 * 100) + '%"></i></span><span class="v">' + p.got + '/' + p.w + '</span></div>';
+      if (p.why) h += '<div class="why">' + esc(p.why) + '</div>';
+    }
+    for (const b of s.blocks) h += '<div class="note bad" style="margin-top:10px">✕ ' + esc(b) + '</div>';
+    for (const w of s.warns) h += '<div class="note warn">! ' + esc(w) + '</div>';
+    if (s.best) h += '<div class="note ok" style="margin-top:10px">最强的点：' + esc(s.best.name) + '（' + s.best.got + '/' + s.best.w + '） → 文案就主打这个</div>';
+    if (s.worst && s.worst.got / s.worst.w < 0.5) h += '<div class="note warn">最弱的点：' + esc(s.worst.name) + ' → ' + esc(s.worst.hint) + '</div>';
+    box.innerHTML = h;
+  }
+
+  /* ---------- 决策：先做这个 ---------- */
+  let nextState = null;
+
+  function renderDecision() {
+    const box = $('#decision');
+    if (!state.products.length) { box.innerHTML = ''; return; }
+    const r = E.pickBest(state.products);
+    if (!r.best) {
+      box.innerHTML = '<div class="card"><div class="empty">品池里的品都被硬否决了（要资质 / 退货高），换一批再选。</div></div>';
+      return;
+    }
+    const p = r.best, b = r.bestRow, m = E.margin(p);
+    let h = '<div class="dc">';
+    h += '<div class="dc-head"><span class="dc-tag">先做这个</span>';
+    h += '<span class="dc-name">' + esc(p.name) + '</span>';
+    h += '<span class="badge good">卖 ¥' + (p.price || 0) + '</span>';
+    if (m.ok) h += '<span class="badge good">毛利 ¥' + m.profit + ' / ' + Math.round(m.rate * 100) + '%</span>';
+    else h += '<span class="badge mid">待补拿货价</span>';
+    h += '<span class="dc-grade">' + b.grade + '<small>综合分</small></span></div>';
+    h += '<ul class="dc-why">' + (b.why || []).map(w => '<li>' + esc(w) + '</li>').join('') + '</ul>';
+    h += '<div class="dc-btns">';
+    h += '<button class="btn" id="goBest">就做它 · 直接出文案</button>';
+    h += '<button class="btn ghost" id="goSrc">先拿货（去 1688）</button>';
+    h += '<button class="btn ghost" id="altToggle">看第 2、3 名 ▾</button>';
+    h += '</div>';
+    const alt = r.top.slice(1, 3);
+    h += '<div class="alts" id="alts">';
+    if (!alt.length) h += '<div class="hint">池子里只有这一个能做的品。</div>';
+    for (const a of alt) {
+      h += '<div class="a"><b>' + a.grade + '</b><span class="nm">' + esc(a.p.name) + '</span>' +
+        '<button class="mini" data-pick="' + a.p.id + '">换成这个</button></div>';
+    }
+    h += '</div>';
+    if ((r.skip || []).length) {
+      h += '<div class="skipbox">先别碰：' + r.skip.map(s => esc(s.name) + '（' + esc(s.reason) + '）').join('；') + '</div>';
+    }
+    h += '</div>';
+    box.innerHTML = h;
+
+    $('#goBest').onclick = () => pickOne(p.id, true);
+    $('#goSrc').onclick = () => { pickOne(p.id, false); goSource(); };
+    $('#altToggle').onclick = () => $('#alts').classList.toggle('on');
+    box.querySelectorAll('[data-pick]').forEach(el => { el.onclick = () => pickOne(el.dataset.pick, false); });
+  }
+
+  function pickOne(id, gen) {
+    const p = state.products.find(x => x.id === id);
+    if (!p) return;
+    curId = id; state.picked = id; save();
+    writeForm(p); refreshAll();
+    if (gen) { setTab('note'); genNote(); }
+    else toast('已选「' + p.name + '」，这一步：把拿货价和货源链接填上');
+  }
+
+  /** 去拿货：滚到拿货价那一栏，同时用浏览器搜 1688（关键词已按 GBK 编码） */
+  function goSource() {
+    setTab('pick');
+    const el = $('#f-cost');
+    if (el) { try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {} el.focus(); }
+    openSearchFor('1688');
+  }
+
+  /* ---------- 比价：同一个品，哪家货最好 ---------- */
+  function renderSources() {
+    const box = $('#srcCard');
+    const p = cur();
+    if (!p) { box.style.display = 'none'; return; }
+    box.style.display = '';
+    const cmp = E.compareSources(p);
+    if (!cmp.list.length) {
+      box.innerHTML = '<h3>货源比价</h3><div class="hint">还没有货源。点「找货源（1688）」挑 2–3 家，再用「导入货源」把拿货价粘回来（同一个品填多行），这里会自动算出该用哪家、差几个点毛利。</div>';
+      return;
+    }
+    let h = '<h3>货源比价（同一个品，' + cmp.list.length + ' 家）</h3>';
+    h += '<table class="srctb"><thead><tr><th>供应商</th><th>拿货价</th><th>毛利</th><th>毛利率</th><th></th></tr></thead><tbody>';
+    cmp.list.forEach((s, i) => {
+      const isCur = Number(p.cost) === s.cost;
+      h += '<tr class="' + (i === 0 ? 'pick' : '') + '">';
+      h += '<td>' + esc(s.vendor || '未命名') + (i === 0 ? '<span class="best-tag">毛利最高</span>' : '') + '</td>';
+      h += '<td class="num">¥' + s.cost + '</td>';
+      h += '<td class="num">¥' + s.profit + '</td>';
+      h += '<td class="num">' + Math.round(s.rate * 100) + '%</td>';
+      h += '<td>' + (isCur ? '<span class="hint">已采用</span>' : '<button class="mini" data-use="' + i + '">用这家</button>');
+      if (s.src) h += ' <a class="u" data-open="' + esc(s.src) + '">链接</a>';
+      h += '</td></tr>';
+    });
+    h += '</tbody></table>';
+    if (cmp.list.length > 1 && cmp.delta > 0) {
+      h += '<div class="hint">最贵和最便宜差 ' + cmp.delta + ' 个百分点毛利。别图省事选第一家，两家都拿样品，比做工和包装。</div>';
+    } else if (!cmp.list[0].src) {
+      h += '<div class="hint">把供应商链接也一起粘进来，补货时不用重新找。</div>';
+    }
+    box.innerHTML = h;
+    box.querySelectorAll('[data-use]').forEach(el => {
+      el.onclick = () => {
+        const s = cmp.list[Number(el.dataset.use)];
+        const t = cur();
+        if (!s || !t) return;
+        t.cost = s.cost; t.src = s.src || t.src || ''; t.vendor = s.vendor;
+        save(); writeForm(cur()); refreshAll();
+        toast('已采用「' + (s.vendor || '这家') + '」：拿货 ¥' + s.cost + '，毛利 ¥' + s.profit);
+      };
+    });
+    box.querySelectorAll('[data-open]').forEach(el => {
+      el.onclick = async () => {
+        const r = await window.fde.openExternalUrl(el.dataset.open);
+        if (r && r.ok === false) toast('打不开：' + (r.error || ''), true);
+      };
+    });
+  }
+
+  /* ---------- 下一步：永远知道现在该做哪件事 ---------- */
+  function renderNext() {
+    const p = cur();
+    const n = p ? state.notes[p.id] : null;
+    const ns = E.nextStep({ product: p, picked: state.picked, note: n, rows: state.rows });
+    nextState = ns;
+    $('#nextDots').innerHTML = ns.steps.map((s, i) =>
+      '<span class="d' + (s.done ? ' done' : (i === ns.idx ? ' cur' : '')) + '">' + (i + 1) + ' ' + esc(s.label) + (s.done ? ' ✓' : '') + '</span>').join('');
+    $('#nextTx').textContent = (p ? '' : '还没选品 · ') + ns.todo;
+    $('#nextBtn').textContent = ns.cta;
+  }
+
+  function refreshAll() {
+    renderList(); renderScore(); renderNotePick();
+    renderDecision(); renderSources(); renderNext();
+  }
+
+  function doNext() {
+    const p = cur();
+    const ns = nextState || E.nextStep({ product: p, picked: state.picked, note: p ? state.notes[p.id] : null, rows: state.rows });
+    if (!p || ns.idx === 0) {
+      const r = E.pickBest(state.products);
+      if (r.best) { pickOne(r.best.id, true); return; }
+      toast('先点「适老精选」载入一批品，我才能替你选', true);
+      return;
+    }
+    if (ns.idx === 1) { goSource(); return; }
+    if (ns.idx === 2) { setTab('note'); genNote(); return; }
+    if (ns.idx === 3) { setTab('post'); return; }
+    setTab('review');
+  }
+
+  /* ---------- 品池列表 ---------- */
+  const SEED = [
+    { name: '免打孔浴室折叠洗澡椅', cat: 'safety', price: 159, comm: 25, comp: 'low', compCount: 3200, season: 'all', ret: 'low', cert: 'none', shoot: 5, note: '老人坐着洗澡，免打孔夹装，承重 150kg，折起来只占 15cm' },
+    { name: '马桶起身扶手（夹装）', cat: 'safety', price: 129, comm: 22, comp: 'low', compCount: 4100, season: 'all', ret: 'low', cert: 'none', shoot: 4, note: '夹在马桶边不打孔，起身有支撑，承重 120kg' },
+    { name: '浴室防滑垫（加大）', cat: 'safety', price: 59, comm: 28, comp: 'mid', compCount: 26000, season: 'all', ret: 'low', cert: 'none', shoot: 4, note: '吸盘固定，尺寸 40×60，适合淋浴区' }
+  ];
+  /* 适老精选：按「无资质 / 全年卖 / 退货低 / 客单 45–220 / 能拍」筛的一批，
+     价格带对齐 2026 年市面真实零售价（洗澡椅 80–120、扶手 79–159、马桶增高器 65–95、
+     防滑垫 30–60、夜灯 15–25），compCount 是关键词在售商品数的大致量级。
+     拖鞋这种红海但高转化的品也留着，让分数自己说话（会显示"可试"）。 */
+  const SEED_AGED = [
+    { name: '落地式马桶起身扶手架（免安装）', cat: 'safety', price: 219, comm: 20, cost: 88, comp: 'low', compCount: 3600, season: 'all', ret: 'low', cert: 'none', shoot: 4, note: '不用打孔不用装，落地卡住就能用；可挪到卧室、可带去医院和出租房；承重 150kg。老房瓷砖不敢打孔的家庭最吃这个' },
+    { name: '夹装式马桶扶手（不打孔）', cat: 'safety', price: 129, comm: 22, cost: 42, comp: 'low', compCount: 4100, season: 'all', ret: 'low', cert: 'none', shoot: 4, note: '夹在马桶边拧紧就用，承重 120kg；比吸盘稳得多（吸盘款三天就掉是真实差评高发点），也不破坏防水' },
+    { name: '床边起身扶手（插床垫·可折叠）', cat: 'safety', price: 169, comm: 21, cost: 58, comp: 'low', compCount: 5200, season: 'all', ret: 'low', cert: 'none', shoot: 4, note: '插进床垫下固定，夜里起身有支点；可折下不挡人。子女买给爸妈最常见的送礼款，70% 订单是子女下单' },
+    { name: '浴室折叠洗澡椅（带扶手·可调高）', cat: 'safety', price: 139, comm: 24, cost: 52, comp: 'mid', compCount: 7800, season: 'all', ret: 'low', cert: 'none', shoot: 4, note: '坐着洗澡不晃，凳面高 38cm、承重 150kg，折起来只占 15cm，小卫生间也放得下；带扶手比不带的贵 20 但转化明显好' },
+    { name: '加厚软垫马桶增高器', cat: 'safety', price: 89, comm: 25, cost: 22, comp: 'mid', compCount: 15000, season: 'all', ret: 'low', cert: 'none', shoot: 4, note: '把马桶抬高 10cm，蹲不下去的人起身省一半力；软垫不凉，卡扣式不用工具，装上就能用' },
+    { name: '夜光 L 型扶手（打孔安装）', cat: 'safety', price: 99, comm: 23, cost: 25, comp: 'low', compCount: 6800, season: 'all', ret: 'low', cert: 'none', shoot: 3, note: '关灯自己发光 12 小时，夜里不用摸黑找扶手；杆径 3cm 带防滑纹，握得住。夜光是最好写的差异点' },
+    { name: '可裁剪门槛斜坡垫', cat: 'safety', price: 49, comm: 27, cost: 14, comp: 'low', compCount: 3600, season: 'all', ret: 'low', cert: 'none', shoot: 3, note: '3–8cm 高差一铺就平，轮椅、助行器、推车都能过；橡胶底不打滑，宽度可剪。几乎没人讲这个品，竞争最小' },
+    { name: '橡胶底可裁剪防滑垫（浴室）', cat: 'safety', price: 45, comm: 28, cost: 9, comp: 'mid', compCount: 26000, season: 'all', ret: 'low', cert: 'none', shoot: 4, note: '40×60 可剪，吸盘+橡胶底双固定，湿水不卷边；比亮面砖摩擦大一倍。别买贵的，30–60 元就够，这是用户共识' },
+    { name: '包跟防滑居家拖鞋（老人款）', cat: 'safety', price: 69, comm: 26, cost: 18, comp: 'high', compCount: 45000, season: 'all', ret: 'mid', cert: 'none', shoot: 5, note: '包跟不掉、橡胶底抓地，湿瓷砖上不打滑；送爸妈最容易被"立刻穿上"的入门款。红海，靠内容差异化，注意尺码退货' },
+    { name: '带扶手换鞋凳', cat: 'safety', price: 149, comm: 22, cost: 62, comp: 'low', compCount: 5000, season: 'all', ret: 'low', cert: 'none', shoot: 5, note: '坐着换鞋不弯腰，侧边扶手当起身支点；门口一放就有家居感，最好拍的一件' }
+  ];
+  /* 1688 优选货源（2026-11 联网调研的参考批发价，下单前以实际询价为准）。
+     同名多行 = 多家供应商，导入后自动进比价表；比现有拿货价优势明显的自动换用。 */
+  const SEED_SRC = [
+    '品名,售价,拿货价,供应商',
+    '落地式马桶起身扶手架（免安装）,219,62,衡水宏仁医疗器械·免打孔防滑·98%好评',
+    '落地式马桶起身扶手架（免安装）,219,55,温州尤亮无障碍设施厂·日发300件',
+    '夹装式马桶扶手（不打孔）,129,19,潮州鑫韵五金·折叠式·承重200斤',
+    '夹装式马桶扶手（不打孔）,129,26,赣州夕阳助手·304不锈钢带安全绳',
+    '床边起身扶手（插床垫·可折叠）,169,25,河北华恩医疗·同款已售4100+',
+    '床边起身扶手（插床垫·可折叠）,169,35,铭泉医疗器械·好评97.2%',
+    '浴室折叠洗澡椅（带扶手·可调高）,139,33,衡水乐创医疗·好评100%',
+    '浴室折叠洗澡椅（带扶手·可调高）,139,40,温州好步医疗·铝合金承重150kg',
+    '浴室折叠洗澡椅（带扶手·可调高）,139,58,衡水友康医疗·14年老厂·回头率51%',
+    '加厚软垫马桶增高器,89,16,冀州康雅医疗·回头率59%',
+    '加厚软垫马桶增高器,89,19,衡水赛尔维·超级工厂·已售8100+'
+  ].join('\n');
+  function seed() {
+    seedInto(SEED, '示例品');
+  }
+  function seedInto(list, label) {
+    let n = 0;
+    for (const s of list) {
+      if (state.products.some(p => p.name === s.name)) continue;
+      state.products.push(Object.assign({ id: uid() }, s));
+      n++;
+    }
+    save();
+    if (state.products.length) curId = state.products[0].id;
+    writeForm(cur()); refreshAll();
+    toast(n ? ('载入 ' + n + ' 个' + label + '，顶上已经替你排好「先做这个」') : '这批品已经在品池里了');
+  }
+
+  function renderList() {
+    const box = $('#plist');
+    if (!state.products.length) {
+      box.innerHTML = '<div class="empty">还没有品。<br>点「+ 新建」，从 1688 或小红书抄 9 个数进来。' +
+        '<div style="margin-top:14px"><button class="mini" id="seedAgedBtn">载入适老精选 10 个（已按你的条件筛过）</button></div>' +
+        '<div style="margin-top:8px"><button class="mini" id="seedSrcBtn">或载入 1688 优选货源（11 家比价）</button></div>' +
+        '<div style="margin-top:8px"><button class="mini" id="seedBtn">或先看 3 个示例（可改）</button></div></div>';
+      const ab = box.querySelector('#seedAgedBtn');
+      if (ab) ab.onclick = () => seedInto(SEED_AGED, '适老精选品');
+      const sb = box.querySelector('#seedBtn');
+      if (sb) sb.onclick = seed;
+      const ssb = box.querySelector('#seedSrcBtn');
+      if (ssb) ssb.onclick = () => { importRows(parseSrcTable(SEED_SRC)); };
+      return;
+    }
+    const bestId = (E.pickBest(state.products).best || {}).id;
+    box.innerHTML = state.products.map(p => {
+      const s = E.score(p);
+      const tone = s.tone;
+      const profit = (p.cost > 0 && p.price > 0) ? (p.price - p.cost) : 0;
+      const pr = profit > 0 ? ' · 毛利¥' + profit + '/' + Math.round(profit / p.price * 100) + '%' : '';
+      return '<div class="pitem' + (p.id === curId ? ' on' : '') + '" data-id="' + p.id + '">' +
+        '<div class="l1">' + (p.id === bestId ? '<span class="star">首选</span>' : '') +
+        '<span class="nm">' + esc(p.name || '未命名') + '</span>' +
+        '<span class="sc ' + tone + '">' + s.total + '</span></div>' +
+        '<div class="l2"><span class="badge ' + tone + '">' + s.verdict + '</span> ' +
+        esc((E.CATS.find(c => c.id === p.cat) || {}).name || '') + ' · ¥' + (p.price || 0) + pr + '</div></div>';
+    }).join('');
+    box.querySelectorAll('.pitem').forEach(el => {
+      el.onclick = () => { curId = el.dataset.id; state.picked = curId; writeForm(cur()); refreshAll(); };
+    });
+  }
+
+  function renderNotePick() {
+    const sel = $('#notePick');
+    const opt = state.products.map(p => '<option value="' + p.id + '">' + esc(p.name || '未命名') + '</option>').join('');
+    sel.innerHTML = opt || '<option value="">（先建一个品）</option>';
+    if (curId) sel.value = curId;
+    const r = $('#r-prod');
+    r.innerHTML = opt || '<option value="">（先建一个品）</option>';
+    if (curId) r.value = curId;
+  }
+
+  /* ---------- 笔记渲染 ---------- */
+  function renderNote() {
+    const box = $('#noteOut');
+    const p = cur();
+    if (!p) { box.innerHTML = '<div class="card"><div class="empty">先在左边选一个品。</div></div>'; return; }
+    const n = state.notes[p.id];
+    if (!n) { box.innerHTML = '<div class="card"><div class="empty">还没生成。点上面的「生成文案」。</div></div>'; return; }
+    const all = (n.titles || []).join('\n') + '\n' + (n.body || '') + '\n' + (n.cover || '');
+    const cc = E.compliance(all);
+    let h = '';
+    if (!cc.ok) {
+      for (const hit of cc.hits) {
+        h += '<div class="note bad">✕ ' + esc(hit.kind) + '：' + esc(hit.words.join('、')) + '<br><span style="opacity:.8">' + esc(hit.tip) + '</span></div>';
+      }
+    } else {
+      h += '<div class="note ok">合规检查通过：没有极限词、医疗宣称、站外导流。</div>';
+    }
+    h += '<div class="card"><h3>标题（点一下复制，留 2–3 个做 A/B）</h3>';
+    h += (n.titles || []).map((t, i) => '<div class="ttl"><span>' + esc(t) + '</span><button class="mini" data-copy="' + esc(t) + '">复制</button></div>').join('');
+    h += '</div>';
+    h += '<div class="card"><h3>正文（可直接改）</h3><textarea id="nBody" style="min-height:200px">' + esc(n.body || '') + '</textarea>' +
+      '<div class="row" style="margin-top:8px"><button class="btn ghost" id="copyBody">复制正文</button>' +
+      '<button class="btn ghost" id="copyPack">复制发布包（标题+正文+标签）</button>' +
+      '<button class="btn ghost" id="recheck">重新查合规</button></div>' +
+      '<div class="hint">发布包按小红书发布顺序排好：先粘标题，再粘正文（标签已附在正文末尾）。</div></div>';
+    h += '<div class="card"><h3>首图文案</h3><div class="ttl"><span style="white-space:pre-wrap">' + esc(n.cover || '') + '</span>' +
+      '<button class="mini" data-copy="' + esc(n.cover || '') + '">复制</button></div>' +
+      '<h3 style="margin-top:12px">配图提示词</h3>' +
+      (n.images || []).map(x => '<div class="ttl"><span>' + esc(x) + '</span><button class="mini" data-copy="' + esc(x) + '">复制</button></div>').join('') + '</div>';
+    h += '<div class="card"><h3>标签</h3><div class="tags">' + (n.tags || []).map(t => '<span class="tag">#' + esc(t) + '</span>').join('') + '</div>' +
+      '<div class="row" style="margin-top:8px"><button class="btn ghost" id="copyTags">复制标签</button></div></div>';
+    if ((n.risks || []).length) {
+      h += '<div class="card"><h3>这个品的风险提示</h3>' + n.risks.map(r => '<div class="note warn">! ' + esc(r) + '</div>').join('') + '</div>';
+    }
+    box.innerHTML = h;
+
+    box.querySelectorAll('[data-copy]').forEach(b => {
+      b.onclick = async () => { try { await window.fde.copyText(b.dataset.copy); b.textContent = '已复制'; } catch (e) {} };
+    });
+    const cb = $('#copyBody');
+    if (cb) cb.onclick = async () => { try { await window.fde.copyText($('#nBody').value); cb.textContent = '已复制'; } catch (e) {} };
+    const cp = $('#copyPack');
+    if (cp) cp.onclick = async () => {
+      const title = (n.titles || [])[0] || p.name || '';
+      const body = ($('#nBody') ? $('#nBody').value : (n.body || ''));
+      const tags = (n.tags || []).map(t => '#' + t).join(' ');
+      const pack = '【标题】\n' + title + '\n\n【正文】\n' + body + '\n\n' + tags;
+      try { await window.fde.copyText(pack); cp.textContent = '发布包已复制'; } catch (e) { toast('复制失败：' + e.message, true); }
+    };
+    const ct = $('#copyTags');
+    if (ct) ct.onclick = async () => { try { await window.fde.copyText((n.tags || []).map(t => '#' + t).join(' ')); ct.textContent = '已复制'; } catch (e) {} };
+    const rc = $('#recheck');
+    if (rc) rc.onclick = () => {
+      const nv = $('#nBody').value;
+      state.notes[p.id].body = nv; save();
+      const r = E.compliance(nv + '\n' + (n.titles || []).join('\n') + '\n' + (n.cover || ''));
+      toast(r.ok ? '合规通过，可以发' : r.hits.map(x => x.kind + '：' + x.words.join('、')).join('；'), !r.ok);
+      renderNote();
+    };
+  }
+
+  function renderPost() {
+    const box = $('#postChk');
+    const p = cur();
+    if (!p) { box.innerHTML = '<div class="empty">先选一个品。</div>'; return; }
+    const n = state.notes[p.id];
+    const items = E.checks(p, n).map(c => [c.t, c.ok]);
+    box.innerHTML = items.map(([t, ok]) =>
+      '<div class="note ' + (ok ? 'ok' : 'bad') + '">' + (ok ? '✓ ' : '✕ ') + esc(t) + '</div>').join('') +
+      '<div class="hint">发布后 24 小时再记数据。前 2 小时的数字不作数，容易被自己带偏。</div>';
+  }
+
+  function renderReview() {
+    const list = $('#rList');
+    const rows = state.rows.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    if (!rows.length) {
+      list.innerHTML = '<div class="empty">还没有记录。发布 24 小时后回来记一条。</div>';
+    } else {
+      list.innerHTML = '<table><thead><tr><th>日期</th><th>品</th><th>曝光</th><th>互动</th><th>私信</th><th>成交</th><th>诊断</th></tr></thead><tbody>' +
+        rows.map(r => {
+          const a = E.advice(r);
+          const inter = (Number(r.like) || 0) + (Number(r.fav) || 0) + (Number(r.cmt) || 0);
+          return '<tr><td>' + esc(r.date || '') + '</td><td>' + esc(r.product || '') + '</td>' +
+            '<td class="num">' + (r.imp || 0) + '</td><td class="num">' + inter + '</td>' +
+            '<td class="num">' + (r.dm || 0) + '</td><td class="num">' + (r.ord || 0) + '</td>' +
+            '<td class="adv ' + a.level + '">' + esc(a.text) + '</td></tr>';
+        }).join('') + '</tbody></table>';
+    }
+    const sum = E.summarize(state.rows);
+    $('#rSum').innerHTML = sum.length
+      ? '<table><thead><tr><th>品</th><th>篇数</th><th>曝光</th><th>互动率</th><th>成交</th><th>销售额</th><th>结论</th></tr></thead><tbody>' +
+        sum.map(g => '<tr><td>' + esc(g.product) + '</td><td class="num">' + g.posts + '</td><td class="num">' + g.imp + '</td>' +
+          '<td class="num">' + g.rate.toFixed(1) + '%</td><td class="num">' + g.ord + '</td><td class="num">' + g.amount + '</td>' +
+          '<td class="adv">' + esc(g.call) + '</td></tr>').join('') + '</tbody></table>'
+      : '<div class="empty">攒够 3 条记录，这里会告诉你哪个品该加量、哪个该换。</div>';
+  }
+
+  /* ---------- 切 tab ---------- */
+  function setTab(t) {
+    tab = t;
+    document.querySelectorAll('header .pipeline i').forEach(el => el.classList.toggle('on', el.dataset.step === t));
+    const map = { pick: 'v-pick', note: 'v-note', post: 'v-post', review: 'v-review' };
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+    const el = document.getElementById(map[t]);
+    if (el) el.classList.add('on');
+    if (t === 'note') { renderNotePick(); renderNote(); }
+    if (t === 'post') renderPost();
+    if (t === 'review') renderReview();
+  }
+  document.querySelectorAll('header .pipeline i').forEach(el => { el.onclick = () => setTab(el.dataset.step); });
+
+  /* ---------- 生成文案 ---------- */
+  const fallbackNotes = (p, why) => {
+    const name = p.name || '这个品';
+    const scene = p.note || '';
+    return {
+      titles: [
+        '给爸妈洗澡这件事，我拖了三年才解决',
+        name + '装完第一晚，我妈说早该买了',
+        '不是所有老人都愿意让人扶，但这个能自己来',
+        '家里有老人的，浴室这一步别省',
+        '花一百多改掉一个隐患，值'
+      ],
+      body: '我妈今年七十二，浴室地滑这件事我提醒了很多次，她总说"我扶着墙就行"。\n\n' +
+        '后来还是装了' + name + '。' + (scene ? '选它主要因为：' + scene + '。' : '') +
+        '装的时候没打孔，夹上去拧紧就行，我自己十分钟弄完。\n\n' +
+        '用了一个月，几个真实的变化：\n' +
+        '一是她愿意用了，因为不用求人扶；\n' +
+        '二是收起来不占地，折叠后靠墙放着；\n' +
+        '三是底部有防滑，踩上去不晃。\n\n' +
+        '这类东西不用买贵的，但一定要买装得稳的。装之前量一下家里的尺寸，别买回来装不上。',
+      tags: ['适老化改造', '居家安全', '老人洗澡', '适老好物', '给爸妈买什么', '浴室安全', '防滑', '居家改造', '养老'],
+      cover: '爸妈的浴室\n这一步别省',
+      images: ['浴室实拍：老人坐着洗澡的侧面，能看到折叠椅和扶手，自然光', '细节图：底部防滑脚垫与夹装卡扣特写', '收纳状态：折叠后靠墙，与旁边毛巾架对比大小'],
+      risks: ['涉及"防摔/防跌"表述时不要写成功效承诺，只说使用场景', '不要用老人摔倒的惊悚画面，容易被判不适内容'],
+      at: Date.now(),
+      local: true,
+      why: why || ''
+    };
+  };
+
+  async function genNote() {
+    const p = cur();
+    if (!p) { toast('先在左边选一个品', true); return; }
+    const btn = $('#genBtn');
+    btn.disabled = true; btn.textContent = '生成中…';
+    $('#genTip').textContent = '';
+    let n = null;
+    try {
+      const r = await window.fde.aiChat({
+        messages: [{ role: 'user', content: E.notesPrompt(p) }],
+        maxTokens: 1600,
+        temperature: 0.75,
+        purpose: 'script'
+      });
+      if (r && r.ok) {
+        const obj = E.parseJSON(r.text);
+        if (obj) {
+          const nn = E.normalizeNotes(obj);
+          if (!nn.empty) { n = nn; n.at = Date.now(); n.model = r.model || ''; }
+        }
+      } else if (r) {
+        $('#genTip').textContent = '算力没通（' + (r.error || r.kind || '未知') + '），已用本地模板';
+      }
+    } catch (e) {
+      $('#genTip').textContent = '调用失败，已用本地模板';
+    }
+    if (!n) n = fallbackNotes(p);
+    state.notes[p.id] = n;
+    save();
+    btn.disabled = false; btn.textContent = '生成文案';
+    renderNote();
+    if (n.local) $('#genTip').textContent = ($('#genTip').textContent || '') + ' · 这是本地模板，改完可用';
+    setTab('note'); renderNext();
+  }
+
+  /* ---------- 事件 ---------- */
+  const FORM_IDS = FIELDS.map(k => '#f-' + k).join(',');
+  document.querySelectorAll(FORM_IDS).forEach(el => {
+    el.addEventListener('input', renderScore);
+    el.addEventListener('change', () => { renderScore(); renderSources(); renderNext(); });
+  });
+
+  $('#saveBtn').onclick = () => {
+    const d = readForm();
+    if (!d.name) { $('#saveTip').textContent = '先填品名'; return; }
+    if (curId) {
+      const p = cur();
+      Object.assign(p, d);
+    } else {
+      const p = Object.assign({ id: uid() }, d);
+      state.products.push(p);
+      curId = p.id;
+    }
+    save(); refreshAll();
+    $('#saveTip').textContent = '已保存';
+    setTimeout(() => { $('#saveTip').textContent = ''; }, 1500);
+  };
+
+  let delArm = 0;
+  $('#delBtn').onclick = () => {
+    if (!curId) return;
+    const btn = $('#delBtn');
+    // 两段式确认，避开 confirm() 阻塞渲染进程
+    if (Date.now() - delArm > 3000) {
+      delArm = Date.now();
+      btn.textContent = '确认删除？';
+      setTimeout(() => { btn.textContent = '删除'; }, 3000);
+      return;
+    }
+    delArm = 0;
+    btn.textContent = '删除';
+    const name = cur() ? cur().name : '';
+    state.products = state.products.filter(p => p.id !== curId);
+    delete state.notes[curId];
+    if (name) state.rows = state.rows.filter(r => r.product !== name);
+    curId = null; save(); writeForm(null); refreshAll();
+    toast('已删除');
+  };
+
+  $('#newBtn').onclick = () => {
+    curId = null; writeForm(null); refreshAll(); setTab('pick');
+    $('#f-name').focus();
+  };
+  $('#agedBtn').onclick = () => { setTab('pick'); seedInto(SEED_AGED, '适老精选品'); };
+  $('#srcBtn').onclick = () => {
+    setTab('pick');
+    const r = importRows(parseSrcTable(SEED_SRC));
+    const parts = [];
+    if (r.added) parts.push('新进 ' + r.added + ' 个品');
+    if (r.merged) parts.push(r.merged + ' 家 1688 货源进比价');
+    if (r.adopted) parts.push(r.adopted + ' 个品自动换成更优货源');
+    toast(parts.length ? parts.join('，') + '；比价表里还能人工再挑' : '1688 优选货源已经都在池里了');
+  };
+
+  // 找货源 / 淘宝比价：1688 页面是 GBK，编码交给主进程拼（否则搜索框乱码）
+  async function openSearchFor(platform) {
+    const p = cur();
+    if (platform === '1688') {
+      const src = String((p && p.src) || ($('#f-src') || {}).value || '').trim();
+      if (src) {
+        const r0 = await window.fde.openExternalUrl(src);
+        if (r0 && r0.ok === false) toast('打不开：' + (r0.error || ''), true);
+        return;
+      }
+    }
+    const name = String(($('#f-name') || {}).value || (p && p.name) || '').trim();
+    if (!name) { toast('先填品名（或点「适老精选」载入一批）', true); return; }
+    // 关键词化：去掉括号里的补充说明，搜索命中率更高
+    const kw = name.replace(/[（(][^）)]*[）)]/g, '').trim() || name;
+    let r = null;
+    try { r = await window.fde.openSearch({ platform: platform, keyword: kw }); }
+    catch (e) { r = { ok: false, error: String(e.message || e) }; }
+    if (!r || r.ok === false) { toast('打不开浏览器：' + ((r && r.error) || '未知原因'), true); return; }
+    toast(platform === '1688'
+      ? '已用浏览器搜「' + kw + '」：勾「一件代发」+ 销量排序，优先实力商家 / 回头率高'
+      : '已用浏览器搜「' + kw + '」：看同类零售价，你的定价别超过它');
+  }
+  $('#findSrc').onclick = () => openSearchFor('1688');
+  $('#findTaobao').onclick = () => openSearchFor('taobao');
+
+  /* ---------- 导入货源表（选品工具 / 1688 导出 → 一次进一批） ---------- */
+  function parseSrcTable(text) {
+    const lines = String(text || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (!lines.length) return [];
+    const split = (l) => l.split(/\t|,|，|\|/).map(c => c.trim());
+    const rows = lines.map(split);
+    let col = { name: 0, price: 1, cost: 2, src: 3, vendor: 4 };
+    let start = 0;
+    const head = rows[0].join('|');
+    if (/品名|名称|商品|货品/.test(head)) {
+      const find = (re) => rows[0].findIndex(c => re.test(c));
+      col = {
+        name: find(/品名|名称|商品|货品/),
+        price: find(/售价|零售|单价|价格/),
+        cost: find(/拿货|进货|成本|批发/),
+        src: find(/链接|地址|url/i),
+        vendor: find(/供应商|商家|店铺|厂家|公司/)
+      };
+      start = 1;
+    }
+    const num = (v) => Number(String(v || '').replace(/[^\d.]/g, '')) || 0;
+    const out = [];
+    for (let i = start; i < rows.length; i++) {
+      const r = rows[i];
+      const name = col.name >= 0 ? String(r[col.name] || '') : '';
+      if (!name || name.length < 2) continue;
+      out.push({
+        name,
+        price: col.price >= 0 ? num(r[col.price]) : 0,
+        cost: col.cost >= 0 ? num(r[col.cost]) : 0,
+        src: col.src >= 0 ? String(r[col.src] || '') : '',
+        vendor: col.vendor >= 0 ? String(r[col.vendor] || '') : ''
+      });
+    }
+    return out;
+  }
+
+  /**
+   * 导入货源。同一个品出现多行 = 多家供应商 → 进比价表，而不是当成重复品丢掉；
+   * 品还没有拿货价的，自动采用毛利最高的那家（人还是可以在比价表里改）。
+   */
+  function importRows(rows) {
+    const out = { added: 0, merged: 0, adopted: 0 };
+    let focusId = null;
+    for (const r of rows) {
+      const ex = state.products.find(p => p.name === r.name);
+      if (!ex) {
+        const p = Object.assign({
+          id: uid(), cat: 'safety', comm: 22, comp: 'mid', compCount: 8000,
+          season: 'all', ret: 'low', cert: 'none', shoot: 3,
+          note: '从货源表导入：卖点和竞争度还没核实，选它之后补两句人话'
+        }, r);
+        p.srcs = Number(r.cost) > 0 ? [{ vendor: r.vendor || '', cost: Number(r.cost), src: r.src || '', price: Number(r.price) || 0, at: Date.now() }] : [];
+        if (!Number(p.price) && Number(r.price)) p.price = Number(r.price);
+        if (Number(r.cost) > 0) { p.cost = Number(r.cost); p.vendor = r.vendor || ''; }
+        state.products.push(p);
+        out.added++;
+        focusId = p.id;
+        continue;
+      }
+      if (!Number(ex.price) && Number(r.price)) ex.price = Number(r.price);
+      focusId = ex.id;
+      if (!(Number(r.cost) > 0)) continue;
+      ex.srcs = Array.isArray(ex.srcs) ? ex.srcs : [];
+      const dup = ex.srcs.some(s => Number(s.cost) === Number(r.cost) && String(s.vendor || '') === String(r.vendor || ''));
+      if (!dup) {
+        ex.srcs.push({ vendor: r.vendor || '', cost: Number(r.cost), src: r.src || '', price: Number(r.price) || 0, at: Date.now() });
+        out.merged++;
+      }
+      const best = E.compareSources(ex).best;
+      if (!(Number(ex.cost) > 0)) {
+        if (best) { ex.cost = best.cost; ex.src = best.src || ex.src || ''; ex.vendor = best.vendor || ''; out.adopted++; }
+      } else if (best && Number(ex.price) > 0 && best.cost < ex.cost &&
+        (ex.price - best.cost) / ex.price - (ex.price - ex.cost) / ex.price >= 0.08) {
+        // 新货源比当前采用的毛利高出 8 个点以上 → 自动换用更优货源（人可在比价表里改回）
+        ex.cost = best.cost; ex.src = best.src || ex.src || ''; ex.vendor = best.vendor || ''; out.adopted++;
+      }
+    }
+    if (focusId) curId = focusId;
+    if (out.added || out.merged) { save(); writeForm(cur()); refreshAll(); }
+    return out;
+  }
+
+  $('#importBtn').onclick = () => {
+    $('#impMask').classList.add('on');
+    $('#impTip').textContent = '';
+    $('#impText').value = '';
+    setTimeout(() => { try { $('#impText').focus(); } catch (e) {} }, 30);
+  };
+  $('#impCancel').onclick = () => $('#impMask').classList.remove('on');
+  $('#impOk').onclick = () => {
+    const rows = parseSrcTable($('#impText').value);
+    if (!rows.length) { $('#impTip').textContent = '没认出来：一行一个品，至少要有品名'; return; }
+    const r = importRows(rows);
+    const parts = [];
+    if (r.added) parts.push('新进 ' + r.added + ' 个品');
+    if (r.merged) parts.push(r.merged + ' 家货源进比价');
+    if (r.adopted) parts.push('自动采用最低价 ' + r.adopted + ' 个');
+    $('#impTip').textContent = parts.length ? ('已导入：' + parts.join('，')) : '这些品和货源都已经在池里了';
+    if (r.added || r.merged) {
+      setTimeout(() => {
+        $('#impMask').classList.remove('on');
+        setTab('pick');
+        toast(parts.join('，') + '；比价表在下面，直接点「用这家」');
+      }, 300);
+    }
+  };
+
+  $('#genBtn').onclick = genNote;
+  $('#notePick').onchange = () => {
+    curId = $('#notePick').value; state.picked = curId;
+    writeForm(cur()); refreshAll(); renderNote();
+  };
+
+  $('#rAdd').onclick = () => {
+    const sel = $('#r-prod');
+    const prod = state.products.find(p => p.id === sel.value);
+    const row = {
+      id: uid(), product: prod ? prod.name : '', date: $('#r-date').value.trim(),
+      title: $('#r-title').value.trim(),
+      imp: Number($('#r-imp').value) || 0, like: Number($('#r-like').value) || 0,
+      fav: Number($('#r-fav').value) || 0, cmt: Number($('#r-cmt').value) || 0,
+      dm: Number($('#r-dm').value) || 0, ord: Number($('#r-ord').value) || 0,
+      amount: Number($('#r-amount').value) || 0
+    };
+    if (!row.product) { $('#rTip').textContent = '先选品'; return; }
+    if (!row.date) row.date = new Date().toISOString().slice(0, 10);
+    state.rows.push(row); save();
+    $('#r-imp').value = ''; $('#r-like').value = ''; $('#r-fav').value = ''; $('#r-cmt').value = '';
+    $('#r-dm').value = ''; $('#r-ord').value = ''; $('#r-amount').value = ''; $('#r-title').value = '';
+    $('#rTip').textContent = '已记下';
+    setTimeout(() => { $('#rTip').textContent = ''; }, 1500);
+    renderReview();
+  };
+
+  $('#nextBtn').onclick = doNext;
+  $('#aiCfg').onclick = () => { try { window.fde.aiOpenSettings(); } catch (e) {} };
+  $('#closeBtn').onclick = () => window.close();
+
+  /* ---------- 全自动：选品→拿货校验→文案→合规→首图→配图→发布包 ---------- */
+  const AUTO_STEPS = [
+    { k: 'pick', label: '① 定品' },
+    { k: 'source', label: '② 拿货价 / 货源' },
+    { k: 'copy', label: '③ 生成文案' },
+    { k: 'legal', label: '④ 合规检查' },
+    { k: 'cover', label: '⑤ 首图（本地画）' },
+    { k: 'photo', label: '⑥ AI 配图' },
+    { k: 'export', label: '⑦ 导出发布包' }
+  ];
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  let autoRunning = false;
+  let autoState = {};
+
+  function renderAuto() {
+    $('#autoSteps').innerHTML = AUTO_STEPS.map(s => {
+      const st = autoState[s.k] || { status: '', note: '' };
+      const ic = st.status === 'ok' ? '✓' : st.status === 'run' ? '◌' : st.status === 'warn' ? '!' : st.status === 'err' ? '✕' : st.status === 'skip' ? '–' : '·';
+      return '<div class="astep ' + (st.status || '') + '"><span class="ic">' + ic + '</span>' +
+        '<span class="lb">' + esc(s.label) + '</span><span class="nt">' + esc(st.note || '') + '</span></div>';
+    }).join('');
+  }
+  function setStep(k, status, note) {
+    autoState[k] = { status, note: note || '' };
+    renderAuto();
+  }
+  function autoOut(html) { $('#autoOut').innerHTML = html; }
+
+  /** 本地画第一张图：1080×1440 小红书竖版，暖色纸张感，免算力 */
+  function makeCover(p, n) {
+    const W = 1080, H = 1440;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const g = c.getContext('2d');
+    const bg = g.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#fdf7ec'); bg.addColorStop(1, '#ebdfc9');
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+
+    g.fillStyle = '#2f6b46'; g.fillRect(0, 0, W, 18);
+    g.font = '500 40px "Microsoft YaHei", "Noto Sans SC", sans-serif';
+    g.fillText('适老改造 · 实测', 96, 158);
+
+    const lines = String((n && n.cover) || (p && p.name) || '').split(/\n/).map(s => s.trim()).filter(Boolean).slice(0, 3);
+    let size = 124;
+    for (; size >= 60; size -= 6) {
+      g.font = '700 ' + size + 'px "Microsoft YaHei", "Noto Sans SC", sans-serif';
+      const widest = Math.max.apply(null, lines.map(l => g.measureText(l).width).concat([0]));
+      if (widest <= W - 192) break;
+    }
+    g.fillStyle = '#2b2620';
+    let y = 400;
+    for (const l of lines) {
+      g.fillText(l, 96, y);
+      y += Math.round(size * 1.34);
+    }
+
+    g.strokeStyle = 'rgba(47,107,70,.4)';
+    g.lineWidth = 2;
+    g.setLineDash([12, 12]);
+    g.beginPath(); g.moveTo(96, H - 236); g.lineTo(W - 96, H - 236); g.stroke();
+    g.setLineDash([]);
+
+    g.fillStyle = '#6b6257';
+    g.font = '400 34px "Microsoft YaHei", "Noto Sans SC", sans-serif';
+    const nm = String((p && p.name) || '').replace(/[（(][^）)]*[）)]/g, '').slice(0, 22);
+    g.fillText(nm, 96, H - 168);
+
+    g.fillStyle = 'rgba(47,107,70,.95)';
+    g.font = '500 30px "Microsoft YaHei", "Noto Sans SC", sans-serif';
+    const tag = '给爸妈家改一处';
+    g.fillText(tag, W - 96 - g.measureText(tag).width, H - 88);
+
+    return c.toDataURL('image/png');
+  }
+
+  /** 用平台图片模型出 1 张配图；没有算力或超时就返回失败，让流程继续走 */
+  async function aiPhoto(n, onTick) {
+    let cat = null;
+    try { cat = await window.fde.modelsCatalog(); } catch (e) {}
+    const list = (cat && cat.ok && cat.groups && Array.isArray(cat.groups.image)) ? cat.groups.image : [];
+    if (!list.length) return { ok: false, error: '模型目录里没有图片模型（先去算力设置拉一次模型）' };
+    const model = list[0].id || list[0].name;
+    const prompt = ((n.images && n.images[0]) || '适老家居产品使用场景') +
+      '，3:4 竖构图，真实中国家庭卫生间，自然光，手机拍摄质感，不要文字和水印';
+    let sub = null;
+    try { sub = await window.fde.mediaGenerate({ model, prompt, params: { ratio: '3:4' } }); } catch (e) { sub = { ok: false, error: e.message }; }
+    if (!sub || sub.ok === false) return { ok: false, error: (sub && sub.error) || '提交失败' };
+    const t0 = Date.now();
+    while (Date.now() - t0 < 120000) {
+      await sleep(3000);
+      let st = null;
+      try { st = await window.fde.mediaStatus(sub.taskId); } catch (e) { st = null; }
+      const s = st && st.status;
+      if (!s) continue;
+      if (onTick) onTick(s.running ? ('出图中… ' + (s.progress ? s.progress + '%' : s.statusText || '')) : (s.statusText || ''));
+      if (s.failed) return { ok: false, error: s.error || '生成失败' };
+      if (s.done && s.urls && s.urls.length) return { ok: true, url: s.urls[0], model };
+    }
+    return { ok: false, error: '等了 2 分钟没出图' };
+  }
+
+  function packText(p, n) {
+    const title = (n.titles && n.titles[0]) || p.name || '';
+    return '【标题】\n' + title + '\n\n【正文】\n' + (n.body || '') + '\n\n' + (n.tags || []).map(t => '#' + t).join(' ');
+  }
+
+  async function runAuto() {
+    if (autoRunning) return;
+    autoRunning = true;
+    autoState = {};
+    $('#autoMask').classList.add('on');
+    $('#autoFoot').innerHTML = '<button class="btn ghost" id="autoClose2">关闭</button><span class="hint">跑的时候别关窗口，AI 出图要等一会儿</span>';
+    $('#autoClose2').onclick = () => { if (!autoRunning) $('#autoMask').classList.remove('on'); };
+    renderAuto();
+    autoOut('开始跑…');
+
+    const todo = [];
+    let p = null, n = null, cover = null, photo = null, dir = '';
+
+    try {
+      /* ① 定品 */
+      setStep('pick', 'run', '正在按分数＋毛利排序…');
+      if (!state.products.length) seedInto(SEED_AGED, '适老精选品');
+      const r = E.pickBest(state.products);
+      if (!r.best) throw new Error('品池里没有能做的品（都被资质/退货否决了）');
+      p = r.best;
+      curId = p.id; state.picked = p.id; save();
+      writeForm(p); refreshAll();
+      setStep('pick', 'ok', p.name + '（综合 ' + r.bestRow.grade + ' 分，总分 ' + r.bestRow.s.total + '）');
+
+      /* ② 拿货价 */
+      const m = E.margin(p);
+      if (m.ok && m.rate >= 0.4) {
+        const cmp = E.compareSources(p);
+        if (cmp.best && cmp.best.cost !== Number(p.cost)) {
+          p.cost = cmp.best.cost; p.src = cmp.best.src || p.src; p.vendor = cmp.best.vendor;
+          save(); writeForm(p); refreshAll();
+        }
+        setStep('source', 'ok', '毛利 ¥' + m.profit + '／' + Math.round(m.rate * 100) + '%（拿货 ¥' + p.cost + ' → 卖 ¥' + p.price + '）');
+        if (!p.src) todo.push('货源链接没填：补货时再补，不影响这篇发布');
+      } else if (m.ok) {
+        setStep('source', 'warn', '毛利只有 ' + Math.round(m.rate * 100) + '%，低于 40%：建议换一家供应商');
+        todo.push('毛利偏低，换一家供应商再跑一次');
+      } else {
+        setStep('source', 'warn', '没有拿货价：已替你搜好 1688，挑一家填回来这步才算完');
+        todo.push('去 1688 挑一家，把拿货价 + 链接填回第 2 步（平台不给个人开放商品 API，这步只能人来）');
+        try { await window.fde.openSearch({ platform: '1688', keyword: String(p.name).replace(/[（(][^）)]*[）)]/g, '').trim() }); } catch (e) {}
+      }
+
+      /* ③ 文案 */
+      setStep('copy', 'run', '调模型写 5 条标题＋正文…');
+      let res = null;
+      try {
+        res = await window.fde.aiChat({
+          messages: [{ role: 'user', content: E.notesPrompt(p) }],
+          maxTokens: 1600, temperature: 0.75, purpose: 'script'
+        });
+      } catch (e) { res = { ok: false, error: e.message }; }
+      if (res && res.ok) {
+        const obj = E.parseJSON(res.text);
+        if (obj) {
+          const nn = E.normalizeNotes(obj);
+          if (!nn.empty) { n = nn; n.at = Date.now(); n.model = res.model || ''; }
+        }
+      }
+      if (!n) {
+        n = fallbackNotes(p);
+        setStep('copy', 'warn', '算力没通（' + ((res && (res.error || res.kind)) || '未知') + '），已用本地模板，改两句就能发');
+      } else {
+        setStep('copy', 'ok', (n.titles || []).length + ' 条标题，正文 ' + (n.body || '').length + ' 字');
+      }
+      state.notes[p.id] = n; save();
+
+      /* ④ 合规 */
+      const cc = E.compliance(packText(p, n));
+      if (cc.ok) {
+        setStep('legal', 'ok', '没有极限词 / 医疗宣称 / 站外导流');
+      } else {
+        setStep('legal', 'err', cc.hits.map(h => h.kind + '：' + h.words.join('、')).join('；'));
+        todo.push('文案里有违规词（已标在上方），去第 2 步改两个字再发：' + cc.hits.map(h => h.words[0]).join('、'));
+      }
+
+      /* ⑤ 首图 */
+      setStep('cover', 'run', '本地绘制 1080×1440…');
+      cover = makeCover(p, n);
+      setStep('cover', 'ok', '1080×1440 PNG（暖色纸张感，不用算力）');
+
+      /* ⑥ AI 配图 */
+      setStep('photo', 'run', '调图片模型出 1 张场景图…');
+      photo = await aiPhoto(n, (t) => setStep('photo', 'run', t || '出图中…'));
+      if (photo.ok) setStep('photo', 'ok', '已出图（' + photo.model + '），会一起存进发布包');
+      else {
+        setStep('photo', 'skip', '跳过：' + photo.error + '；用第 2 步的配图提示词自己拍/出图');
+        todo.push('配图没自动出：拿"配图提示词"去别的工具出，或者样品实拍 3 张（自己拍反而更不容易限流）');
+      }
+
+      /* ⑦ 导出 */
+      setStep('export', 'run', '写文件…');
+      const files = [];
+      files.push({ name: '01-标题.txt', text: (n.titles || []).map((t, i) => (i + 1) + '. ' + t).join('\n\n') });
+      files.push({ name: '02-正文.txt', text: (n.body || '') + '\n\n' + (n.tags || []).map(t => '#' + t).join(' ') });
+      files.push({ name: '03-首图.png', dataUrl: cover });
+      if (photo.ok) files.push({ name: '04-配图.png', url: photo.url });
+      const cks = E.checks(p, n);
+      files.push({
+        name: '05-发布清单.txt',
+        text: [
+          '品名：' + p.name,
+          '售价：¥' + p.price + (p.cost ? '　拿货：¥' + p.cost + '　毛利：¥' + (p.price - p.cost) : ''),
+          '综合分：' + E.pickBest(state.products).bestRow.grade,
+          '',
+          '— 发布前检查 —',
+          ...cks.map(c => (c.ok ? '[x] ' : '[ ] ') + c.t),
+          '',
+          '— 怎么发 —',
+          '1. 电脑打开 https://creator.xiaohongshu.com/publish/publish',
+          '2. 上传 03-首图.png（第一张），有 04-配图.png 就放第二张',
+          '3. 粘 01-标题.txt 里的第 1 条作标题，粘 02-正文.txt 作正文',
+          '4. 发布时段：早 7–9 点 或 晚 20–22 点',
+          '5. 24 小时后回卖货台第 4 步记数据',
+          '',
+          todo.length ? '— 还没自动化的 —\n' + todo.map((t, i) => (i + 1) + '. ' + t).join('\n') : '— 全部自动完成 —'
+        ].join('\n')
+      });
+      const ex = await window.fde.ecomExport({ slug: p.name, files: files });
+      if (!ex || ex.ok === false) throw new Error((ex && ex.error) || '写文件失败');
+      dir = ex.dir;
+      setStep('export', 'ok', ex.files.length + ' 个文件 → ' + dir);
+
+      /* 收尾 */
+      autoOut('<b>跑完了：' + esc(p.name) + '</b><br>' +
+        '综合分 ' + E.pickBest(state.products).bestRow.grade + '　毛利 ' + (E.margin(p).ok ? '¥' + E.margin(p).profit + '／' + Math.round(E.margin(p).rate * 100) + '%' : '未知') + '<br>' +
+        '产物：<code>' + esc(dir) + '</code><br>' +
+        (todo.length ? '<b>还要你动手的 ' + todo.length + ' 件</b>：<br>' + todo.map((t, i) => (i + 1) + '. ' + esc(t)).join('<br>') : '<b>全部自动完成</b>，可以直接发') +
+        '<br><br>' + (cc.ok ? '' : '<span style="color:#e79a9c">文案还有违规词，先改再发。</span>'));
+
+      $('#autoFoot').innerHTML =
+        '<button class="btn" id="autoPost">打开发布页</button>' +
+        '<button class="btn ghost" id="autoDir">打开文件夹</button>' +
+        '<button class="btn ghost" id="autoCopy">复制发布包</button>' +
+        '<button class="btn ghost" id="autoClose3">关闭</button>';
+      $('#autoPost').onclick = async () => {
+        const rr = await window.fde.openExternalUrl('https://creator.xiaohongshu.com/publish/publish');
+        if (rr && rr.ok === false) toast('打不开：' + (rr.error || ''), true);
+      };
+      $('#autoDir').onclick = async () => {
+        const rr = await window.fde.ecomShow(dir);
+        if (rr && rr.ok === false) toast(rr.error || '打不开文件夹', true);
+      };
+      $('#autoCopy').onclick = async () => {
+        try { await window.fde.copyText(packText(p, n)); toast('发布包已复制：粘标题、粘正文就行'); } catch (e) { toast('复制失败', true); }
+      };
+      $('#autoClose3').onclick = () => { autoRunning = false; $('#autoMask').classList.remove('on'); refreshAll(); setTab('note'); renderNote(); };
+      refreshAll();
+    } catch (err) {
+      autoOut('<b style="color:#e79a9c">中断：' + esc(err.message || String(err)) + '</b>');
+      $('#autoFoot').innerHTML = '<button class="btn ghost" id="autoClose4">关闭</button><button class="btn" id="autoRetry">重试</button>';
+      $('#autoClose4').onclick = () => { autoRunning = false; $('#autoMask').classList.remove('on'); };
+      $('#autoRetry').onclick = () => { autoRunning = false; runAuto(); };
+    } finally {
+      autoRunning = false;
+    }
+  }
+  $('#autoBtn').onclick = runAuto;
+
+  /* ---------- 启动 ---------- */
+
+  if (state.products.length) { curId = state.products[0].id; writeForm(cur()); }
+  refreshAll();
+  // 诊断/自动化测试钩子：只读快照，不影响运行
+  window.__fdeEcom = () => ({ products: state.products, rows: state.rows, notes: state.notes, curId });
+  const today = new Date().toISOString().slice(0, 10);
+  $('#r-date').value = today;
+})();
+</script>
+</body>
+</html>

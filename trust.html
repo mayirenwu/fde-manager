@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>信任中心 · FDE</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0b0f17; --panel: #11161f; --panel2: #161c27;
+    --line: #1e2635; --line2: #2a3444;
+    --tx: #e6ebf4; --tx2: #9aa6b8; --tx3: #6b7789;
+    --acc: #4f8cff; --ok: #22c55e; --warn: #f59e0b; --err: #ef4444; --pur: #a855f7;
+  }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--tx); overflow: hidden;
+    font: 13px/1.6 -apple-system, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    display: flex; flex-direction: column;
+  }
+  .hd {
+    -webkit-app-region: drag; height: 54px; flex: 0 0 54px;
+    display: flex; align-items: center; gap: 10px; padding: 0 16px;
+    border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  .hd .logo {
+    width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+    background: linear-gradient(135deg, #22c55e, #4f8cff);
+    display: grid; place-items: center; font-weight: 800; font-size: 13px; color: #fff;
+  }
+  .hd h1 { font-size: 14px; font-weight: 650; white-space: nowrap; }
+  .hd .sub { font-size: 11px; color: var(--tx3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hd .grow { flex: 1; }
+  .hd button {
+    -webkit-app-region: no-drag;
+    background: var(--panel2); border: 1px solid var(--line2); color: var(--tx2);
+    border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer;
+  }
+  .hd button:hover { color: var(--tx); border-color: #3a4658; }
+
+  /* 我是谁：确认要记名，所以先让人选身份 */
+  .whoami {
+    -webkit-app-region: no-drag;
+    display: flex; align-items: center; gap: 6px; padding: 3px 4px 3px 8px;
+    background: var(--panel2); border: 1px solid var(--line2); border-radius: 8px;
+  }
+  .whoami .lb { font-size: 10.5px; color: var(--tx3); }
+  .whoami select {
+    background: transparent; border: none; color: var(--tx2); font-size: 11.5px;
+    outline: none; padding: 2px; font-family: inherit; cursor: pointer;
+  }
+  .whoami input {
+    width: 86px; background: #0e131b; border: 1px solid var(--line2); color: var(--tx);
+    border-radius: 5px; padding: 3px 6px; font-size: 11.5px; outline: none; font-family: inherit;
+  }
+
+  .body { flex: 1; display: flex; min-height: 0; }
+
+  /* 左侧导航 */
+  .nav {
+    width: 208px; flex: 0 0 208px; border-right: 1px solid var(--line);
+    background: var(--panel); padding: 12px 8px; overflow-y: auto;
+  }
+  .nav .grp {
+    font-size: 10px; color: #4d5666; letter-spacing: .8px;
+    padding: 10px 10px 5px; font-weight: 600;
+  }
+  .nav .grp:first-child { padding-top: 2px; }
+  .nav .item {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px;
+    font-size: 12.5px; color: var(--tx2); cursor: pointer; margin-bottom: 2px;
+  }
+  .nav .item:hover { background: var(--panel2); color: var(--tx); }
+  .nav .item.on { background: #1b2333; color: #fff; box-shadow: inset 2px 0 0 var(--acc); }
+  .nav .item .ic { font-size: 14px; width: 18px; text-align: center; }
+  .nav .item .badge {
+    margin-left: auto; font-size: 10px; background: #3b2f14; color: var(--warn);
+    border-radius: 20px; padding: 1px 6px; min-width: 18px; text-align: center;
+  }
+  .nav .item .badge.blue { background: #17233d; color: #7fa6ee; }
+  .nav .item .badge.red { background: #3a1d1d; color: #f08a8a; }
+  .nav .hint { font-size: 10.5px; color: #4d5666; padding: 12px 10px 4px; line-height: 1.7; }
+
+  /* 右侧内容 */
+  .content { flex: 1; overflow-y: auto; padding: 18px 20px 44px; min-width: 0; }
+  .page { display: none; }
+  .page.on { display: block; }
+  .page > h2 { font-size: 16px; font-weight: 650; margin-bottom: 4px; }
+  .page > .lead { font-size: 12px; color: var(--tx3); margin-bottom: 14px; line-height: 1.75; max-width: 760px; }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 12px;
+  }
+  .card h3 { font-size: 13px; font-weight: 650; margin-bottom: 3px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .card .tag { font-size: 10px; font-weight: 500; color: var(--tx3); border: 1px solid var(--line2); border-radius: 20px; padding: 1px 7px; }
+  .card .tag.g { color: #7dd3a0; border-color: #215139; }
+  .card .tag.y { color: #e0b566; border-color: #4a3a18; }
+  .card p.tip { font-size: 11.5px; color: var(--tx3); line-height: 1.75; margin-bottom: 10px; }
+
+  /* 项目条 */
+  .projbar {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px;
+  }
+  .projbar .nm { font-size: 14px; font-weight: 650; }
+  .projbar select {
+    background: var(--panel2); border: 1px solid var(--line2); color: var(--tx);
+    border-radius: 7px; padding: 6px 9px; font-size: 12.5px; outline: none; font-family: inherit;
+  }
+  .projbar .meta { font-size: 11px; color: var(--tx3); margin-left: auto; text-align: right; line-height: 1.5; }
+
+  /* 进度 */
+  .prog { height: 6px; background: #1a2130; border-radius: 4px; overflow: hidden; margin: 8px 0 4px; }
+  .prog > i { display: block; height: 100%; background: linear-gradient(90deg, #22c55e, #4f8cff); border-radius: 4px; }
+
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0 4px; }
+  .kpi { background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; }
+  .kpi .v { font-size: 18px; font-weight: 700; letter-spacing: .3px; line-height: 1.25; }
+  .kpi .l { font-size: 10.5px; color: var(--tx3); margin-top: 1px; }
+  .kpi.ok .v { color: var(--ok); }
+  .kpi.warn .v { color: var(--warn); }
+  .kpi.err .v { color: var(--err); }
+
+  /* 确认台账 */
+  .ack {
+    display: flex; gap: 10px; padding: 10px 12px; border-radius: 10px;
+    background: var(--panel2); border: 1px solid var(--line); margin-bottom: 7px;
+  }
+  .ack.turn { border-color: #2b4a7a; background: #131c2b; }
+  .ack.object { border-color: #5b2323; background: #1d1315; }
+  .ack .mark {
+    flex: 0 0 20px; height: 20px; border-radius: 6px; display: grid; place-items: center;
+    font-size: 11px; font-weight: 700; margin-top: 1px;
+  }
+  .ack .mark.pending { background: #202838; color: #6f7d93; }
+  .ack .mark.ok { background: #12331f; color: #4ade80; }
+  .ack .mark.object { background: #3a1d1d; color: #f08a8a; }
+  .ack .main { flex: 1; min-width: 0; }
+  .ack .ttl { font-size: 12.5px; font-weight: 600; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .ack .who { font-size: 10px; color: var(--tx3); border: 1px solid var(--line2); border-radius: 20px; padding: 1px 7px; }
+  .ack .who.me { color: #9db8ff; border-color: #2b4a7a; background: #14203a; }
+  .ack .hint { font-size: 11.5px; color: var(--tx3); line-height: 1.7; margin-top: 3px; }
+  .ack .done { font-size: 11px; color: #7dd3a0; margin-top: 4px; }
+  .ack .obj { font-size: 11.5px; color: #f0a0a0; margin-top: 4px; line-height: 1.7; }
+  .ack .ops { display: flex; gap: 4px; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
+  .ack .ops button {
+    background: none; border: 1px solid var(--line2); color: var(--tx3);
+    border-radius: 6px; padding: 3px 8px; font-size: 11px; cursor: pointer; white-space: nowrap;
+  }
+  .ack .ops button.yes { border-color: #215139; color: #7dd3a0; }
+  .ack .ops button.yes:hover { background: #12331f; color: #a7e8bf; }
+  .ack .ops button.no:hover { color: #f08a8a; border-color: #5b2323; }
+  .ack .ops button:hover { color: var(--tx); }
+  .ackform {
+    margin: 2px 0 9px 30px; padding: 10px 12px; border-radius: 9px;
+    background: #0f1620; border: 1px dashed var(--line2);
+  }
+  .ackform .row { gap: 8px; }
+  .ackform input, .ackform textarea {
+    background: var(--panel2); border: 1px solid var(--line2); color: var(--tx);
+    border-radius: 6px; padding: 5px 8px; font-size: 11.5px; outline: none; font-family: inherit;
+  }
+  .ackform textarea { width: 100%; resize: vertical; min-height: 44px; margin-top: 6px; }
+
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row + .row { margin-top: 8px; }
+  .grow { flex: 1; min-width: 0; }
+  select, input[type=text], input[type=number], textarea {
+    background: var(--panel2); border: 1px solid var(--line2); color: var(--tx);
+    border-radius: 7px; padding: 7px 9px; font-size: 12px; outline: none; font-family: inherit;
+  }
+  select:focus, input:focus, textarea:focus { border-color: #3d5b96; }
+  textarea { resize: vertical; min-height: 54px; line-height: 1.6; }
+  button.btn {
+    background: var(--panel2); border: 1px solid var(--line2); color: var(--tx);
+    border-radius: 7px; padding: 7px 12px; font-size: 12px; cursor: pointer; white-space: nowrap;
+  }
+  button.btn:hover { border-color: #3d4a5e; background: #1b2231; }
+  button.btn.pri { background: #1d4ed8; border-color: #2b62f0; color: #fff; }
+  button.btn.pri:hover { background: #2559e8; }
+  button.btn.gr { background: #166534; border-color: #1d7a3d; color: #fff; }
+  button.btn.gr:hover { background: #187038; }
+  button.btn.sm { padding: 4px 9px; font-size: 11.5px; }
+  button.btn:disabled { opacity: .5; cursor: default; }
+
+  .fld { margin-bottom: 10px; }
+  .fld label { display: block; font-size: 11px; color: var(--tx3); margin-bottom: 4px; }
+  .fld label .req { color: var(--err); }
+  .fld input, .fld textarea, .fld select { width: 100%; }
+  .fld2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .fld3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .fld4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+
+  .chk { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--tx2); cursor: pointer; }
+  .chk input { width: 14px; height: 14px; accent-color: #4f8cff; }
+
+  .facts { font-size: 12px; }
+  .fact { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid #171d29; }
+  .fact:last-child { border-bottom: none; }
+  .fact .k { flex: 0 0 100px; color: var(--tx3); font-size: 11.5px; }
+  .fact .v { color: var(--tx2); word-break: break-all; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 11px; }
+  .fact .v.ok { color: var(--ok); font-family: inherit; font-size: 12px; }
+
+  .tpllist { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tpl {
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 13px; cursor: pointer;
+  }
+  .tpl:hover { border-color: #33415a; background: #1a2231; }
+  .tpl .n { font-size: 12.5px; font-weight: 600; margin-bottom: 3px; }
+  .tpl .d { font-size: 11px; color: var(--tx3); line-height: 1.6; }
+
+  /* 问答 */
+  .qa { border-bottom: 1px solid var(--line); padding: 12px 0; }
+  .qa:last-child { border-bottom: none; }
+  .qa .q { font-size: 13px; font-weight: 600; color: #fff; display: flex; gap: 8px; align-items: flex-start; }
+  .qa .q .n {
+    flex: 0 0 20px; height: 20px; border-radius: 5px; background: #1b2333; color: #7d93bb;
+    font-size: 11px; display: grid; place-items: center; font-weight: 700;
+  }
+  .qa .a { font-size: 12px; color: var(--tx2); line-height: 1.8; margin: 6px 0 0 28px; }
+  .qa .a b { color: #d8e2f5; }
+  .qa .act { margin: 8px 0 0 28px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .qa .act button {
+    background: #1b2333; border: 1px solid #2a3650; color: #9db8ff;
+    border-radius: 6px; padding: 4px 10px; font-size: 11.5px; cursor: pointer;
+  }
+  .qa .act button:hover { background: #22304a; color: #cfe0ff; }
+
+  /* 干系人 */
+  .st {
+    display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px;
+  }
+  .st .av {
+    flex: 0 0 30px; height: 30px; border-radius: 8px; display: grid; place-items: center;
+    font-size: 15px; background: #1f2839;
+  }
+  .st .main { flex: 1; min-width: 0; }
+  .st .l1 { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .st .nm { font-size: 12.5px; font-weight: 600; }
+  .st .rl { font-size: 10.5px; color: var(--tx3); }
+  .st .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .st .worry { font-size: 11.5px; color: var(--tx2); margin-top: 4px; line-height: 1.65; }
+  .st .next { font-size: 11.5px; color: #9db8ff; margin-top: 4px; line-height: 1.65; }
+  .st .next b { color: #cfe0ff; }
+  .st .ops { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+  .st .ops button {
+    background: none; border: 1px solid var(--line2); color: var(--tx3);
+    border-radius: 6px; padding: 2px 7px; font-size: 11px; cursor: pointer;
+  }
+  .st .ops button:hover { color: var(--err); border-color: #5b2323; }
+  .st.done { opacity: .55; }
+  .st.done .nm { text-decoration: line-through; }
+
+  /* ROI */
+  .roi { border-radius: 10px; padding: 12px 14px; display: flex; gap: 14px; align-items: center; }
+  .roi.worth { background: #10231a; border: 1px solid #1d5137; }
+  .roi.marginal { background: #241d10; border: 1px solid #4a3a18; }
+  .roi.not-worth { background: #261415; border: 1px solid #5b2323; }
+  .roi.unknown { background: #1a1e28; border: 1px solid var(--line2); }
+  .roi .v { font-size: 20px; font-weight: 700; letter-spacing: .3px; white-space: nowrap; }
+  .roi.worth .v { color: var(--ok); }
+  .roi.marginal .v { color: var(--warn); }
+  .roi.not-worth .v { color: var(--err); }
+  .roi .m { font-size: 11.5px; color: var(--tx2); line-height: 1.7; }
+  .roi .m b { color: var(--tx); }
+
+  .docgrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .doc {
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 13px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .doc .t { font-size: 12.5px; font-weight: 650; }
+  .doc .w { font-size: 11px; color: var(--tx3); line-height: 1.6; flex: 1; }
+  .doc .acts { display: flex; gap: 6px; }
+  .doc .acts button { flex: 1; }
+
+  /* 顾虑回应 */
+  .ob {
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 9px;
+    background: var(--panel);
+  }
+  .ob .say { font-size: 12.5px; font-weight: 600; color: #fff; }
+  .ob .role {
+    font-size: 10px; color: var(--tx3); border: 1px solid var(--line2);
+    border-radius: 20px; padding: 1px 7px; margin-left: 7px;
+  }
+  .ob .line { font-size: 11.5px; line-height: 1.75; margin-top: 6px; display: flex; gap: 7px; }
+  .ob .line .k { flex: 0 0 62px; font-size: 10.5px; }
+  .ob .line.bad .k { color: #d97b7b; }
+  .ob .line.good .k { color: #6cc48c; }
+  .ob .line.basis .k { color: #7d93bb; }
+  .ob .line .t { flex: 1; color: var(--tx2); }
+  .ob .line.good .t { color: #d9e4f5; }
+  .ob .copy {
+    margin-top: 8px; background: none; border: 1px solid var(--line2); color: var(--tx3);
+    border-radius: 6px; padding: 3px 9px; font-size: 11px; cursor: pointer;
+  }
+  .ob .copy:hover { color: var(--tx); }
+
+  /* 预览弹层 */
+  .modal { position: fixed; inset: 0; background: rgba(5,8,13,.82); display: none; z-index: 50; padding: 24px; }
+  .modal.on { display: flex; flex-direction: column; }
+  .modal .bar { display: flex; align-items: center; gap: 10px; padding: 0 0 10px; flex: 0 0 auto; }
+  .modal .bar .t { font-size: 13px; font-weight: 600; }
+  .modal .bar .grow { flex: 1; }
+  .modal iframe { flex: 1; width: 100%; border: 1px solid var(--line2); border-radius: 10px; background: #fff; }
+  .modal pre {
+    flex: 1; overflow: auto; background: #0d1219; border: 1px solid var(--line2);
+    border-radius: 10px; padding: 18px 20px; font-size: 12px; line-height: 1.85;
+    white-space: pre-wrap; word-break: break-word; color: #cfd8e8;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #1b2333; border: 1px solid #33415a; color: #dfe7f5; border-radius: 9px;
+    padding: 9px 16px; font-size: 12px; opacity: 0; pointer-events: none;
+    transition: all .22s ease; z-index: 90; max-width: 70%;
+  }
+  .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.err { border-color: #5b2323; background: #2a1616; color: #ffc9c9; }
+  .empty { font-size: 12px; color: var(--tx3); padding: 10px 2px; line-height: 1.7; }
+  .feed { font-size: 11.5px; color: var(--tx2); line-height: 1.9; }
+  /* 谁在等谁 */
+  .waitline { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .waitline .w {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 11px;
+    border: 1px solid var(--line2); border-radius: 20px; padding: 3px 9px; color: var(--tx3);
+  }
+  .waitline .w b { color: var(--tx2); font-weight: 600; }
+  .waitline .w.done { border-color: #215139; color: #7dd3a0; }
+  .waitline .w.obj { border-color: #5b2323; color: #f08a8a; }
+  /* 确认条目里"这一条对谁有用" */
+  .ack .why { font-size: 11px; color: #7d8798; line-height: 1.65; margin-top: 3px; }
+  .ack .why b { color: #9aa6b8; font-weight: 600; }
+  .grp-h { font-size: 12px; font-weight: 650; color: var(--tx); margin: 16px 0 8px; display: flex; align-items: center; gap: 7px; }
+  .grp-h .n { font-size: 10.5px; color: var(--tx3); font-weight: 400; }
+  .grp-h:first-child { margin-top: 2px; }
+  .nextline { font-size: 12px; line-height: 2; color: var(--tx2); }
+  .nextline .k { color: var(--tx3); }
+  .feed .t { color: #4d5666; margin-right: 8px; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+  <div class="hd">
+    <div class="logo">盾</div>
+    <h1>信任中心</h1>
+    <span class="sub">所有参与方共用的一页：同一份事实、各自要确认的事、材料都在这里</span>
+    <div class="grow"></div>
+    <div class="whoami">
+      <span class="lb">我是</span>
+      <select id="whoRole">
+        <optgroup label="服务方">
+          <option value="fde">交付 / 实施</option>
+        </optgroup>
+        <optgroup label="客户方">
+          <option value="boss">决策人</option>
+          <option value="operator">操作员</option>
+          <option value="reviewer">复核 / 审核</option>
+          <option value="it">IT / 安全</option>
+          <option value="finance">财务 / 采购</option>
+        </optgroup>
+      </select>
+      <input type="text" id="whoName" placeholder="填名字" />
+    </div>
+    <button id="docsBtn" title="打开已导出的交付文档目录">📁 文档</button>
+    <button id="closeBtn">关闭</button>
+  </div>
+
+  <div class="body">
+    <div class="nav">
+      <div class="grp">这件事</div>
+      <div class="item on" data-p="home"><span class="ic">🏠</span>协作台<span class="badge" id="bHome"></span></div>
+      <div class="item" data-p="people"><span class="ic">👥</span>人和分工</div>
+      <div class="item" data-p="evidence"><span class="ic">✅</span>核对与签认</div>
+      <div class="grp">材料</div>
+      <div class="item" data-p="security"><span class="ic">🔒</span>数据与安全</div>
+      <div class="item" data-p="case"><span class="ic">🏆</span>案例</div>
+      <div class="item" data-p="terms"><span class="ic">📄</span>条款与约定</div>
+      <div class="grp">参考</div>
+      <div class="item" data-p="qa"><span class="ic">💬</span>各方问答</div>
+      <div class="hint">确认、异议、导出记录都留在这台机器上，谁在什么时候点的都可以查。切换上面的身份，这一页会告诉你轮到谁。</div>
+    </div>
+
+    <div class="content">
+      <!-- ============ 1. 协作台 ============ -->
+      <div class="page on" id="p-home">
+        <h2>这个项目现在到哪一步</h2>
+        <p class="lead">这一页给所有参与的人看：客户方的决策人、操作员、复核人、IT、财务，以及服务方。八项确认各自署名，谁点的、什么时候点的都记在这里——不存在两套说法。</p>
+
+        <div class="projbar">
+          <span style="font-size:12px;color:var(--tx3);">项目</span>
+          <select id="homeProject"></select>
+          <div class="meta" id="homeMeta"></div>
+        </div>
+
+        <div class="card" id="homeStats"></div>
+
+        <div class="card" id="homeNext"></div>
+
+        <div class="card">
+          <h3>要一起确认的八件事 <span class="tag" id="ackTag">0 / 0</span></h3>
+          <p class="tip">每一项都对不止一方有用——所以谁都得看。确认会记下名字和时间，写进验收材料；认为不对就点「有异议」，把问题写清楚。有异议不是坏事，比签完再返工省钱。</p>
+          <div class="row" style="margin-bottom:10px;">
+            <button class="btn sm" id="ackDigest">📋 复制确认摘要</button>
+            <span style="font-size:11px;color:var(--tx3);">贴到群里、附在报告后面，各方看到的是同一份</span>
+          </div>
+          <div id="ackList"></div>
+        </div>
+
+        <div class="card">
+          <h3>最近实际发生的事 <span class="tag">来自运行记录</span></h3>
+          <div class="feed" id="homeFeed"></div>
+        </div>
+      </div>
+
+      <!-- ============ 2. 人和分工 ============ -->
+      <div class="page" id="p-people">
+        <h2>谁在做，谁在核，谁有权叫停</h2>
+        <p class="lead">一个项目推不动，通常是这三个人里有一个没对上：做事的人、复核的人、拍板的人。下面写的「关心什么」不是揣测——是各方自己的顾虑，后面每条都对应一份已经写好的做法。</p>
+
+        <div class="projbar">
+          <span style="font-size:12px;color:var(--tx3);">项目</span>
+          <select id="ppProject"></select>
+        </div>
+
+        <div class="card">
+          <h3>已经登记的人 <span class="tag" id="stCount">0 人</span></h3>
+          <p class="tip">「下一步」按角色和当前状态给，谁打开都能看到该先做什么。谈成了勾一下，状态变了改一下。</p>
+          <div id="stList"><div class="empty">还没有登记。先把三个人写下来：做事的人、复核的人、拍板的人。</div></div>
+        </div>
+
+        <div class="card">
+          <h3>加一个人</h3>
+          <div class="row">
+            <input type="text" id="stName" placeholder="姓名 / 称呼" style="flex:1;" />
+            <select id="stRole" style="width:150px;"></select>
+            <select id="stAtt" style="width:104px;"></select>
+            <select id="stPower" style="width:104px;">
+              <option value="3">能拍板</option>
+              <option value="2" selected>能影响</option>
+              <option value="1">只能配合</option>
+            </select>
+            <button class="btn pri" id="stAdd">添加</button>
+          </div>
+          <div class="fld2" style="margin-top:10px;">
+            <div class="fld"><label>他关心什么（用他的原话最好）</label><input type="text" id="stWorry" placeholder="「这是不是要裁人？」" /></div>
+            <div class="fld"><label>对应的做法</label><input type="text" id="stAction" placeholder="留空则用默认建议" /></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>这次算的账 <span class="tag">口径一起定</span></h3>
+          <p class="tip">「每次人工耗时」和「每月频次」决定这份账能不能看。频次留空就用近 30 天实测——用实际跑出来的数，比谁拍的数字都服人。</p>
+          <div class="fld2">
+            <div class="fld"><label>流程名称（对外说法）</label><input type="text" id="dcFlow" placeholder="亚马逊订单处理" /></div>
+            <div class="fld"><label>每次人工耗时（分钟）</label><input type="number" id="dcPerRun" min="0" placeholder="120" /></div>
+          </div>
+          <div class="fld4">
+            <div class="fld"><label>之后每次复核（分钟）</label><input type="number" id="dcReview" min="0" placeholder="5" /></div>
+            <div class="fld"><label>每月频次（留空 = 实测）</label><input type="number" id="dcFreq" min="0" placeholder="22" /></div>
+            <div class="fld"><label>人力小时成本（元）</label><input type="number" id="dcRate" min="0" placeholder="80" /></div>
+            <div class="fld"><label>服务月费（元，可 0）</label><input type="number" id="dcFee" min="0" placeholder="0" /></div>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <button class="btn pri" id="dcSave">保存口径</button>
+            <span style="font-size:11px;color:var(--tx3);">保存后，下面三份文件同时更新；口径本身也进确认清单</span>
+          </div>
+        </div>
+
+        <div class="card" id="roiCard"></div>
+
+        <div class="card">
+          <h3>同一件事，三个版本 <span class="tag">各看各的，数字是同一套</span></h3>
+          <p class="tip">都不超过一页 A4。三份用的数字完全一样，只是详略不同：拍板的人看结论，做事的人看步骤，复核的人看边界。</p>
+          <div class="docgrid">
+            <div class="doc">
+              <div class="t">👑 决策版</div>
+              <div class="w">一页账：每月支出、做完省多少、不做的代价、三个选项（含"暂不做"）。顶部一句话可以直接转给上级或合伙人。</div>
+              <div class="acts"><button class="btn sm" data-pv="boss">预览</button><button class="btn sm pri" data-ex="boss">导出</button></div>
+            </div>
+            <div class="doc">
+              <div class="t">🧑‍💻 操作版</div>
+              <div class="w">先写清哪些事不涉及（编制、汇报关系），再写清哪几步还要人判断，署名留给谁。做的事变了，权限没变小。</div>
+              <div class="acts"><button class="btn sm" data-pv="operator">预览</button><button class="btn sm pri" data-ex="operator">导出</button></div>
+            </div>
+            <div class="doc">
+              <div class="t">🔍 核对版</div>
+              <div class="w">5 项核对清单 + 三种结论（通过 / 有条件通过 / 不通过）。签的是"核对过这几项"，不是"为结果担保"。</div>
+              <div class="acts"><button class="btn sm" data-pv="reviewer">预览</button><button class="btn sm pri" data-ex="reviewer">导出</button></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>文件里用到的名字与约定</h3>
+          <div class="fld3">
+            <div class="fld"><label>操作员名字（写进"署名权"）</label><input type="text" id="dcOperator" placeholder="老王" /></div>
+            <div class="fld"><label>复核人名字</label><input type="text" id="dcReviewer" placeholder="李会计" /></div>
+            <div class="fld"><label>日常对接人 + 联系方式</label><input type="text" id="dcContact" placeholder="老王 / 138xxxx" /></div>
+          </div>
+          <div class="fld"><label>步骤对照（一行一步，用 | 分隔：这一步 | 原来怎么做 | 现在怎么做 | 人还要做什么）</label>
+            <textarea id="dcSteps" rows="4" placeholder="导订单 | 逐个后台导出另存 | 程序自动导出 | 确认有没有缺表&#10;核对库存 | 一行行对 | 程序出差异清单 | 判断差异要不要处理&#10;出补货建议 | 凭经验估 | 程序按定好的规则算 | 改规则、拍板"></textarea>
+          </div>
+          <button class="btn pri" id="dcSave2">保存</button>
+        </div>
+
+        <div class="card">
+          <h3>决策记录 <span class="tag">换人时 30 秒能讲清</span></h3>
+          <p class="tip">记清"谁批的、什么时候、批的什么范围、当时算的什么账"。接手的人最关心的是"我接下要担什么"，而不是"之前做得多好"。</p>
+          <div class="fld3">
+            <div class="fld"><label>当初拍板的人</label><input type="text" id="cgApprovedBy" placeholder="张总 / 运营副总" /></div>
+            <div class="fld"><label>拍板时间</label><input type="text" id="cgApprovedAt" placeholder="2026-10-15" /></div>
+            <div class="fld"><label>内部支持者（尽量 3 个）</label><input type="text" id="cgSponsor" placeholder="王主管、李会计、IT 老陈" /></div>
+          </div>
+          <div class="fld"><label>批准的范围（写清边界，换人时不会被无限扩大）</label><input type="text" id="cgScope" placeholder="仅美国站订单处理，不含定价与广告" /></div>
+          <div class="fld"><label>备注（当时的成本数字 / 承诺过什么）</label><textarea id="cgNote" rows="2" placeholder="当时算的是每月省 40 小时，同意先做一条流程，不满意可停。"></textarea></div>
+          <button class="btn pri" id="cgSave">保存记录</button>
+        </div>
+
+        <div class="card">
+          <h3>各方关心的事，和对应的做法 <span class="tag">客户方与服务方都能看</span></h3>
+          <p class="tip">按角色分组。说法都摆在台面上：先看这句大概会怎么问，再看哪种回应容易失效、哪种更站得住，依据是什么。客户看了知道自己的顾虑被写下来了，服务方也不用临场编。</p>
+          <div id="obList"></div>
+        </div>
+
+        <div class="card">
+          <h3>双方都可能卡住的地方 <span class="tag">先说清，不伤感情</span></h3>
+          <p class="tip">这类合作里反复出现的四件事，不是谁对谁错。提前写清处理方式，比事后各说各话便宜。</p>
+          <div id="mutualList"></div>
+        </div>
+      </div>
+
+      <!-- ============ 3. 核对与签认 ============ -->
+      <div class="page" id="p-evidence">
+        <h2>核对与签认</h2>
+        <p class="lead">这一页出的是双方各留一份的材料。数字全部来自本机运行记录：脚本清单、执行次数、成功率、退出码，逐条可翻；失败记录保留，不做筛选——藏起来的报告，核对的人一眼就能看出来。</p>
+
+        <div class="projbar">
+          <span style="font-size:12px;color:var(--tx3);">项目</span>
+          <select id="evProject"></select>
+        </div>
+
+        <div class="card">
+          <h3>这一页怎么用 <span class="tag">三种人看三样东西</span></h3>
+          <div class="docgrid">
+            <div class="doc">
+              <div class="t">🧑‍💻 做事的人</div>
+              <div class="w">看脚本清单：哪些活已经不用手做了，哪一步还要自己判断。有对不上的，当场说。</div>
+            </div>
+            <div class="doc">
+              <div class="t">🔍 复核的人</div>
+              <div class="w">看执行记录与失败明细：逐条核对，有保留就写进保留意见，一样算通过。</div>
+            </div>
+            <div class="doc">
+              <div class="t">👑 拍板的人</div>
+              <div class="w">看释放工时和结论：签字，或者写"有条件通过"并说明条件。不用看代码。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="row">
+            <span style="font-size:12px;color:var(--tx3);flex:0 0 60px;">区间</span>
+            <select id="evRange" class="grow">
+              <option value="30">近 30 天</option>
+              <option value="90">近 90 天</option>
+              <option value="365">近一年</option>
+              <option value="0">全部记录</option>
+            </select>
+            <span style="font-size:11px;color:var(--tx3);">服务方</span>
+            <input type="text" id="evOperator" placeholder="公司 / 姓名" style="width:140px;" />
+            <button class="btn pri" id="evGen">生成预览</button>
+          </div>
+        </div>
+
+        <div class="card" id="evStats"></div>
+
+        <div class="card">
+          <h3>本期结论 <span class="tag">三种都算通过</span></h3>
+          <p class="tip">最后一项确认就是结论。选「有异议」也可以，把原因写进备注——写清原因的不通过，比含糊的通过更省事。</p>
+          <div id="ackList2"></div>
+        </div>
+
+        <div class="empty" id="evHint">确认无误后再导出 PDF。导出的文件保存在「文档 / FDE-交付文档」，双方各留一份，可以打印、盖章、扫描存档。</div>
+      </div>
+
+      <!-- ============ 4. 数据与安全 ============ -->
+      <div class="page" id="p-security">
+        <h2>数据和它待的地方</h2>
+        <p class="lead">这一页是双方共同的底线，不是服务方的自证。列的是程序里真实成立的检测结果；"对外通信"为空，是因为它一个外发请求都没有，断网也能用全部功能。</p>
+        <div class="card">
+          <h3>本机事实 <span class="tag g">自动检测</span></h3>
+          <div class="facts" id="secFacts"></div>
+        </div>
+        <div class="card">
+          <h3>四件事，各自都能核对 <span class="tag">存哪 / 谁能碰 / 怎么删 / 退出归谁</span></h3>
+          <div class="fld2">
+            <div class="fld"><label>存在哪</label><div class="tip" style="margin:0;">本机数据目录（上面有具体路径）。不上传、不进服务方服务器、不依赖任何云账号。</div></div>
+            <div class="fld"><label>谁能碰</label><div class="tip" style="margin:0;">只在这台电脑上、用这个系统账号的人。服务方需要现场操作时，由客户方在场，操作记录留在本机日志里。</div></div>
+            <div class="fld"><label>怎么删</label><div class="tip" style="margin:0;">删掉数据目录即清空；要带走就先导出一份环境快照（.fdeenv），文件在谁手里由客户决定。</div></div>
+            <div class="fld"><label>退出后归谁</label><div class="tip" style="margin:0;">数据、脚本、上下文材料都留在客户机器上。不用授权锁、不远程停用，服务方不留副本。</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>这一页能回答什么</h3>
+          <p class="tip">"数据在哪、流向哪、谁能碰、怎么删、退出后归谁"——写清这五件事，IT 和法务能拿去过会，客户也随时能自己核对。口头保证不算，一页纸算。</p>
+          <div class="row">
+            <button class="btn" id="secPreview">先看一遍</button>
+            <button class="btn pri" id="secGen">导出（PDF）</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 5. 案例 ============ -->
+      <div class="page" id="p-case">
+        <h2>案例</h2>
+        <p class="lead">案例卡有两处用处：客户方留档，向内部说明这件事到底做了什么；服务方在下一个类似场景里当参考。所以每张卡对外用之前，要先取得对方同意——这一条写在这里，也写在表单里。</p>
+
+        <div class="projbar">
+          <span style="font-size:12px;color:var(--tx3);">项目</span>
+          <select id="csProject"></select>
+        </div>
+
+        <div class="card">
+          <div class="fld2">
+            <div class="fld"><label>客户名称（可脱敏，如"华东某跨境卖家"）</label><input type="text" id="csClient" placeholder="华东某跨境卖家" /></div>
+            <div class="fld"><label>行业</label><input type="text" id="csIndustry" placeholder="跨境电商 / 亚马逊美国站" /></div>
+          </div>
+          <div class="fld"><label>原来的做法（越具体越可信）</label><textarea id="csPain" placeholder="每天上午人工从 3 个后台导报表，合并后手工核对库存，一个人要花 2 小时，出错后要翻半天才找到是哪张表。"></textarea></div>
+          <div class="fld"><label>做了哪些改动（拆成几步，哪一步还留给人判断）</label><textarea id="csSolution" placeholder="把导表、合并、核对库存拆成 3 个脚本，一键跑完；异常行单独列出来由人确认，其余直接生成补货建议。"></textarea></div>
+          <div class="fld"><label>对方怎么说（第一次交付后主动问一句，比自述有用）</label><textarea id="csQuote" placeholder="以前每天上午都在忙这个，现在点一下，回来看异常清单就行。"></textarea></div>
+          <div class="fld3">
+            <div class="fld"><label>单次人工耗时（分钟）<span class="req">*</span></label><input type="number" id="csMinutes" min="0" placeholder="120" /></div>
+            <div class="fld"><label>人工小时成本（元，可填 0）</label><input type="number" id="csRate" min="0" placeholder="80" /></div>
+            <div class="fld"><label>评价人（称呼 / 职位）</label><input type="text" id="csContact" placeholder="王经理 · 运营负责人" /></div>
+          </div>
+          <div class="row" style="justify-content:space-between;">
+            <label class="chk"><input type="checkbox" id="csPublish" /> 已取得对方同意，可对外使用</label>
+            <div class="row" style="gap:8px;">
+              <button class="btn" id="csSave">保存</button>
+              <button class="btn pri" id="csGen">生成案例卡</button>
+            </div>
+          </div>
+        </div>
+        <div class="empty" id="csHint">「单次人工耗时」是关键——没有它，案例卡上就没有任何可量化的结果。</div>
+      </div>
+
+      <!-- ============ 6. 条款与约定 ============ -->
+      <div class="page" id="p-terms">
+        <h2>条款与约定</h2>
+        <p class="lead">不用每次从零写。下面几份是这类交付的骨架。重点不在谁让一步，而在几条双方都用得上的约定：责任有上限、数据不出本机、退出不锁定、效果只承诺可控的过程指标。</p>
+        <div class="card">
+          <div class="tpllist" id="tplList"></div>
+        </div>
+        <div class="card">
+          <h3>三条对双方都用得上的约定</h3>
+          <p class="tip">
+            <b>一、责任上限。</b>客户知道最坏赔到哪，服务方知道自己的风险边界。边界清楚，签字才不犹豫。<br>
+            <b>二、数据不出本机。</b>数据不离开客户的机器，服务方也不承担保管责任——这条同时保护两边。<br>
+            <b>三、退出不锁定。</b>客户随时能自己接手；服务方不靠授权锁或远程停用留客，靠交付本身留客。
+          </p>
+        </div>
+      </div>
+
+      <!-- ============ 7. 各方问答 ============ -->
+      <div class="page" id="p-qa">
+        <h2>各方最常问的几件事</h2>
+        <p class="lead">不是谁说服谁，是把话说在前面。每一问都配一份能当场打开的材料——打开比解释有用。</p>
+        <div class="card" id="qaList"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="bar">
+      <span class="t" id="mTitle">预览</span>
+      <div class="grow"></div>
+      <button class="btn" id="mCopy" style="display:none;">复制全文</button>
+      <button class="btn pri" id="mExport">导出 PDF</button>
+      <button class="btn" id="mClose">关闭</button>
+    </div>
+    <iframe id="mFrame" style="display:none;"></iframe>
+    <pre id="mPre" style="display:none;"></pre>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+const api = window.fde;
+let S = {
+  projects: [], facts: null, templates: [], roleDefs: {}, attitudes: {}, obstacles: [],
+  cur: 'home', pid: '', csId: '', evId: '',
+  who: localStorage.getItem('fde_trust_who') || '',
+  whoRole: localStorage.getItem('fde_trust_role') || 'fde',
+  mutual: [],
+  ackEdit: null,        // { key, state } 正在填写的确认表单
+  modalKind: '', modalTpl: '', evMeta: null, docKind: ''
+};
+
+function $(s) { return document.querySelector(s); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+let toastTimer = null;
+function toast(msg, isErr) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast on' + (isErr ? ' err' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = 'toast'; }, 2800);
+}
+function fmtBytes(n) {
+  if (!n) return '0 B';
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+  return (n / 1024 / 1024).toFixed(1) + ' MB';
+}
+function fmtTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const p = n => String(n).padStart(2, '0');
+  return (d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function hour1(min) { return Math.round((min || 0) / 6) / 10; }
+function cur() { return S.projects.find(p => p.id === S.pid); }
+function roleLabel(r) { return (S.roleDefs[r] || {}).name || r; }
+
+/* ---------- 我是谁 ---------- */
+$('#whoRole').value = S.whoRole;
+$('#whoName').value = S.who;
+$('#whoRole').onchange = () => {
+  S.whoRole = $('#whoRole').value;
+  localStorage.setItem('fde_trust_role', S.whoRole);
+  renderAcks();
+  renderHomeNext();
+  if (S.cur !== 'home') goPage('home');
+};
+$('#whoName').onchange = () => {
+  S.who = $('#whoName').value.trim();
+  localStorage.setItem('fde_trust_who', S.who);
+  renderAcks();
+};
+
+/* ---------- 导航 ---------- */
+function goPage(p) {
+  S.cur = p;
+  document.querySelectorAll('.nav .item').forEach(x => x.classList.toggle('on', x.dataset.p === p));
+  document.querySelectorAll('.page').forEach(x => x.classList.remove('on'));
+  const el = $('#p-' + p);
+  if (el) el.classList.add('on');
+  $('.content').scrollTop = 0;
+  if (p === 'people') { renderPeople(); fillDocForm(); fillChange(); renderRoi(); }
+  if (p === 'evidence') { renderEvStats(); renderAcks(); }
+  if (p === 'home') { renderHomeStats(); renderAcks(); renderHomeNext(); renderFeed(); }
+  if (p === 'case') loadCaseForm();
+  if (location.hash.slice(1) !== p) history.replaceState(null, '', '#' + p);
+}
+document.querySelectorAll('.nav .item').forEach(el => {
+  el.onclick = () => goPage(el.dataset.p);
+});
+window.addEventListener('hashchange', () => {
+  const h = location.hash.slice(1);
+  if (h && h !== S.cur) goPage(h);
+});
+
+/* ---------- 项目下拉（多处同步） ---------- */
+function fillProjectSelects() {
+  const html = S.projects.map(p => '<option value="' + p.id + '">' + esc(p.name) + '</option>').join('')
+    || '<option value="">（还没有项目）</option>';
+  ['homeProject', 'ppProject', 'evProject', 'csProject'].forEach(id => {
+    const el = $('#' + id);
+    if (!el) return;
+    el.innerHTML = html;
+    if (S.pid) el.value = S.pid;
+  });
+}
+function bindProject(id) {
+  const el = $('#' + id);
+  if (!el) return;
+  el.onchange = () => {
+    S.pid = el.value;
+    ['homeProject', 'ppProject', 'evProject', 'csProject'].forEach(x => {
+      const e = $('#' + x);
+      if (e && e.value !== S.pid) e.value = S.pid;
+    });
+    S.ackEdit = null;
+    renderHomeStats(); renderAcks(); renderHomeNext(); renderFeed();
+    renderPeople(); fillDocForm(); fillChange(); renderRoi();
+    renderEvStats(); loadCaseForm();
+  };
+}
+['homeProject', 'ppProject', 'evProject', 'csProject'].forEach(bindProject);
+
+/* ---------- 协作台 ---------- */
+function renderHomeStats() {
+  const p = cur();
+  const box = $('#homeStats');
+  if (!p) { box.innerHTML = '<div class="empty">还没有项目。先去左侧面板建一个项目，这里会自动出现。</div>'; return; }
+  const a = p.ackStats, c = p.counts;
+  const runState = c.runs >= 5 ? '在用' : c.runs > 0 ? '刚起步' : '还没跑过';
+  box.innerHTML =
+    '<h3>' + esc(p.name) + ' <span class="tag ' + (c.runs ? 'g' : 'y') + '">' + runState + '</span></h3>' +
+    '<p class="tip" style="margin-bottom:2px;">确认进度 ' + a.ok + ' / ' + a.total +
+      (a.object ? '，<span style="color:#f08a8a;">' + a.object + ' 项有异议待处理</span>' : '') +
+      (a.pending ? '，' + a.pending + ' 项还没人看' : '') + '。</p>' +
+    '<div class="prog"><i style="width:' + a.pct + '%"></i></div>' +
+    '<div class="kpis">' +
+      '<div class="kpi"><div class="v">' + c.scripts + '</div><div class="l">自动化脚本</div></div>' +
+      '<div class="kpi"><div class="v">' + c.runs + '</div><div class="l">累计执行</div></div>' +
+      '<div class="kpi ' + (c.successRate == null ? '' : (c.successRate >= 90 ? 'ok' : 'warn')) + '">' +
+        '<div class="v">' + (c.successRate == null ? '—' : c.successRate + '%') + '</div><div class="l">成功率</div></div>' +
+      '<div class="kpi"><div class="v">' + (p.saved.minutes ? hour1(p.saved.minutes) + 'h' : '—') + '</div><div class="l">释放工时</div></div>' +
+    '</div>' +
+    '<div class="waitline">' +
+      '<span class="w done"><b>' + a.ok + '</b> 项已确认</span>' +
+      (a.object ? '<span class="w obj"><b>' + a.object + '</b> 项有异议待处理</span>' : '') +
+      Object.keys(p.wait || {}).map(k => '<span class="w">等 <b>' + esc(k) + '</b> ' + p.wait[k] + ' 项</span>').join('') +
+      (a.complete ? '<span class="w done">八项齐备，可作为验收依据</span>' : '') +
+    '</div>' +
+    '<div style="margin-top:8px;font-size:11px;color:var(--tx3);">纳管窗口 ' + c.windows + ' · 上下文材料 ' + c.context + ' · 工作流节点 ' + c.canvasNodes +
+      ' · 已登记 ' + (p.stakeholders || []).length + ' 人</div>';
+  $('#homeMeta').innerHTML = runState + '<br>' + (c.windows || 0) + ' 个窗口在管';
+}
+
+function renderHomeNext() {
+  const p = cur();
+  const box = $('#homeNext');
+  if (!p) { box.innerHTML = ''; return; }
+  const role = S.whoRole;
+  const isFde = role === 'fde';
+  const mine = p.acks.filter(x => x.state === 'pending' && whoMatch(x));
+  const objs = p.acks.filter(x => x.state === 'object');
+  const btn = (label, go, pri) => '<button class="btn sm' + (pri ? ' pri' : '') + '" data-go="' + go + '" style="margin-left:6px;">' + label + '</button>';
+  const lines = [];
+
+  if (objs.length) {
+    lines.push('<div style="color:#f0a0a0;">有 ' + objs.length + ' 项被提出异议，先处理再往下走：' +
+      objs.map(o => esc(o.title) + '（' + esc(o.by || '未署名') + '）').join('、') + '。</div>');
+  }
+
+  if (mine.length) {
+    lines.push('<div><b>等你确认 ' + mine.length + ' 项：</b>' +
+      mine.map(m => esc(m.title) + btn('去核对', m.page)).join('　') + '</div>');
+    lines.push('<div style="color:var(--tx3);font-size:11.5px;">对不上就点「有异议」，写清哪里不对——异议挂着不会被当成通过。</div>');
+  } else if (!isFde) {
+    const waitFde = p.acks.filter(x => x.state === 'pending' && (x.roles || []).includes('fde')).length;
+    lines.push('<div style="color:var(--tx3);">你这边暂时没有待确认的。' +
+      (waitFde ? '有 ' + waitFde + ' 项在等服务方整理材料。' : '') + '</div>');
+  }
+
+  // 各角色在这个项目里真正要做的事
+  if (isFde) {
+    const waitOther = p.acks.filter(x => x.state === 'pending' && !whoMatch(x)).length;
+    if (waitOther) lines.push('<div style="color:var(--tx3);">还有 ' + waitOther + ' 项等客户方确认。当面打开这一页一起过，比发文件快。</div>');
+    const blk = (p.stakeholders || []).filter(s => s.attitude === 'resist');
+    if (blk.length) lines.push('<div style="color:#e0b566;">还没谈通的人：' + blk.map(s => esc(s.name)).join('、') +
+      ' —— 去「人和分工」看各自关心什么、对应的做法是什么。</div>');
+    if (!p.saved.perRun) lines.push('<div style="color:var(--tx3);">「每次人工耗时」还没填，账算不出来，释放工时会一直是空的。' + btn('去填口径', 'people') + '</div>');
+    if (!p.case.client) lines.push('<div style="color:var(--tx3);">案例卡还没填客户信息，填一次以后能复用。' + btn('去填', 'case') + '</div>');
+    if (p.counts.runs) lines.push('<div>' + btn('出本期验收报告', 'evidence', true) + '</div>');
+  } else if (role === 'boss') {
+    lines.push('<div>先看两样：这份账值不值（决策版一页纸）、边界在哪（费用与责任上限）。' +
+      btn('看决策版', 'pv:boss', true) + btn('看费用条款', 'terms') + '</div>');
+  } else if (role === 'operator') {
+    lines.push('<div>你要核的是：哪些活不用手做了、哪一步还得你判断、署名归谁。' +
+      btn('看操作版', 'pv:operator', true) + btn('看步骤对照', 'people') + '</div>');
+  } else if (role === 'reviewer') {
+    lines.push('<div>你签的是「核对过这几项」，不是为结果担保。有保留写进意见栏，一样算通过。' +
+      btn('看核对版', 'pv:reviewer', true) + btn('看执行记录', 'evidence') + '</div>');
+  } else if (role === 'it') {
+    lines.push('<div>你要核的是数据在哪、流向哪、怎么删、退出归谁——都能在这台机器上直接验。' +
+      btn('看本机事实', 'security', true) + btn('导出数据说明', 'sec-export') + '</div>');
+  } else if (role === 'finance') {
+    lines.push('<div>你要核的是计价方式、结算周期、对账口径。' +
+      btn('看费用条款', 'terms', true) + btn('看成本折算', 'people') + '</div>');
+  }
+
+  if (p.ackStats.complete) {
+    lines.push('<div style="color:#7dd3a0;">八项都确认完了，没有挂着的异议。可以出验收报告，各方各留一份。</div>');
+  }
+  if (!lines.length) lines.push('<div style="color:var(--tx3);">暂时没有待办。往下翻可以看最近实际发生了什么。</div>');
+
+  box.innerHTML = '<h3>下一步 <span class="tag">按你现在的身份给</span></h3>' +
+    '<div class="nextline">' + lines.join('') + '</div>';
+  box.querySelectorAll('button[data-go]').forEach(bt => {
+    bt.onclick = () => {
+      const g = bt.dataset.go;
+      if (g === 'sec-export') return $('#secGen').click();
+      if (g === 'env') return api.openEnv();
+      if (g.indexOf('tpl:') === 0) return openTemplate(g.slice(4));
+      if (g.indexOf('pv:') === 0) return previewDoc(g.slice(3));
+      if (['security', 'evidence', 'case', 'people', 'home', 'terms'].includes(g)) goPage(g);
+    };
+  });
+}
+
+// 三份一页纸的预览（首页快捷入口也用它）
+async function previewDoc(kind) {
+  if (!S.pid) return toast('先选项目', true);
+  if (S.cur !== 'people') await saveDocs(true);
+  const r = await api.adoptPreview(kind, S.pid);
+  if (!r || !r.ok) return toast((r && r.error) || '生成失败', true);
+  S.docKind = kind;
+  openModal(r.html, 'doc', { boss: '决策版 · 给拍板的人', operator: '操作版 · 给做事的人', reviewer: '核对版 · 给复核的人' }[kind]);
+}
+
+function renderFeed() {
+  const p = cur();
+  const box = $('#homeFeed');
+  if (!p) { box.innerHTML = ''; return; }
+  const list = p.recent || [];
+  box.innerHTML = list.length
+    ? list.map(l => '<div><span class="t">' + fmtTime(l.t) + '</span>' + esc(l.text) + '</div>').join('')
+    : '<div class="empty">还没有运行记录。这个项目跑起来之后，这里会显示真实的最近动作。</div>';
+}
+
+/* ---------- 确认台账 ---------- */
+// 当前身份是否轮到确认这一项：看台账里登记的角色，不靠猜字
+function whoMatch(a) {
+  const roles = a.roles || [];
+  return roles.includes(S.whoRole);
+}
+
+function renderAcks() {
+  const p = cur();
+  const hosts = [$('#ackList'), $('#ackList2')].filter(Boolean);
+  if (!p) {
+    hosts.forEach(h => { h.innerHTML = '<div class="empty">先选一个项目。</div>'; });
+    $('#ackTag').textContent = '0 / 0';
+    return;
+  }
+  const a = p.ackStats;
+  $('#ackTag').textContent = a.ok + ' / ' + a.total;
+  const bHome = $('#bHome');
+  if (a.object) { bHome.className = 'badge red'; bHome.textContent = a.object; }
+  else if (a.pending) { bHome.className = 'badge'; bHome.textContent = a.pending; }
+  else { bHome.className = 'badge blue'; bHome.textContent = '✓'; }
+
+  const html = p.acks.map(it => {
+    const on = whoMatch(it) && it.state === 'pending';
+    const cls = 'ack' + (it.state === 'object' ? ' object' : '') + (on ? ' turn' : '');
+    const mark = it.state === 'ok' ? '<div class="mark ok">✓</div>'
+      : it.state === 'object' ? '<div class="mark object">!</div>'
+      : '<div class="mark pending">·</div>';
+    let tail = '';
+    if (it.state === 'ok') {
+      tail = '<div class="done">✓ ' + esc(it.by || '未署名') + ' 于 ' + fmtTime(it.at) + ' 确认</div>' +
+        (it.remark ? '<div class="hint" style="color:#9aa6b8;">备注：' + esc(it.remark) + '</div>' : '');
+    } else if (it.state === 'object') {
+      tail = '<div class="obj">! ' + esc(it.by || '未署名') + ' 于 ' + fmtTime(it.at) + ' 提出异议：' + esc(it.remark || '（未写原因）') + '</div>';
+    }
+    const ops = it.state === 'pending'
+      ? '<button class="yes" data-ack="ok" data-key="' + it.key + '">我确认</button>' +
+        '<button class="no" data-ack="object" data-key="' + it.key + '">有异议</button>'
+      : '<button data-ack="edit" data-key="' + it.key + '">修改</button>' +
+        '<button data-ack="pending" data-key="' + it.key + '">撤回</button>';
+    return '<div class="' + cls + '">' + mark +
+      '<div class="main"><div class="ttl">' + esc(it.title) +
+        '<span class="who' + (on ? ' me' : '') + '">' + esc(it.who) + (on ? ' · 轮到你了' : '') + '</span>' +
+      '</div><div class="hint">' + esc(it.hint) + '</div>' +
+      (it.why ? '<div class="why"><b>对各方：</b>' + esc(it.why) + '</div>' : '') + tail + '</div>' +
+      '<div class="ops">' + ops + '</div></div>';
+  }).join('');
+
+  hosts.forEach(h => { h.innerHTML = html; });
+  document.querySelectorAll('#ackList button[data-ack], #ackList2 button[data-ack]').forEach(b => {
+    const hostId = b.closest('#ackList2') ? 'ackList2' : 'ackList';
+    b.onclick = () => ackClick(b.dataset.key, b.dataset.ack, hostId);
+  });
+}
+
+function ackClick(key, act, hostId) {
+  const p = cur();
+  if (!p) return;
+  const it = p.acks.find(x => x.key === key);
+  if (!it) return;
+  if (act === 'pending') {
+    api.trustAck({ projectId: p.id, key, state: 'pending', by: S.who }).then(r => {
+      if (!r || !r.ok) return toast((r && r.error) || '操作失败', true);
+      applyAcks(r);
+      toast('已撤回');
+    });
+    return;
+  }
+  S.ackEdit = { key, state: act === 'edit' ? (it.state === 'ok' ? 'ok' : 'object') : act, host: hostId || 'ackList' };
+  renderAckForm();
+}
+
+function renderAckForm() {
+  const p = cur();
+  if (!p || !S.ackEdit) return;
+  const it = p.acks.find(x => x.key === S.ackEdit.key);
+  if (!it) return;
+  const isObj = S.ackEdit.state === 'object';
+  const hostId = S.ackEdit.host || 'ackList';
+  const host = $('#' + hostId);
+  const prev = $('#ackForm');
+  if (prev) prev.remove();
+  const wrap = document.createElement('div');
+  wrap.className = 'ackform';
+  wrap.id = 'ackForm';
+  wrap.innerHTML =
+    '<div style="font-size:11.5px;color:var(--tx3);margin-bottom:7px;">' +
+      (isObj ? '对「' + esc(it.title) + '」有异议——写清哪里不对，便于修正后重新确认。'
+             : '确认「' + esc(it.title) + '」——确认代表你看过并认可这一条事实，不改变任何责任划分。') +
+    '</div>' +
+    '<div class="row">' +
+      '<span style="font-size:11.5px;color:var(--tx3);flex:0 0 44px;">署名</span>' +
+      '<input type="text" id="ackBy" placeholder="名字" value="' + esc(S.who) + '" style="width:130px;" />' +
+      '<span style="font-size:11px;color:var(--tx3);">' + (S.whoRole === 'fde' ? '服务方' : '客户方') + '</span>' +
+      '<div class="grow"></div>' +
+      '<button class="btn ' + (isObj ? '' : 'gr') + '" id="ackGo">' + (isObj ? '提交异议' : '确认') + '</button>' +
+      '<button class="btn" id="ackCancel">取消</button>' +
+    '</div>' +
+    '<textarea id="ackRemark" placeholder="' + (isObj ? '哪里不对 / 需要改成什么（必须写清）' : '备注（可留空）') + '">' +
+      esc(it.remark || '') + '</textarea>';
+  const rows = host.querySelectorAll('.ack');
+  const idx = p.acks.findIndex(x => x.key === S.ackEdit.key);
+  if (rows[idx]) rows[idx].after(wrap); else host.appendChild(wrap);
+  wrap.scrollIntoView({ block: 'nearest' });
+  $('#ackBy').focus();
+  $('#ackCancel').onclick = () => { S.ackEdit = null; wrap.remove(); };
+  $('#ackGo').onclick = async () => {
+    const by = $('#ackBy').value.trim();
+    const remark = $('#ackRemark').value.trim();
+    if (!by) return toast('填一下署名', true);
+    if (isObj && !remark) return toast('异议要写清原因，否则没法处理', true);
+    const r = await api.trustAck({ projectId: p.id, key: it.key, state: S.ackEdit.state, by, remark });
+    if (!r || !r.ok) return toast((r && r.error) || '提交失败', true);
+    S.who = by; localStorage.setItem('fde_trust_who', by); $('#whoName').value = by;
+    S.ackEdit = null;
+    applyAcks(r);
+    toast(isObj ? '已提交异议，服务方会看到' : '已确认并记录');
+  };
+}
+
+$('#ackDigest').onclick = async () => {
+  if (!S.pid) return toast('先选一个项目', true);
+  const r = await api.trustAckDigest(S.pid);
+  if (!r || !r.ok) return toast((r && r.error) || '生成失败', true);
+  toast('已复制，可以直接粘贴');
+};
+
+function applyAcks(r) {
+  const p = cur();
+  if (!p) return;
+  p.acks = r.acks;
+  p.ackStats = r.ackStats;
+  renderAcks();
+  renderHomeStats();
+  renderHomeNext();
+}
+
+/* ---------- 人和分工：干系人 ---------- */
+function renderPeople() {
+  const p = cur();
+  const host = $('#stList');
+  if (!p) { host.innerHTML = '<div class="empty">还没有项目。</div>'; return; }
+  const list = p.stakeholders || [];
+  $('#stCount').textContent = list.length + ' 人';
+  if (!list.length) {
+    host.innerHTML = '<div class="empty">还没有登记。建议先补三个人：拍板的人 / 实际操作的人 / 复核签字的人——这三个里有一个没对上，事情就推不动。</div>';
+    return;
+  }
+  const order = { boss: 0, mid: 1, reviewer: 2, operator: 3, it: 4, finance: 5 };
+  const sorted = [...list].sort((a, b) => (order[a.role] == null ? 9 : order[a.role]) - (order[b.role] == null ? 9 : order[b.role]));
+  host.innerHTML = sorted.map(s => {
+    const at = S.attitudes[s.attitude] || S.attitudes.unknown;
+    return '<div class="st' + (s.done ? ' done' : '') + '">' +
+      '<div class="av">' + ((S.roleDefs[s.role] || {}).icon || '🙂') + '</div>' +
+      '<div class="main"><div class="l1">' +
+        '<span class="dot" style="background:' + at.color + ';"></span>' +
+        '<span class="nm">' + esc(s.name || '（未填名字）') + '</span>' +
+        '<span class="rl">' + esc(roleLabel(s.role)) + ' · ' + (s.power >= 3 ? '能拍板' : s.power === 2 ? '能影响' : '只能配合') + '</span>' +
+        '<span class="rl" style="color:' + at.color + ';">' + at.name + '</span>' +
+      '</div>' +
+      (s.worry ? '<div class="worry">担心：' + esc(s.worry) + '</div>' : '') +
+      '<div class="next"><b>下一步：</b>' + esc(s.next || '') + '</div></div>' +
+      '<div class="ops">' +
+        '<button data-act="att" data-id="' + s.id + '">改态度</button>' +
+        '<button data-act="done" data-id="' + s.id + '">' + (s.done ? '撤销' : '已谈') + '</button>' +
+        '<button data-act="del" data-id="' + s.id + '">删除</button>' +
+      '</div></div>';
+  }).join('');
+  host.querySelectorAll('button[data-act]').forEach(b => {
+    b.onclick = async () => {
+      const s = (p.stakeholders || []).find(x => x.id === b.dataset.id);
+      if (!s) return;
+      if (b.dataset.act === 'del') {
+        if (!confirm('删除「' + (s.name || '这个人') + '」？')) return;
+        await api.adoptDelStakeholder(p.id, s.id);
+      } else if (b.dataset.act === 'done') {
+        await api.adoptSaveStakeholder(p.id, { id: s.id, done: !s.done });
+      } else {
+        const next = { unknown: 'neutral', neutral: 'support', support: 'resist', resist: 'unknown' }[s.attitude || 'unknown'];
+        await api.adoptSaveStakeholder(p.id, { id: s.id, attitude: next });
+      }
+      await reload(true);
+    };
+  });
+}
+
+$('#stAdd').onclick = async () => {
+  const p = cur();
+  if (!p) return toast('先建项目', true);
+  const name = $('#stName').value.trim();
+  if (!name) return toast('填一下名字', true);
+  const role = $('#stRole').value;
+  const def = S.roleDefs[role] || {};
+  await api.adoptSaveStakeholder(p.id, {
+    name, role,
+    attitude: $('#stAtt').value,
+    power: Number($('#stPower').value),
+    worry: $('#stWorry').value.trim() || def.worry || '',
+    action: $('#stAction').value.trim() || def.action || ''
+  });
+  $('#stName').value = ''; $('#stWorry').value = ''; $('#stAction').value = '';
+  await reload(true);
+  toast('已添加');
+};
+
+/* ---------- 人和分工：口径与三份文件 ---------- */
+function fillDocForm() {
+  const p = cur();
+  if (!p) return;
+  const a = p.adoption || {};
+  $('#dcFlow').value = a.flowName || '';
+  $('#dcPerRun').value = a.perRunMinutes || (p.case && p.case.manualMinutes) || '';
+  $('#dcReview').value = a.reviewMinutes || '';
+  $('#dcFreq').value = a.monthlyRuns || '';
+  $('#dcRate').value = a.hourlyRate || (p.case && p.case.hourlyRate) || '';
+  $('#dcFee').value = a.monthlyFee || '';
+  $('#dcOperator').value = a.operatorName || '';
+  $('#dcReviewer').value = a.reviewerName || '';
+  $('#dcContact').value = a.contact || '';
+  $('#dcSteps').value = (a.steps || []).map(s => [s.step, s.before, s.after, s.you].join(' | ')).join('\n');
+  renderRoi();
+}
+
+function docPatch() {
+  const steps = $('#dcSteps').value.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const c = l.split('|').map(x => x.trim());
+    return { step: c[0] || '', before: c[1] || '', after: c[2] || '', you: c[3] || '' };
+  });
+  return {
+    flowName: $('#dcFlow').value.trim(),
+    perRunMinutes: Number($('#dcPerRun').value || 0),
+    reviewMinutes: Number($('#dcReview').value || 0),
+    monthlyRuns: Number($('#dcFreq').value || 0),
+    hourlyRate: Number($('#dcRate').value || 0),
+    monthlyFee: Number($('#dcFee').value || 0),
+    operatorName: $('#dcOperator').value.trim(),
+    reviewerName: $('#dcReviewer').value.trim(),
+    contact: $('#dcContact').value.trim(),
+    steps
+  };
+}
+
+async function saveDocs(silent) {
+  const p = cur();
+  if (!p) return toast('先选项目', true);
+  const r = await api.adoptSave(p.id, docPatch());
+  if (!r || !r.ok) return toast('保存失败', true);
+  p.adoption = r.adoption; p.calc = r.calc;
+  renderRoi();
+  if (!silent) toast('已保存，三份文件已更新');
+  return r;
+}
+$('#dcSave').onclick = () => saveDocs(false);
+$('#dcSave2').onclick = () => saveDocs(false);
+
+function renderRoi() {
+  const p = cur();
+  if (!p) return;
+  const c = p.calc || {};
+  const cls = ['worth', 'not-worth', 'marginal'].includes(c.verdict) ? c.verdict : 'unknown';
+  const label = { worth: '算得过来', 'not-worth': '别做这一条', marginal: '算得紧', unknown: '口径没填全' }[cls];
+  $('#roiCard').innerHTML =
+    '<h3>这份账长什么样 <span class="tag">数字会原样写进三份文件</span></h3>' +
+    '<div class="roi ' + cls + '" style="margin-top:8px;">' +
+      '<div class="v">' + label + '</div>' +
+      '<div class="m">每月：' + hour1(c.beforeMin) + ' 小时 → ' + hour1(c.afterMin) + ' 小时，净释放 <b>' + hour1(c.savedMin) + ' 小时</b>' +
+        (c.rate ? '（≈ ¥' + Math.round(c.savedYuan || 0).toLocaleString('zh-CN') + ' / 月）' : '（未填小时成本，只算小时数）') +
+        '<br>' + esc(c.why || '') +
+        '<br><span style="color:var(--tx3);">频次来源：' + esc(c.freqSource || '—') + '</span>' +
+      '</div>' +
+    '</div>';
+}
+
+document.querySelectorAll('#p-people button[data-pv]').forEach(b => {
+  b.onclick = () => previewDoc(b.dataset.pv);
+});
+document.querySelectorAll('#p-people button[data-ex]').forEach(b => {
+  b.onclick = async () => {
+    if (!S.pid) return toast('先选项目', true);
+    await saveDocs(true);
+    b.disabled = true; b.textContent = '生成中…';
+    const r = await api.adoptExport(b.dataset.ex, S.pid);
+    b.disabled = false; b.textContent = '导出';
+    if (!r || !r.ok) { if (r && r.canceled) return; return toast((r && r.error) || '导出失败', true); }
+    toast('已导出：' + r.path);
+  };
+});
+
+/* ---------- 人和分工：决策记录 ---------- */
+function fillChange() {
+  const p = cur();
+  if (!p) return;
+  const a = p.adoption || {};
+  $('#cgApprovedBy').value = a.approvedBy || '';
+  $('#cgApprovedAt').value = a.approvedAt || '';
+  $('#cgSponsor').value = a.sponsor || '';
+  $('#cgScope').value = a.scope || '';
+  $('#cgNote').value = a.note || '';
+}
+$('#cgSave').onclick = async () => {
+  const p = cur();
+  if (!p) return toast('先选项目', true);
+  const r = await api.adoptSave(p.id, {
+    approvedBy: $('#cgApprovedBy').value.trim(),
+    approvedAt: $('#cgApprovedAt').value.trim(),
+    sponsor: $('#cgSponsor').value.trim(),
+    scope: $('#cgScope').value.trim(),
+    note: $('#cgNote').value.trim()
+  });
+  if (!r || !r.ok) return toast('保存失败', true);
+  p.adoption = r.adoption;
+  toast('决策记录已保存');
+};
+
+/* ---------- 人和分工：顾虑回应 ---------- */
+function renderObstacles() {
+  const groups = {};
+  for (const o of S.obstacles) (groups[o.role] = groups[o.role] || []).push(o);
+  const order = ['operator', 'reviewer', 'boss', 'mid', 'it', 'finance'];
+  if (!S.obstacles.length) { $('#obList').innerHTML = '<div class="empty">加载中…</div>'; return; }
+  $('#obList').innerHTML = order.filter(r => groups[r]).map(r =>
+    '<div class="grp-h">' + ((S.roleDefs[r] || {}).icon || '') + ' ' + roleLabel(r) +
+      '<span class="n">' + groups[r].length + ' 条</span></div>' +
+    groups[r].map(o =>
+      '<div class="ob">' +
+        '<div class="say">' + esc(o.say) + '<span class="role">' + esc(roleLabel(r)) + '</span></div>' +
+        '<div class="line bad"><span class="k">容易失效</span><span class="t">' + esc(o.dont) + '</span></div>' +
+        '<div class="line good"><span class="k">更站得住</span><span class="t">' + esc(o.do) + '</span></div>' +
+        '<div class="line basis"><span class="k">依据</span><span class="t">' + esc(o.basis) + '</span></div>' +
+        '<button class="copy" data-copy="' + esc(o.do) + '">复制这段说法</button>' +
+      '</div>').join('')
+  ).join('');
+  $('#obList').querySelectorAll('button.copy').forEach(b => {
+    b.onclick = async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copy); toast('已复制'); }
+      catch (e) { toast('复制失败', true); }
+    };
+  });
+
+  const ml = $('#mutualList');
+  if (!ml) return;
+  ml.innerHTML = (S.mutual || []).map(o =>
+    '<div class="ob">' +
+      '<div class="say">' + esc(o.say) + '</div>' +
+      '<div class="line bad"><span class="k">容易出问题</span><span class="t">' + esc(o.dont) + '</span></div>' +
+      '<div class="line good"><span class="k">先这样定</span><span class="t">' + esc(o.do) + '</span></div>' +
+      '<div class="line basis"><span class="k">为什么</span><span class="t">' + esc(o.basis) + '</span></div>' +
+    '</div>').join('') || '<div class="empty">加载中…</div>';
+}
+
+/* ---------- 核对与签认 ---------- */
+function renderEvStats() {
+  const p = cur();
+  if (!p) { $('#evStats').innerHTML = '<div class="empty">还没有项目。</div>'; return; }
+  const c = p.counts;
+  $('#evStats').innerHTML =
+    '<h3>' + esc(p.name) + ' <span class="tag ' + (c.runs ? 'g' : 'y') + '">' + (c.runs ? '可以出报告' : '数据还太少') + '</span></h3>' +
+    '<p class="tip">下面是这份报告会写进去的真实数字。客户名、口径可在其他页填一次，几处共用。</p>' +
+    '<div class="kpis">' +
+      '<div class="kpi"><div class="v">' + c.scripts + '</div><div class="l">自动化脚本</div></div>' +
+      '<div class="kpi"><div class="v">' + c.runs + '</div><div class="l">执行次数</div></div>' +
+      '<div class="kpi ' + (c.successRate == null ? '' : (c.successRate >= 90 ? 'ok' : 'warn')) + '">' +
+        '<div class="v">' + (c.successRate == null ? '—' : c.successRate + '%') + '</div><div class="l">成功率</div></div>' +
+      '<div class="kpi"><div class="v">' + (p.saved.minutes ? hour1(p.saved.minutes) + 'h' : '—') + '</div><div class="l">释放工时</div></div>' +
+    '</div>' +
+    '<div style="margin-top:10px;font-size:11.5px;color:var(--tx3);line-height:1.8;">' +
+      '纳管窗口 ' + c.windows + ' · 上下文材料 ' + c.context + ' · 工作流节点 ' + c.canvasNodes +
+      (p.saved.perRun ? '' : ' · <span style="color:var(--warn)">未填「每次人工耗时」，效果那一节会是空的</span>') +
+    '</div>';
+}
+
+$('#evRange').onchange = renderEvStats;
+
+$('#evGen').onclick = async () => {
+  if (!S.pid) return toast('先选一个项目', true);
+  const days = Number($('#evRange').value);
+  const to = Date.now();
+  const from = days ? to - days * 86400000 : 0;
+  S.evMeta = { range: { from, to }, operator: $('#evOperator').value.trim() };
+  const r = await api.trustPreview('report', S.pid, S.evMeta);
+  if (!r || !r.ok) return toast((r && r.error) || '生成失败', true);
+  openModal(r.html, 'report', '交付与验收报告');
+};
+
+/* ---------- 数据与安全 ---------- */
+function renderFacts() {
+  const f = S.facts || {};
+  const rows = [
+    ['数据目录', f.dataRoot, true],
+    ['配置文件', f.dataFile, true],
+    ['配置大小', fmtBytes(f.dataSize), false],
+    ['运行方式', (f.mode === 'portable' ? '便携版（数据跟着程序走）' : '标准安装') + (f.source ? ' · ' + f.source : ''), false],
+    ['对外通信', '0 个外发请求（断网可用）', 'ok'],
+    ['模型调用', '默认不出本机（提示词走剪贴板）', 'ok'],
+    ['当前权限', f.isAdmin ? '管理员（用于窗口纳管）' : '普通用户', false],
+    ['纳管项目', (f.projects || 0) + ' 个', false],
+    ['程序版本', 'v' + f.version, false]
+  ];
+  $('#secFacts').innerHTML = rows.map(r =>
+    '<div class="fact"><div class="k">' + esc(r[0]) + '</div>' +
+    '<div class="v' + (r[2] === 'ok' ? ' ok' : '') + '">' + esc(r[1] || '—') + '</div></div>').join('');
+}
+$('#secPreview').onclick = async () => {
+  const r = await api.trustPreview('security');
+  if (!r || !r.ok) return toast('生成失败', true);
+  openModal(r.html, 'security', '数据处理说明');
+};
+$('#secGen').onclick = async () => {
+  const r = await api.trustExport('security');
+  if (!r || !r.ok) { if (r && r.canceled) return; return toast((r && r.error) || '导出失败', true); }
+  toast('已导出：' + r.path);
+};
+
+/* ---------- 案例 ---------- */
+function loadCaseForm() {
+  const p = cur();
+  if (!p) return;
+  $('#csClient').value = p.case.client || '';
+  $('#csIndustry').value = p.case.industry || '';
+  $('#csPain').value = p.case.pain || '';
+  $('#csSolution').value = p.case.solution || '';
+  $('#csQuote').value = p.case.quote || '';
+  $('#csMinutes').value = p.case.manualMinutes || '';
+  $('#csRate').value = p.case.hourlyRate || '';
+  $('#csContact').value = p.case.contact || '';
+  $('#csPublish').checked = !!p.case.allowPublish;
+  $('#csHint').textContent = p.counts.runs
+    ? '这个项目已有 ' + p.counts.runs + ' 次执行记录，案例卡上的数字都是真的。'
+    : '这个项目还没有执行记录，案例卡会显示"待填"——先跑几次再来。';
+}
+
+function casePatch() {
+  return {
+    client: $('#csClient').value.trim(),
+    industry: $('#csIndustry').value.trim(),
+    pain: $('#csPain').value.trim(),
+    solution: $('#csSolution').value.trim(),
+    quote: $('#csQuote').value.trim(),
+    manualMinutes: Number($('#csMinutes').value || 0),
+    hourlyRate: Number($('#csRate').value || 0),
+    contact: $('#csContact').value.trim(),
+    allowPublish: $('#csPublish').checked
+  };
+}
+async function saveCase(silent) {
+  if (!S.pid) return toast('先选一个项目', true);
+  const r = await api.trustSaveCase(S.pid, casePatch());
+  if (!r || !r.ok) return toast((r && r.error) || '保存失败', true);
+  const p = cur();
+  if (p) { p.case = r.case; }
+  if (!silent) { toast('已保存'); buildQA(); }
+  return r;
+}
+$('#csSave').onclick = () => saveCase(false);
+$('#csGen').onclick = async () => {
+  await saveCase(true);
+  const r = await api.trustPreview('case', S.pid, { headline: '' });
+  if (!r || !r.ok) return toast((r && r.error) || '生成失败', true);
+  openModal(r.html, 'case', '案例卡');
+};
+
+/* ---------- 条款 ---------- */
+function renderTpls() {
+  $('#tplList').innerHTML = S.templates.map(t =>
+    '<div class="tpl" data-id="' + t.id + '"><div class="n">' + esc(t.name) + '</div>' +
+    '<div class="d">' + esc(t.desc) + '</div></div>').join('');
+  $('#tplList').querySelectorAll('.tpl').forEach(el => {
+    el.onclick = () => openTemplate(el.dataset.id);
+  });
+}
+async function openTemplate(id) {
+  const r = await api.trustTemplate(id);
+  if (!r || !r.ok) return toast('模板不存在', true);
+  S.modalTpl = id;
+  openModal(null, 'tpl', r.name, r.body);
+}
+
+/* ---------- 常见疑问 ---------- */
+function buildQA() {
+  const noCase = !S.projects.some(p => p.case && p.case.client);
+
+  const clientQ = [
+    {
+      q: '数据会不会传到外面去？',
+      a: '不会。<b>这个程序本身没有任何外发请求</b>，不联网也能用全部功能。需要大模型时，它只把整理好的提示词放进剪贴板，由用的人<b>用自己的账号</b>提交，内容不经过服务方。这一条可以写进协议，也可以当场断网演示一次。',
+      act: [{ t: '看本机检测结果', go: 'security' }, { t: '导出数据处理说明', go: 'sec-export' }]
+    },
+    {
+      q: '服务方不做了，这套东西还能用吗？',
+      a: '能。交付时给一份<b>环境快照</b>，用同一个程序导入就能自己跑；约定里写明<b>不靠授权锁、不远程停用、不依赖对方的服务器</b>。这一条对客户是保障，对服务方也是边界。',
+      act: [{ t: '打开环境 / 迁移', go: 'env' }, { t: '看交接清单模板', go: 'tpl:handover' }]
+    },
+    {
+      q: '效果怎么衡量？',
+      a: '看两个可控的量：<b>执行记录</b>（跑了多少次、成功多少次、失败多少次都在）和<b>释放工时</b>（按双方确认的单次人工耗时折算）。经营结果不在承诺范围内——那是市场决定的，谁承诺谁埋雷。',
+      act: [{ t: '看执行记录', go: 'evidence' }, { t: '对一次口径', go: 'people' }]
+    },
+    {
+      q: '有没有做过类似的？',
+      a: '每个项目都能出一页<b>案例卡</b>：原来的做法、拆成几步、跑了多少次、释放多少工时、失败几次。数字来自真实运行记录，取得对方同意后可以对外用。',
+      act: [{ t: '现在填一张案例卡', go: 'case' }]
+    },
+    {
+      q: '出了问题谁负责，赔到哪为止？',
+      a: '提前写清<b>责任上限</b>（建议等于该期费用）和<b>不含的范围</b>（第三方平台规则变化、账号封禁、客户自有系统变更）。模糊地带最贵——真出事时，一条清楚的上限条款能省下十倍时间。',
+      act: [{ t: '看服务合同模板', go: 'tpl:contract' }]
+    },
+    {
+      q: '能不能先小范围试一下？',
+      a: '可以，而且应该这么做。两周、一条流程、验收口径开工前写清、按已完成结算，试点费可抵扣正式费用。范围小到能真的做完。',
+      act: [{ t: '看试点协议模板', go: 'tpl:poc' }]
+    },
+    {
+      q: '脚本归谁，能不能给源码？',
+      a: '定制脚本归客户，通用工具归服务方，写进约定；客户坚持要托管，就约定<b>源代码托管</b>（约定条件触发时可取出）。归属写清楚，双方都不用猜。',
+      act: [{ t: '看工作说明书模板', go: 'tpl:sow' }]
+    },
+    {
+      q: '怎么证明记录是真的？',
+      a: '每条执行记录都有时间、脚本名、退出码，可以自己翻日志核对；<b>失败记录也保留</b>，不筛选。八项确认每一项都记了谁在什么时候点的——这本身就是凭证。',
+      act: [{ t: '去核对与签认', go: 'evidence' }, { t: '看确认记录', go: 'home' }]
+    }
+  ];
+
+  const fdeQ = [
+    {
+      q: '这个活到底算不算做完？',
+      a: '开工前把验收口径写进<b>确认台账</b>，结论三种都算通过：通过 / 有条件通过（写明条件）/ 不通过（写明原因）。口径先定，就不用靠"感觉差不多了"来收尾。',
+      act: [{ t: '看确认台账', go: 'home' }]
+    },
+    {
+      q: '客户中途换对接人怎么办？',
+      a: '靠三样东西接住：<b>决策记录</b>（谁批的、批的什么范围）、<b>交接清单</b>（东西在哪、怎么跑起来）、<b>环境快照</b>（整套打包带走）。30 秒能讲完，项目就不会停在这里。',
+      act: [{ t: '填决策记录', go: 'people' }, { t: '看交接清单', go: 'tpl:handover' }]
+    },
+    {
+      q: '需求一直往上加怎么办？',
+      a: '范围写进 <b>SOW</b>，超出的记进「下一步清单」按批处理，另开一单写清加多少时间多少钱。变更本身不是问题，没有记录才是问题。',
+      act: [{ t: '看 SOW 模板', go: 'tpl:sow' }]
+    },
+    {
+      q: '做了一半客户不做了，钱怎么算？',
+      a: '按已完成结算，写进合同与试点协议：已完成部分按约定比例结算，未开始的退回。这条对客户是放心，对服务方是保底。',
+      act: [{ t: '看试点协议', go: 'tpl:poc' }]
+    },
+    {
+      q: '客户内部有人不配合怎么办？',
+      a: '别靠说服。看「人和分工」里各方关心什么：操作员要的是不动编制和判断权，复核人要的是不为结果担保，决策人要的是能随时停。这些都能写进文件，不靠临场表态。',
+      act: [{ t: '看各方关心的事', go: 'people' }]
+    }
+  ];
+
+  let alert = '';
+  if (noCase && S.projects.length) {
+    alert = '<div style="border:1px solid #4a3a18;background:#1c1810;border-radius:10px;padding:12px 14px;margin-bottom:14px;">' +
+      '<div style="font-size:12.5px;font-weight:650;color:#e0b566;">还没有可对外的案例</div>' +
+      '<div style="font-size:11.5px;color:var(--tx3);margin:4px 0 8px;line-height:1.7;">现在有 ' + S.projects.length +
+      ' 个项目在跑，但都没填客户信息。客户问"做过类似的吗"，只能讲，不能给看。</div>' +
+      '<button class="btn sm" onclick="document.querySelector(\'.nav .item[data-p=case]\').click()">去填第一个 →</button></div>';
+  }
+
+  const block = (title, sub, items) =>
+    '<div class="grp-h">' + title + '<span class="n">' + sub + '</span></div>' +
+    items.map((it, i) =>
+      '<div class="qa"><div class="q"><span class="n">' + (i + 1) + '</span><span>' + it.q + '</span></div>' +
+      '<div class="a">' + it.a + '</div>' +
+      '<div class="act">' + it.act.map(a => '<button data-go="' + a.go + '">' + esc(a.t) + '</button>').join('') +
+      '</div></div>').join('');
+
+  $('#qaList').innerHTML = alert +
+    block('客户方会问的', '八个问题，每个配一份能当场打开的材料', clientQ) +
+    block('服务方也要先问清', '这五个不说清，后面都会变成纠纷', fdeQ);
+
+  $('#qaList').querySelectorAll('button[data-go]').forEach(b => {
+    b.onclick = () => {
+      const g = b.dataset.go;
+      if (g === 'sec-export') return $('#secGen').click();
+      if (g === 'env') return api.openEnv();
+      if (g.indexOf('tpl:') === 0) return openTemplate(g.slice(4));
+      if (['security', 'evidence', 'case', 'people', 'home', 'terms'].includes(g)) goPage(g);
+    };
+  });
+}
+
+/* ---------- 预览弹层 ---------- */
+function openModal(html, kind, title, text) {
+  S.modalKind = kind;
+  $('#mTitle').textContent = title || '预览';
+  const fr = $('#mFrame'), pre = $('#mPre');
+  if (kind === 'tpl') {
+    fr.style.display = 'none';
+    pre.style.display = 'block';
+    pre.textContent = text || '';
+    $('#mCopy').style.display = '';
+    $('#mExport').textContent = '导出 .md';
+  } else {
+    pre.style.display = 'none';
+    fr.style.display = 'block';
+    fr.srcdoc = html || '';
+    $('#mCopy').style.display = 'none';
+    $('#mExport').textContent = '导出 PDF';
+  }
+  $('#modal').classList.add('on');
+}
+function closeModal() {
+  $('#modal').classList.remove('on');
+  $('#mFrame').srcdoc = '';
+  $('#mPre').textContent = '';
+}
+$('#mClose').onclick = closeModal;
+$('#modal').onclick = (e) => { if (e.target.id === 'modal') closeModal(); };
+$('#mCopy').onclick = async () => {
+  const t = $('#mPre').textContent;
+  try { await navigator.clipboard.writeText(t); toast('已复制全文'); } catch (e) { toast('复制失败', true); }
+};
+$('#mExport').onclick = async () => {
+  if (S.modalKind === 'tpl') {
+    const r = await api.trustExportTemplate(S.modalTpl);
+    if (!r || !r.ok) { if (r && r.canceled) return; return toast((r && r.error) || '导出失败', true); }
+    return toast('已导出：' + r.path);
+  }
+  const btn = $('#mExport');
+  btn.disabled = true; btn.textContent = '生成中…';
+  let r;
+  if (S.modalKind === 'security') r = await api.trustExport('security');
+  else if (S.modalKind === 'doc') r = await api.adoptExport(S.docKind, S.pid);
+  else if (S.modalKind === 'case') r = await api.trustExport('case', S.pid, { headline: '' });
+  else r = await api.trustExport('report', S.pid, S.evMeta || {});
+  btn.disabled = false; btn.textContent = '导出 PDF';
+  if (!r || !r.ok) { if (r && r.canceled) return; return toast((r && r.error) || '导出失败', true); }
+  toast('已导出：' + r.path);
+};
+
+/* ---------- 启动 ---------- */
+$('#closeBtn').onclick = () => api.closeTrust();
+$('#docsBtn').onclick = () => api.trustOpenDocs();
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+async function reload(keep) {
+  const info = await api.trustInfo();
+  if (!info || !info.ok) return toast('加载失败', true);
+  S.projects = info.projects || [];
+  S.facts = info.facts || {};
+  S.templates = info.templates || [];
+  S.roleDefs = info.roleDefs || {};
+  S.attitudes = info.attitudes || {};
+  S.obstacles = info.obstacles || [];
+  S.mutual = info.mutual || [];
+  if (!S.pid || !S.projects.some(p => p.id === S.pid)) {
+    S.pid = (S.projects[0] || {}).id || '';
+  }
+  fillProjectSelects();
+  renderHomeStats(); renderAcks(); renderHomeNext(); renderFeed();
+  renderPeople(); fillDocForm(); fillChange(); renderRoi();
+  renderEvStats(); loadCaseForm();
+  renderObstacles();
+  if (!keep) { renderFacts(); renderTpls(); buildQA(); }
+}
+
+(async function boot() {
+  await reload(false);
+  $('#stRole').innerHTML = Object.keys(S.roleDefs).map(k =>
+    '<option value="' + k + '">' + S.roleDefs[k].icon + ' ' + S.roleDefs[k].name + '</option>').join('');
+  $('#stAtt').innerHTML = Object.keys(S.attitudes).map(k =>
+    '<option value="' + k + '"' + (k === 'neutral' ? ' selected' : '') + '>' + S.attitudes[k].name + '</option>').join('');
+  $('#stRole').onchange = () => {
+    const d = S.roleDefs[$('#stRole').value];
+    if (d && !$('#stWorry').value) { $('#stWorry').value = d.worry; $('#stAction').value = d.action; }
+  };
+  // 交付时可以带 ?role=boss 直接以某个身份打开（客户来了不用自己切）
+  const qRole = new URLSearchParams(location.search).get('role');
+  if (['fde', 'boss', 'operator', 'reviewer', 'it', 'finance'].includes(qRole)) {
+    S.whoRole = qRole;
+    $('#whoRole').value = qRole;
+    renderAcks(); renderHomeNext();
+  }
+  const h = location.hash.slice(1);
+  goPage(['home', 'people', 'evidence', 'security', 'case', 'terms', 'qa'].includes(h) ? h : 'home');
+})();
+</script>
+</body>
+</html>

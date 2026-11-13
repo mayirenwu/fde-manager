@@ -1,0 +1,26 @@
+# 依赖与构建产物
+node_modules/
+release/
+release2/
+dist/
+
+# 安装包与更新描述文件（CI 产物，不进仓库）
+*.exe
+*.dmg
+*.zip
+*.AppImage
+*.deb
+*.blockmap
+
+# 日志与临时文件
+build-log.txt
+*.log
+.DS_Store
+Thumbs.db
+
+# 编辑器
+.vscode/
+.idea/
+
+# 本机私有配置（各人自己的交付配置，模板是 fde-delivery.example.json）
+fde-delivery.local.json

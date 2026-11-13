@@ -1,0 +1,18 @@
+{
+  "id": "com.fde.pack.market-watch",
+  "name": "交易盯盘与复盘",
+  "projectName": "盯盘 · {{symbol}}",
+  "version": "1.0.0",
+  "category": "交易投研",
+  "author": "official",
+  "icon": "📈",
+  "color": "#ef4444",
+  "desc": "盘前计划 → 盘中盯盘 → 交易记录 → 收盘复盘。交易软件、行情页、风控规则各就各位，切走即静默。",
+  "tags": ["期货", "股票", "复盘", "风控"],
+  "permissions": ["autorun", "script", "context", "canvas"],
+  "params": [
+    { "key": "symbol", "label": "主要品种", "type": "text", "default": "螺纹钢" },
+    { "key": "risk", "label": "单笔风险上限（%）", "type": "text", "default": "1" },
+    { "key": "session", "label": "交易时段", "type": "select", "options": ["日盘", "夜盘", "全时段"], "default": "全时段" }
+  ]
+}

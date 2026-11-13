@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>知识库 · 建库 · 导入 · 检索 · 问答</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: #0b0f17; color: #d7dee9;
+    font: 13px/1.6 system-ui, -apple-system, "Microsoft YaHei", sans-serif;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  header {
+    height: 52px; flex: 0 0 52px; display: flex; align-items: center; gap: 8px;
+    padding: 0 14px; border-bottom: 1px solid #1c2636; background: #0e1421;
+    -webkit-app-region: drag;
+  }
+  header .brand { font-weight: 500; font-size: 14px; letter-spacing: .4px; }
+  header .sub { font-size: 11px; color: #5d6b80; }
+  header .sp { flex: 1; }
+  header button, .tabs button {
+    -webkit-app-region: no-drag; background: #16202f; color: #b8c4d4;
+    border: 1px solid #223046; border-radius: 6px; padding: 5px 10px;
+    font-size: 12px; cursor: pointer;
+  }
+  header button:hover { background: #1c2a3d; color: #e6eef8; }
+  header button.primary { background: #13314a; border-color: #235a80; color: #9ecbff; }
+  .tabs { display: flex; gap: 4px; margin-left: 10px; }
+  .tabs button.on { background: #12233a; border-color: #2b4a72; color: #cfe4ff; }
+
+  main { flex: 1; display: flex; min-height: 0; }
+  aside {
+    width: 254px; flex: 0 0 254px; border-right: 1px solid #1c2636;
+    display: flex; flex-direction: column; min-height: 0; background: #0d1320;
+  }
+  aside .ahead { padding: 10px 12px 8px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #182234; }
+  aside .ahead b { font-size: 12px; font-weight: 500; color: #8b9ab0; flex: 1; }
+  .mini {
+    background: #13314a; color: #9ecbff; border: 1px solid #235a80;
+    border-radius: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer;
+  }
+  .mini:hover { background: #17405f; }
+  .mini.ghost { background: #16202f; border-color: #26364c; color: #a7b6ca; }
+  .mini.ghost:hover { background: #1d2a3d; }
+
+  #libList { overflow: auto; flex: 1; padding: 8px; }
+  .lib {
+    padding: 8px 10px; border-radius: 8px; border: 1px solid #1a2435;
+    background: #111a27; margin-bottom: 7px; cursor: pointer; position: relative;
+  }
+  .lib:hover { border-color: #2a3d57; }
+  .lib.on { border-color: #2f6f9e; background: #12233a; }
+  .lib .l1 { display: flex; align-items: center; gap: 6px; }
+  .lib .nm { flex: 1; font-size: 12.5px; color: #dbe4f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lib .ct { font-size: 10.5px; color: #6f8098; font-variant-numeric: tabular-nums; }
+  .lib .l2 { font-size: 10.5px; color: #66788f; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lib .ops { position: absolute; right: 6px; top: 6px; display: none; gap: 2px; }
+  .lib:hover .ops { display: flex; }
+  .lib .ops span {
+    font-size: 10px; color: #8b9ab0; background: #1a2740; border: 1px solid #26364c;
+    border-radius: 4px; padding: 0 4px; cursor: pointer;
+  }
+  .lib .ops span:hover { color: #e6eef8; background: #22344f; }
+
+  .center { flex: 1; display: flex; flex-direction: column; min-width: 0; border-right: 1px solid #1c2636; }
+  .center .chead { padding: 9px 12px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #182234; }
+  .center .chead b { font-size: 12px; color: #8b9ab0; font-weight: 500; }
+  .center .chead .sp { flex: 1; }
+  input[type=text], input[type=search], select, textarea {
+    background: #0b1220; color: #d7dee9; border: 1px solid #223046;
+    border-radius: 6px; padding: 6px 8px; font: inherit; font-size: 12.5px; outline: none;
+  }
+  input:focus, textarea:focus, select:focus { border-color: #2f6f9e; }
+  #docFilter { width: 150px; }
+  #docList { overflow: auto; flex: 1; padding: 8px; }
+  .doc {
+    padding: 9px 11px; border-radius: 8px; border: 1px solid #1a2435;
+    background: #111a27; margin-bottom: 7px; cursor: pointer;
+  }
+  .doc:hover { border-color: #2a3d57; }
+  .doc.on { border-color: #2f6f9e; background: #12233a; }
+  .doc .t { font-size: 12.5px; color: #dbe4f0; margin-bottom: 2px; }
+  .doc .p { font-size: 10.5px; color: #64768d; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .doc .tags { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag { font-size: 10px; color: #8fb4d9; background: #132434; border: 1px solid #22384f; border-radius: 999px; padding: 0 6px; }
+
+  .right { width: 42%; flex: 0 0 42%; display: flex; flex-direction: column; min-height: 0; background: #0d1320; }
+  .right .rhead { padding: 10px 14px; border-bottom: 1px solid #182234; display: flex; align-items: center; gap: 8px; }
+  .right .rhead b { font-size: 12.5px; font-weight: 500; color: #cfe0f2; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rbody { overflow: auto; padding: 14px; flex: 1; }
+  .meta { font-size: 11px; color: #6f8098; margin-bottom: 10px; word-break: break-all; }
+  .summary { background: #101b29; border: 1px solid #1c2c40; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #b6c6d9; margin-bottom: 12px; }
+  .textview { white-space: pre-wrap; font-size: 12.5px; line-height: 1.75; color: #c3d0de; }
+  .row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .btn {
+    background: #16202f; color: #b8c4d4; border: 1px solid #223046; border-radius: 6px;
+    padding: 5px 11px; font-size: 12px; cursor: pointer;
+  }
+  .btn:hover { background: #1c2a3d; color: #e6eef8; }
+  .btn.warn { color: #e2696b; border-color: #4a2226; background: #20121a; }
+  .btn.warn:hover { background: #2a161c; }
+  .empty { color: #6b7b91; font-size: 12.5px; text-align: center; padding: 60px 20px; line-height: 1.9; }
+  .empty b { color: #9ecbff; font-weight: 500; }
+
+  .view { display: none; flex: 1; min-height: 0; }
+  .view.on { display: flex; }
+  .wide { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 18px 22px; overflow: auto; }
+  .qbar { display: flex; gap: 8px; margin-bottom: 12px; }
+  .qbar input { flex: 1; padding: 9px 12px; font-size: 13px; }
+  .qbar button {
+    background: #13314a; color: #9ecbff; border: 1px solid #235a80; border-radius: 6px;
+    padding: 0 16px; font-size: 12.5px; cursor: pointer;
+  }
+  .qbar button:hover { background: #17405f; }
+  .hint { font-size: 11.5px; color: #6b7b91; margin: 6px 0 14px; }
+  .hit {
+    background: #101825; border: 1px solid #1a2435; border-radius: 9px;
+    padding: 11px 14px; margin-bottom: 10px;
+  }
+  .hit .h1 { display: flex; align-items: center; gap: 8px; }
+  .hit .h1 b { font-size: 13px; color: #dbe4f0; font-weight: 500; flex: 1; }
+  .hit .score { font-size: 10.5px; color: #5d6b80; font-variant-numeric: tabular-nums; }
+  .hit .rel { font-size: 10.5px; color: #64768d; margin: 2px 0 6px; }
+  .hit .snip { font-size: 12px; color: #a9bacd; line-height: 1.75; }
+  mark { background: #2a4a2e; color: #a8e6b4; border-radius: 2px; padding: 0 1px; }
+  .ans {
+    background: #0f1a26; border: 1px solid #1d3145; border-radius: 10px;
+    padding: 14px 16px; font-size: 13px; line-height: 1.85; color: #d2e0ee;
+    white-space: pre-wrap; margin-bottom: 12px;
+  }
+  .cite {
+    display: inline-block; font-size: 11px; color: #9ecbff; background: #12233a;
+    border: 1px solid #2b4a72; border-radius: 4px; padding: 0 5px; margin: 0 2px; cursor: pointer;
+  }
+  .srclist { margin-top: 4px; }
+  .srclist .s {
+    font-size: 11.5px; color: #8b9ab0; padding: 7px 10px; border-radius: 6px;
+    border: 1px solid #1a2435; background: #0f1723; margin-bottom: 6px; cursor: pointer;
+  }
+  .srclist .s:hover { border-color: #2a3d57; color: #cfdceb; }
+  .err { background: #20121a; border: 1px solid #4a2226; color: #e8a3a5; border-radius: 8px; padding: 10px 12px; font-size: 12px; }
+  .busy { font-size: 12px; color: #9ecbff; }
+
+  /* 弹窗 */
+  .mask {
+    position: fixed; inset: 0; background: rgba(4, 8, 14, .72); display: none;
+    align-items: center; justify-content: center; z-index: 50;
+  }
+  .mask.on { display: flex; }
+  .dlg {
+    width: 640px; max-width: 88vw; max-height: 84vh; overflow: auto;
+    background: #0f1622; border: 1px solid #223046; border-radius: 12px; padding: 18px 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+  }
+  .dlg h3 { margin: 0 0 12px; font-size: 14px; font-weight: 500; color: #e6eef8; }
+  .dlg label.f { display: block; margin-bottom: 10px; }
+  .dlg label.f > span { display: block; font-size: 11px; color: #7c8ba1; margin-bottom: 4px; }
+  .dlg input[type=text], .dlg select, .dlg textarea { width: 100%; }
+  .dlg .foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+  .kindrow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px; }
+  .kindopt {
+    border: 1px solid #223046; background: #101a27; border-radius: 8px; padding: 8px 10px; cursor: pointer;
+  }
+  .kindopt.on { border-color: #2f6f9e; background: #12233a; }
+  .kindopt b { display: block; font-size: 12.5px; color: #dbe4f0; font-weight: 500; }
+  .kindopt i { font-style: normal; font-size: 10.5px; color: #6f8098; }
+  .stat { font-size: 12px; color: #a9bacd; line-height: 1.9; }
+  .stat b { color: #9ecbff; font-weight: 500; }
+  .skip { max-height: 150px; overflow: auto; font-size: 11px; color: #7f8fa5; margin-top: 8px; }
+  .skip div { padding: 2px 0; border-bottom: 1px dashed #1a2435; }
+  .bar { height: 5px; background: #16202f; border-radius: 999px; overflow: hidden; margin: 10px 0; }
+  .bar i { display: block; height: 100%; width: 0; background: #2f6f9e; transition: width .2s; }
+  .toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+    background: #1b2738; color: #dbe4f0; border: 1px solid #2b3d55;
+    padding: 8px 16px; border-radius: 8px; font-size: 12.5px; max-width: 70%;
+    opacity: 0; transition: opacity .18s; pointer-events: none; z-index: 99;
+  }
+  .toast.on { opacity: 1; }
+  body.embed header { -webkit-app-region: no-drag; }
+  #dropveil {
+    position: fixed; inset: 0; z-index: 80; display: none;
+    background: rgba(8, 14, 22, .82); align-items: center; justify-content: center;
+    border: 2px dashed #2f6f9e; border-radius: 14px;
+  }
+  #dropveil.on { display: flex; }
+  #dropveil .dz {
+    text-align: center; font-size: 16px; color: #cfe3f7; line-height: 2;
+  }
+  #dropveil .dz i { font-style: normal; font-size: 12px; color: #8b9ab0; }
+  .hint b { color: #9ecbff; font-weight: 500; }
+  .toast.bad { background: #2a1417; border-color: #5c2629; color: #f0b3b5; }
+</style>
+</head>
+<body>
+<header>
+  <span class="brand">📚 知识库</span>
+  <span class="sub">本地存储 · 可检索 · 可问答</span>
+  <div class="tabs">
+    <button data-view="docs" class="on">资料</button>
+    <button data-view="search">检索</button>
+    <button data-view="ask">问答</button>
+  </div>
+  <span class="sp"></span>
+  <button id="newLibBtn">＋ 新建库</button>
+  <button id="impDirBtn" class="primary">📁 导入文件夹</button>
+  <button id="impFileBtn">📄 导入文件</button>
+  <button id="closeBtn">关闭</button>
+</header>
+
+<main>
+  <aside>
+    <div class="ahead">
+      <b>知识库</b>
+      <button class="mini ghost" id="seedLibsBtn" title="按 FDE 常用用途一次建好：方案/客户/交付/选品/合规/案例">建 6 个基础库</button>
+    </div>
+    <div id="libList"></div>
+  </aside>
+
+  <!-- 资料 -->
+  <section class="view on" id="v-docs" style="display:flex">
+    <div class="center">
+      <div class="chead">
+        <b id="docHead">全部文档</b>
+        <span class="sp"></span>
+        <input type="search" id="docFilter" placeholder="在本库内过滤…" />
+      </div>
+      <div id="docList"></div>
+    </div>
+    <div class="right">
+      <div class="rhead"><b id="detailTitle">选一篇资料</b></div>
+      <div class="rbody" id="detailBody">
+        <div class="empty">点右上角 <b>📁 导入文件夹</b>，把现有文件夹导进来。<br>
+          会自动抽正文、切块、建索引<br>不用整理文件名，也不用先分类。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 检索 -->
+  <section class="view" id="v-search">
+    <div class="wide">
+      <div class="qbar">
+        <input type="search" id="qInput" placeholder="搜关键词，例：浴室防滑 报价 / 客户 张阿姨 / 小红书 合规" />
+        <button id="qBtn">搜索</button>
+      </div>
+      <div class="hint" id="qHint">中文按二元切词 + BM25 排序，命中会标黄；不联网也能搜。</div>
+      <div id="qResults"></div>
+    </div>
+  </section>
+
+  <!-- 问答 -->
+  <section class="view" id="v-ask">
+    <div class="wide">
+      <div class="qbar">
+        <input type="search" id="aInput" placeholder="问一句，例：给 70 岁老人做浴室改造，报价怎么算？" />
+        <button id="aBtn">提问</button>
+      </div>
+      <div class="hint">先检索再回答，答案会标注 [资料 n]；知识库里没有的会直说，不编。</div>
+      <div id="aOut"></div>
+    </div>
+  </section>
+</main>
+
+<!-- 新建库 -->
+<div class="mask" id="libMask">
+  <div class="dlg">
+    <h3>新建知识库</h3>
+    <label class="f"><span>库名（按用途起，例：适老改造方案库）</span><input type="text" id="libName" placeholder="例：适老改造方案库" /></label>
+    <div class="kindrow" id="kindRow"></div>
+    <div class="hint" id="kindHint"></div>
+    <div class="foot">
+      <button class="btn" id="libCancel">取消</button>
+      <button class="btn" id="libOk" style="background:#13314a;border-color:#235a80;color:#9ecbff">建库</button>
+    </div>
+  </div>
+</div>
+
+<!-- 导入 -->
+<div class="mask" id="impMask">
+  <div class="dlg">
+    <h3 id="impTitle">导入资料</h3>
+    <div class="stat" id="impStat"></div>
+    <div class="bar"><i id="impBar"></i></div>
+    <div id="impModeRow" style="display:none;margin:10px 0 0">
+      <label class="f"><span>入库方式</span>
+        <select id="impMode">
+          <option value="one">全部进一个库</option>
+          <option value="sub">按子文件夹各建一个库（推荐）</option>
+        </select>
+      </label>
+      <div class="hint" id="impGroups"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:10px" id="impLibRow">
+      <label class="f" style="flex:1"><span>导入到哪个库</span><select id="impLib"></select></label>
+      <label class="f" style="width:190px"><span>&nbsp;</span>
+        <label style="font-size:11.5px;color:#8b9ab0;display:flex;align-items:center;gap:6px">
+          <input type="checkbox" id="impAll" /> 连已在库的一起重导
+        </label>
+      </label>
+    </div>
+    <div class="skip" id="impSkip"></div>
+    <div class="foot">
+      <button class="btn" id="impCancel">取消</button>
+      <button class="btn" id="impOk" style="background:#13314a;border-color:#235a80;color:#9ecbff">开始导入</button>
+    </div>
+  </div>
+</div>
+
+<div id="dropveil"><div class="dz">📥 松手就导入<br><i>文件夹会递归扫描；整批子文件夹可以各建一个库</i></div></div>
+<div class="toast" id="toast"></div>
+
+<!-- 通用输入 / 确认（Electron 不支持 prompt，confirm 会阻塞渲染，统一自绘） -->
+<div class="mask" id="askMask">
+  <div class="dlg" style="width:440px">
+    <h3 id="askTitle">确认</h3>
+    <div class="stat" id="askMsg"></div>
+    <input type="text" id="askInput" style="width:100%;margin-top:10px;display:none" />
+    <div class="foot">
+      <button class="btn" id="askNo">取消</button>
+      <button class="btn" id="askYes" style="background:#13314a;border-color:#235a80;color:#9ecbff">确定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  const EMBED = /[?&]embed=1/.test(location.search);
+  if (EMBED) {
+    document.body.classList.add('embed');
+    const cb = document.querySelector('#closeBtn');
+    if (cb) cb.style.display = 'none';
+  }
+
+  const state = {
+    libs: [], docs: [], kinds: [],
+    libId: '',            // '' = 全部
+    docId: '',
+    view: 'docs',
+    pending: null,        // 待导入 {files, root, from}
+    kindSel: 'solution'
+  };
+
+  let toastTimer = null;
+  function toast(msg, bad) {
+    const el = $('#toast');
+    el.textContent = msg;
+    el.className = 'toast on' + (bad ? ' bad' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.className = 'toast'; }, 2600);
+  }
+
+  /** 自绘确认框：返回 Promise<boolean> */
+  function askConfirm(title, msg) {
+    return new Promise((resolve) => {
+      const mask = $('#askMask');
+      $('#askTitle').textContent = title || '确认';
+      $('#askMsg').textContent = msg || '';
+      $('#askInput').style.display = 'none';
+      mask.classList.add('on');
+      const done = (v) => { mask.classList.remove('on'); $('#askYes').onclick = null; $('#askNo').onclick = null; resolve(v); };
+      $('#askYes').onclick = () => done(true);
+      $('#askNo').onclick = () => done(false);
+    });
+  }
+
+  /** 自绘输入框：返回 Promise<string|null> */
+  function askText(title, value) {
+    return new Promise((resolve) => {
+      const mask = $('#askMask');
+      $('#askTitle').textContent = title || '输入';
+      $('#askMsg').textContent = '';
+      const inp = $('#askInput');
+      inp.style.display = 'block';
+      inp.value = value || '';
+      mask.classList.add('on');
+      setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 40);
+      const done = (v) => { mask.classList.remove('on'); $('#askYes').onclick = null; $('#askNo').onclick = null; resolve(v); };
+      $('#askYes').onclick = () => done(inp.value.trim() || null);
+      $('#askNo').onclick = () => done(null);
+      inp.onkeydown = (e) => { if (e.key === 'Enter') $('#askYes').click(); };
+    });
+  }
+
+  function libById(id) { return state.libs.find((l) => l.id === id); }
+  function docsOf(libId) { return state.docs.filter((d) => !libId || d.libId === libId); }
+  function kindOf(lib) { return state.kinds.find((k) => k.id === (lib && lib.kind)) || { name: '通用库', fields: [], hint: '' }; }
+
+  /* ---------------- 数据 ---------------- */
+  async function load() {
+    const r = await window.fde.kbLoad();
+    if (!r || r.ok === false) { toast('读知识库失败：' + ((r && r.error) || ''), true); return; }
+    state.libs = r.libs || [];
+    state.docs = r.docs || [];
+    state.kinds = r.kinds || [];
+    if (state.libId && !libById(state.libId)) state.libId = '';
+    renderLibs(); renderDocs(); renderDetail(); fillImpLib();
+  }
+
+  async function saveLibs(next) {
+    const r = await window.fde.kbSave({ libs: next });
+    if (!r || r.ok === false) { toast('保存失败：' + ((r && r.error) || ''), true); return false; }
+    state.libs = next;
+    renderLibs(); renderDocs(); fillImpLib();
+    return true;
+  }
+
+  /* ---------------- 左：库 ---------------- */
+  function renderLibs() {
+    const box = $('#libList');
+    const total = state.docs.length;
+    let h = '<div class="lib' + (state.libId === '' ? ' on' : '') + '" data-id="">' +
+      '<div class="l1"><span class="nm">全部文档</span><span class="ct">' + total + '</span></div>' +
+      '<div class="l2">' + state.libs.length + ' 个库</div></div>';
+    if (!state.libs.length) {
+      box.innerHTML = h + '<div class="empty" style="padding:22px 10px;font-size:11.5px">还没有库。<br>先「＋ 新建库」或「建 6 个基础库」</div>';
+      box.querySelectorAll('.lib').forEach((el) => { el.onclick = () => { state.libId = el.dataset.id; renderLibs(); renderDocs(); renderDetail(); }; });
+      return;
+    }
+    h += state.libs.map((l) => {
+      const k = kindOf(l);
+      const n = docsOf(l.id).length;
+      return '<div class="lib' + (state.libId === l.id ? ' on' : '') + '" data-id="' + esc(l.id) + '" title="' + esc(k.hint) + '">' +
+        '<div class="ops"><span data-op="rename" data-id="' + esc(l.id) + '">改名</span><span data-op="del" data-id="' + esc(l.id) + '">删</span></div>' +
+        '<div class="l1"><span class="nm">' + esc(l.name) + '</span><span class="ct">' + n + '</span></div>' +
+        '<div class="l2">' + esc(k.name) + ' · ' + esc((k.fields || []).slice(0, 3).join(' / ')) + '</div></div>';
+    }).join('');
+    box.innerHTML = h;
+    box.querySelectorAll('.lib').forEach((el) => {
+      el.onclick = (e) => {
+        const op = e.target.closest('[data-op]');
+        if (op) {
+          e.stopPropagation();
+          if (op.dataset.op === 'rename') renameLib(op.dataset.id);
+          else removeLib(op.dataset.id);
+          return;
+        }
+        state.libId = el.dataset.id || '';
+        renderLibs(); renderDocs(); renderDetail();
+      };
+    });
+  }
+
+  async function renameLib(id) {
+    const l = libById(id); if (!l) return;
+    const name = await askText('给「' + l.name + '」改个名字', l.name);
+    if (!name) return;
+    await saveLibs(state.libs.map((x) => x.id === id ? Object.assign({}, x, { name: name.slice(0, 40) }) : x));
+    toast('已改名');
+  }
+
+  async function removeLib(id) {
+    const l = libById(id); if (!l) return;
+    const n = docsOf(id).length;
+    const yes = await askConfirm('删除「' + l.name + '」',
+      n ? ('库里有 ' + n + ' 篇资料，删库会一起从索引里删掉（磁盘上的原文件不动）。') : '这个库还是空的，直接删掉？');
+    if (!yes) return;
+    window.fde.kbDocRemove(docsOf(id).map((d) => d.id)).then(async () => {
+      await load();
+      await saveLibs(state.libs.filter((x) => x.id !== id));
+      if (state.libId === id) state.libId = '';
+      renderLibs(); renderDocs(); renderDetail();
+      toast('已删除「' + l.name + '」' + (n ? '及 ' + n + ' 篇资料' : ''));
+    });
+  }
+
+  /* ---------------- 中：文档列表 ---------------- */
+  function renderDocs() {
+    const box = $('#docList');
+    const lib = libById(state.libId);
+    $('#docHead').textContent = lib ? (lib.name + ' · ' + docsOf(lib.id).length + ' 篇') : ('全部文档 · ' + state.docs.length + ' 篇');
+    let list = docsOf(state.libId);
+    const f = ($('#docFilter').value || '').trim().toLowerCase();
+    if (f) list = list.filter((d) => (d.title + ' ' + d.name + ' ' + (d.rel || '') + ' ' + (d.tags || []).join(' ')).toLowerCase().indexOf(f) >= 0);
+    if (!list.length) {
+      box.innerHTML = '<div class="empty">' + (state.docs.length ? '这个库里还没有资料。' : '还没有任何资料。') +
+        '<br><b>导入文件夹</b>是最快的方式：选一个目录，<br>它会递归把 md / txt / docx / xlsx / pptx 都抽成可检索文本。</div>';
+      return;
+    }
+    box.innerHTML = list.slice(0, 800).map((d) => {
+      const tags = (d.tags || []).slice(0, 4).map((t) => '<span class="tag">' + esc(t) + '</span>').join('');
+      return '<div class="doc' + (d.id === state.docId ? ' on' : '') + '" data-id="' + esc(d.id) + '">' +
+        '<div class="t">' + esc(d.title || d.name) + '</div>' +
+        '<div class="p">' + esc(d.rel || d.name) + ' · ' + (d.chars || 0) + ' 字</div>' +
+        (tags ? '<div class="tags">' + tags + '</div>' : '') + '</div>';
+    }).join('');
+    box.querySelectorAll('.doc').forEach((el) => {
+      el.onclick = () => { state.docId = el.dataset.id; renderDocs(); showDoc(state.docId); };
+    });
+  }
+
+  /* ---------------- 右：详情 ---------------- */
+  function renderDetail() {
+    const d = state.docs.find((x) => x.id === state.docId);
+    if (!d) {
+      $('#detailTitle').textContent = '选一篇资料';
+      $('#detailBody').innerHTML = '<div class="empty">点右上角 <b>📁 导入文件夹</b>，把现有文件夹导进来。<br>会自动抽正文、切块、建索引<br>不用整理文件名，也不用先分类。</div>';
+      return;
+    }
+    showDoc(d.id);
+  }
+
+  async function showDoc(id) {
+    const d = state.docs.find((x) => x.id === id);
+    if (!d) return;
+    $('#detailTitle').textContent = d.title || d.name;
+    $('#detailBody').innerHTML = '<div class="meta">' + esc(d.path || d.rel) + '<br>' +
+      (d.chars || 0) + ' 字 · ' + (d.chunks || 0) + ' 块 · 导入于 ' + new Date(d.addedAt || Date.now()).toLocaleString() + '</div>' +
+      '<div class="summary">' + esc(d.summary || '（没有摘要）') + '</div>' +
+      ((d.tags || []).length ? '<div class="tags" style="margin-bottom:12px">' + d.tags.map((t) => '<span class="tag">' + esc(t) + '</span>').join('') + '</div>' : '') +
+      '<div class="row"><button class="btn" id="revealBtn">在文件夹中显示</button><button class="btn warn" id="delDocBtn">从库里移除</button></div>' +
+      '<div class="textview" id="dtext" style="margin-top:14px">读取中…</div>';
+    $('#revealBtn').onclick = () => window.fde.kbReveal(d.path || '');
+    $('#delDocBtn').onclick = async () => {
+      if (!await askConfirm('从库里移除', '《' + (d.title || d.name) + '》将从索引里删掉，磁盘上的原文件不动。')) return;
+      await window.fde.kbDocRemove([d.id]);
+      state.docId = '';
+      await load();
+      toast('已移除');
+    };
+    const r = await window.fde.kbDocText(id);
+    const t = (r && r.text) || '';
+    $('#dtext').textContent = t || '（这篇没有可显示正文）';
+    if (r && r.truncated) $('#dtext').textContent += '\n\n…（只显示前 20 万字）';
+  }
+
+  /* ---------------- 建库 ---------------- */
+  function openLibDlg() {
+    state.kindSel = 'solution';
+    $('#libName').value = '';
+    renderKinds();
+    $('#libMask').classList.add('on');
+    setTimeout(() => { try { $('#libName').focus(); } catch (e) {} }, 30);
+  }
+
+  function renderKinds() {
+    $('#kindRow').innerHTML = state.kinds.filter((k) => k.id !== 'general').map((k) =>
+      '<div class="kindopt' + (k.id === state.kindSel ? ' on' : '') + '" data-id="' + esc(k.id) + '">' +
+      '<b>' + esc(k.name) + '</b><i>' + esc(k.hint) + '</i></div>').join('') +
+      '<div class="kindopt' + (state.kindSel === 'general' ? ' on' : '') + '" data-id="general">' +
+      '<b>通用库</b><i>先扔进来，后面再分</i></div>';
+    const k = state.kinds.find((x) => x.id === state.kindSel) || {};
+    $('#kindHint').innerHTML = '这个库会带这些骨架字段：<b>' + esc((k.fields || []).join(' · ')) + '</b>（导入的资料按标题/标签自动归类，不强制填）';
+    $('#kindRow').querySelectorAll('.kindopt').forEach((el) => {
+      el.onclick = () => { state.kindSel = el.dataset.id; renderKinds(); };
+    });
+  }
+
+  async function createLib(name, kindId) {
+    const lib = {
+      id: 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      name: String(name || '').trim().slice(0, 40) || '未命名库',
+      kind: kindId || 'general',
+      createdAt: Date.now(),
+      count: 0
+    };
+    const ok = await saveLibs(state.libs.concat([lib]));
+    if (ok) { state.libId = lib.id; renderLibs(); renderDocs(); }
+    return ok ? lib : null;
+  }
+
+  $('#newLibBtn').onclick = openLibDlg;
+  $('#libCancel').onclick = () => $('#libMask').classList.remove('on');
+  $('#libOk').onclick = async () => {
+    const k = state.kinds.find((x) => x.id === state.kindSel) || {};
+    // 名字留空就按类型自动起（少一步输入，建库更快）
+    const name = $('#libName').value.trim() || (k.name || '通用库');
+    const lib = await createLib(name, state.kindSel);
+    if (lib) { $('#libMask').classList.remove('on'); toast('已建「' + lib.name + '」'); }
+  };
+  $('#libName').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#libOk').click(); });
+
+  $('#seedLibsBtn').onclick = async () => {
+    const want = state.kinds.filter((k) => k.id !== 'general');
+    const have = new Set(state.libs.map((l) => l.kind));
+    const todo = want.filter((k) => !have.has(k.id));
+    if (!todo.length) { toast('六个基础库都建好了'); return; }
+    let next = state.libs.slice();
+    for (const k of todo) {
+      next = next.concat([{
+        id: 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        name: k.name.replace('库', '') + '库', kind: k.id, createdAt: Date.now(), count: 0
+      }]);
+    }
+    const ok = await saveLibs(next);
+    if (ok) toast('已建 ' + todo.length + ' 个基础库：' + todo.map((k) => k.name).join(' / '));
+  };
+
+  /* ---------------- 导入 ---------------- */
+  function fillImpLib() {
+    const sel = $('#impLib');
+    if (!sel) return;
+    sel.innerHTML = state.libs.map((l) => '<option value="' + esc(l.id) + '">' + esc(l.name) + '（' + docsOf(l.id).length + '）</option>').join('') ||
+      '<option value="">（还没有库，先建一个）</option>';
+    if (state.libId) sel.value = state.libId;
+  }
+
+  async function beginImport(kind) {
+    if (!state.libs.length) {
+      const lib = await createLib('我的资料库', 'general');
+      if (!lib) { toast('先建个库再导入', true); return; }
+      toast('先给你建了「我的资料库」，之后可以改名或分类');
+    }
+    if (kind === 'dir') {
+      const r = await window.fde.kbPickDir();
+      if (!r || !r.ok) return;
+      await scanInto(r.dir);
+    } else {
+      const r = await window.fde.kbPickFiles();
+      if (!r || !r.ok) return;
+      openImportDlg({
+        files: (r.files || []).map((f) => Object.assign(f, { exist: state.docs.some((d) => d.path === f.path) })),
+        root: r.root || '',
+        from: '所选文件',
+        skipped: null
+      });
+    }
+  }
+
+  async function scanInto(dir) {
+    const r = await window.fde.kbScan(dir);
+    if (!r || !r.ok) { toast('扫描失败：' + ((r && r.error) || ''), true); return; }
+    if (!r.files.length) {
+      toast('这个目录里没找到可导入的文档（支持 md/txt/csv/json/html/docx/xlsx/pptx）', true);
+      return;
+    }
+    openImportDlg({ files: r.files, root: dir, from: dir, skipped: r.skipped, truncated: r.truncated });
+  }
+
+  /** 按顶层子文件夹分组（现有文件夹知识库一般就是一个文件夹一类） */
+  function groupsOf(ctx) {
+    const files = (ctx && ctx.files) || [];
+    const map = new Map();
+    let loose = 0;
+    const rootName = (ctx && ctx.root) ? String(ctx.root).replace(/[\\/]+$/, '').split(/[\\/]/).pop() : '';
+    for (const f of files) {
+      const rel = String(f.rel || f.name || '').replace(/\\/g, '/');
+      const seg = rel.indexOf('/') >= 0 ? rel.split('/')[0] : '';
+      const key = seg || '';
+      if (!seg) { loose++; continue; }
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(f);
+    }
+    const out = [...map.entries()].map(([name, list]) => ({ name, files: list }));
+    if (loose) {
+      out.push({
+        name: rootName || '根目录',
+        loose: true,
+        files: files.filter((f) => String(f.rel || '').replace(/\\/g, '/').indexOf('/') < 0)
+      });
+    }
+    return out;
+  }
+
+  function syncImpMode() {
+    const sub = $('#impMode') && $('#impMode').value === 'sub';
+    const libRow = $('#impLibRow');
+    if (libRow) {
+      // 按子文件夹分库时，「导入到哪个库」只用来放根目录的散文件
+      const lab = libRow.querySelector('span');
+      if (lab) lab.textContent = sub ? '根目录的散文件放到' : '导入到哪个库';
+    }
+  }
+
+  function openImportDlg(ctx) {
+    state.pending = ctx;
+    const files = ctx.files || [];
+    const fresh = files.filter((f) => !f.exist);
+    const byExt = {};
+    files.forEach((f) => { byExt[f.ext] = (byExt[f.ext] || 0) + 1; });
+    const extTxt = Object.entries(byExt).sort((a, b) => b[1] - a[1]).slice(0, 8)
+      .map(([e, n]) => e.replace('.', '') + ' ' + n).join(' · ');
+    const sk = ctx.skipped || {};
+    $('#impTitle').textContent = '导入 · ' + (ctx.from.length > 46 ? '…' + ctx.from.slice(-44) : ctx.from);
+    $('#impStat').innerHTML =
+      '找到 <b>' + files.length + '</b> 个可导入文档（新增 <b>' + fresh.length + '</b>，已在库 ' + (files.length - fresh.length) + '）<br>' +
+      '<span style="font-size:11.5px;color:#7f8fa5">' + esc(extTxt) + '</span><br>' +
+      '<span style="font-size:11px;color:#6b7b91">已自动跳过：依赖/系统目录 ' + (sk.dir || 0) + ' 个 · 不支持的文件 ' + (sk.ext || 0) + ' 个 · 超过 8MB ' + (sk.size || 0) + ' 个 · 隐藏文件 ' + (sk.hidden || 0) + ' 个' +
+      (ctx.truncated ? ' · <b style="color:#d6a53a">文件太多，只取了前 4000 个</b>' : '') + '</span>';
+    $('#impSkip').innerHTML = '';
+    $('#impBar').style.width = '0';
+    $('#impOk').disabled = false;
+    $('#impOk').textContent = '开始导入';
+    fillImpLib();
+    // 子文件夹分组：现有文件夹本来就是按用途分的，直接一目录一库最省事
+    const gs = groupsOf(ctx);
+    // 只有两个以上"真正的子文件夹"才值得分库；只有一个子目录时并进一个库更省事
+    const real = gs.filter((g) => !g.loose);
+    const split = real.length >= 2;
+    const modeRow = $('#impModeRow');
+    if (modeRow) {
+      modeRow.style.display = split ? 'block' : 'none';
+      $('#impMode').value = split ? 'sub' : 'one';
+      $('#impGroups').innerHTML = split
+        ? '识别到 <b>' + real.length + '</b> 个子文件夹：' + real.map((g) => esc(g.name) + '（' + g.files.length + '）').join(' · ') +
+          (gs.some((g) => g.loose) ? ' · 根目录散文件并进所选的库' : '')
+        : '';
+      $('#impLibRow').style.display = 'flex';
+      syncImpMode();
+    }
+    $('#impMask').classList.add('on');
+  }
+
+  $('#impDirBtn').onclick = () => beginImport('dir');
+  $('#impFileBtn').onclick = () => beginImport('file');
+  $('#impCancel').onclick = () => $('#impMask').classList.remove('on');
+
+  $('#impMode').onchange = syncImpMode;
+
+  /** 分批写库，边导边报进度（几千个文件也不会把界面卡死） */
+  async function importInto(libId, files, onStep) {
+    const BATCH = 12;
+    let added = 0;
+    const skipped = [];
+    for (let k = 0; k < files.length; k += BATCH) {
+      const part = files.slice(k, k + BATCH);
+      if (onStep) onStep(Math.min(k + BATCH, files.length), files.length);
+      const r = await window.fde.kbAddDocs({ libId, files: part });
+      if (r && r.ok) {
+        added += (r.added || []).length;
+        (r.skipped || []).forEach((x) => skipped.push(x));
+      } else if (r) {
+        skipped.push({ name: '（这一批）', reason: r.error || '导入失败' });
+      }
+    }
+    return { added, skipped };
+  }
+
+  $('#impOk').onclick = async () => {
+    const ctx = state.pending;
+    if (!ctx) return;
+    const all = $('#impAll').checked;
+    const subMode = $('#impMode') && $('#impMode').value === 'sub';
+    const baseLib = $('#impLib').value;
+    if (!baseLib) { toast('先建一个库', true); return; }
+
+    // 组装计划：[{ libId, files }]
+    const plan = [];
+    const gs = subMode ? groupsOf(ctx) : [];
+    if (subMode && gs.filter((g) => !g.loose).length >= 2) {
+      for (const g of gs) {
+        const pick = g.files.filter((f) => all || !f.exist);
+        if (!pick.length) continue;
+        // 根目录的散文件不单独建库，并进当前选中的库
+        if (g.loose) { plan.push({ libId: baseLib, files: pick, name: '根目录' }); continue; }
+        let lib = state.libs.find((l) => l.name === g.name);
+        if (!lib) lib = await createLib(g.name, 'general');
+        if (!lib) continue;
+        plan.push({ libId: lib.id, files: pick, name: g.name });
+      }
+    } else {
+      const pick = (ctx.files || []).filter((f) => all || !f.exist);
+      if (pick.length) plan.push({ libId: baseLib, files: pick, name: '' });
+    }
+
+    const total = plan.reduce((n, p) => n + p.files.length, 0);
+    if (!total) { toast('这一批都已经在库里了'); $('#impMask').classList.remove('on'); return; }
+
+    $('#impOk').disabled = true;
+    $('#impOk').textContent = '导入中…';
+    const bar = $('#impBar');
+    let added = 0;
+    const skipped = [];
+    let done = 0;
+    for (const step of plan) {
+      const r = await importInto(step.libId, step.files, (a) => {
+        $('#impTitle').textContent = '导入中 ' + (done + a) + ' / ' + total + (step.name ? ' · ' + step.name : '');
+      });
+      done += step.files.length;
+      added += r.added;
+      r.skipped.forEach((x) => skipped.push(x));
+      bar.style.width = Math.round(Math.min(1, done / total) * 100) + '%';
+    }
+    bar.style.width = '100%';
+    $('#impOk').disabled = false;
+    $('#impOk').textContent = '完成';
+    $('#impTitle').textContent = '导入完成：新增 ' + added + ' 篇' + (skipped.length ? '，跳过 ' + skipped.length + ' 个' : '');
+    $('#impStat').innerHTML = '新增 <b>' + added + '</b> 篇' +
+      (plan.length > 1 ? ' · 分成 <b>' + plan.length + '</b> 个库' : '') +
+      ' · 跳过 ' + skipped.length + ' 个<br>' +
+      '<span style="font-size:11.5px;color:#7f8fa5">文字已抽好、索引已建好，切到「检索」就能搜</span>';
+    $('#impSkip').innerHTML = skipped.slice(0, 60).map((x) =>
+      '<div>' + esc(x.name) + ' — ' + esc(x.reason) + '</div>').join('') +
+      (skipped.length > 60 ? '<div>…还有 ' + (skipped.length - 60) + ' 个</div>' : '');
+    state.libId = plan.length > 1 ? '' : plan[0].libId;
+    await load();
+    setTimeout(() => { if (added) $('#impMask').classList.remove('on'); }, 900);
+    if (added) {
+      toast(plan.length > 1 ? ('导好了：' + plan.length + ' 个库，共新增 ' + added + ' 篇') : ('导好了：新增 ' + added + ' 篇，去「检索」试试'));
+      setTimeout(() => setView('search'), 300);
+    } else toast('一篇都没进来，看看下面的跳过原因', true);
+  };
+
+  /* ---------------- 检索 ---------------- */
+  function setView(v) {
+    state.view = v;
+    document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('on', b.dataset.view === v));
+    $('#v-docs').classList.toggle('on', v === 'docs');
+    $('#v-search').classList.toggle('on', v === 'search');
+    $('#v-ask').classList.toggle('on', v === 'ask');
+    if (v === 'search') setTimeout(() => { try { $('#qInput').focus(); } catch (e) {} }, 40);
+    if (v === 'ask') setTimeout(() => { try { $('#aInput').focus(); } catch (e) {} }, 40);
+  }
+  document.querySelectorAll('.tabs button').forEach((b) => { b.onclick = () => setView(b.dataset.view); });
+
+  function hl(text, q) {
+    const raw = esc(text);
+    const terms = String(q || '').split(/\s+/).filter((t) => t.length >= 1);
+    let out = raw;
+    for (const t of terms) {
+      const re = new RegExp('(' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      out = out.replace(re, '<mark>$1</mark>');
+    }
+    return out;
+  }
+
+  async function doSearch() {
+    const q = $('#qInput').value.trim();
+    if (!q) { toast('输入关键词再搜', true); return; }
+    const box = $('#qResults');
+    box.innerHTML = '<div class="busy">检索中…</div>';
+    const r = await window.fde.kbSearch({ q, libId: state.libId, limit: 25 });
+    if (!r || r.ok === false) { box.innerHTML = '<div class="err">' + esc((r && r.error) || '检索失败') + '</div>'; return; }
+    if (!r.hits.length) {
+      box.innerHTML = '<div class="empty">没搜到「' + esc(q) + '」。<br>换个更短的词试试；或确认资料已经导入这个库。</div>';
+      return;
+    }
+    const libName = (id) => (libById(id) || {}).name || '';
+    box.innerHTML = '<div class="hint">命中 ' + r.hits.length + ' 篇（按相关度排序）</div>' + r.hits.map((h) =>
+      '<div class="hit" data-id="' + esc(h.docId) + '">' +
+      '<div class="h1"><b>' + esc(h.title) + '</b><span class="score">' + h.score + '</span></div>' +
+      '<div class="rel">' + esc(libName(h.libId) + ' · ' + (h.rel || '')) + '</div>' +
+      '<div class="snip">' + hl(h.snippet, q) + '</div></div>').join('');
+    box.querySelectorAll('.hit').forEach((el) => {
+      el.onclick = () => {
+        state.docId = el.dataset.id;
+        const d = state.docs.find((x) => x.id === state.docId);
+        if (d) state.libId = d.libId;
+        renderLibs(); renderDocs();
+        setView('docs');
+        showDoc(state.docId);
+      };
+    });
+  }
+  $('#qBtn').onclick = doSearch;
+  $('#qInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
+
+  /* ---------------- 问答 ---------------- */
+  async function doAsk() {
+    const q = $('#aInput').value.trim();
+    if (!q) { toast('写一个问题', true); return; }
+    const box = $('#aOut');
+    box.innerHTML = '<div class="busy">正在检索资料并生成回答…</div>';
+    const r = await window.fde.kbAsk({ q, libId: state.libId });
+    if (!r) { box.innerHTML = '<div class="err">没有响应</div>'; return; }
+    if (r.ok === false) {
+      const hs = r.hits || [];
+      box.innerHTML = '<div class="err">' + esc(r.error || '问答失败') +
+        (r.kind === 'nokey' || r.kind === 'nomodel' ? '（先接算力：点右上角「应用功能 → ⚡ 模型设置」填密钥）' : '') + '</div>' +
+        (hs.length ? '<div class="hint" style="margin-top:12px">不过检索到了这些相关段落，可以先自己看：</div>' +
+          hs.map((h) => '<div class="hit" data-id="' + esc(h.docId) + '"><div class="h1"><b>' + esc(h.title) + '</b></div>' +
+            '<div class="snip">' + hl(h.snippet, q) + '</div></div>').join('') : '');
+      bindHits();
+      return;
+    }
+    const ans = esc(r.answer || '').replace(/[\[【]资料\s*(\d+)[\]】]/g, '<span class="cite" data-n="$1">资料 $1</span>');
+    box.innerHTML = '<div class="ans">' + ans + '</div>' +
+      '<div class="hint">依据（点开看原文）' + (r.model ? ' · ' + esc(r.model) : '') + '</div>' +
+      '<div class="srclist">' + (r.hits || []).map((h, i) =>
+        '<div class="s" data-id="' + esc(h.docId) + '">［资料 ' + (i + 1) + '］' + esc(h.title) + ' · ' + esc(h.snippet || '').slice(0, 70) + '…</div>').join('') + '</div>';
+    bindHits();
+  }
+
+  function bindHits() {
+    document.querySelectorAll('#aOut .s, #aOut .hit').forEach((el) => {
+      el.onclick = () => {
+        const d = state.docs.find((x) => x.id === el.dataset.id);
+        if (!d) return;
+        state.docId = d.id; state.libId = d.libId;
+        renderLibs(); renderDocs(); setView('docs'); showDoc(d.id);
+      };
+    });
+    document.querySelectorAll('#aOut .cite').forEach((el) => {
+      el.onclick = () => {
+        const n = Number(el.dataset.n);
+        const s = document.querySelectorAll('#aOut .s')[n - 1];
+        if (s) s.click();
+      };
+    });
+  }
+  $('#aBtn').onclick = doAsk;
+  $('#aInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') doAsk(); });
+
+  /* ---------------- 拖拽导入 ---------------- */
+  let dragDepth = 0;
+  const hasFiles = (e) => {
+    const dt = e.dataTransfer;
+    return !!dt && Array.prototype.indexOf.call(dt.types || [], 'Files') >= 0;
+  };
+  const veil = (on) => { const v = $('#dropveil'); if (v) v.classList.toggle('on', on); };
+
+  document.addEventListener('dragenter', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth++;
+    veil(true);
+  });
+  document.addEventListener('dragover', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    try { e.dataTransfer.dropEffect = 'copy'; } catch (err) {}
+  });
+  document.addEventListener('dragleave', (e) => {
+    if (!hasFiles(e)) return;
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (!dragDepth) veil(false);
+  });
+  document.addEventListener('drop', async (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth = 0;
+    veil(false);
+    if (!state.libs.length) {
+      const lib = await createLib('我的资料库', 'general');
+      if (!lib) { toast('先建个库再导入', true); return; }
+    }
+    const picked = Array.prototype.slice.call(e.dataTransfer.files || []);
+    const paths = picked.map((f) => { try { return window.fde.pathForFile(f) || ''; } catch (err) { return ''; } }).filter(Boolean);
+    if (!paths.length) { toast('没拿到磁盘路径，改用「📁 导入文件夹」按钮', true); return; }
+    const r = await window.fde.kbPaths(paths);
+    if (!r || !r.ok) { toast('读取拖入内容失败', true); return; }
+    const dirs = r.dirs || [];
+    const loose = r.files || [];
+    const collected = [];
+    let root = '';
+    for (const d of dirs) {
+      const sc = await window.fde.kbScan(d);
+      if (!sc || !sc.ok) { toast('扫描失败：' + ((sc && sc.error) || d), true); continue; }
+      const prefix = dirs.length > 1 ? String(d).replace(/[\\/]+$/, '').split(/[\\/]/).pop() + '/' : '';
+      for (const f of (sc.files || [])) {
+        collected.push(Object.assign({}, f, {
+          rel: prefix + (f.rel || f.name),
+          exist: state.docs.some((x) => x.path === f.path)
+        }));
+      }
+      if (!root) root = d;
+    }
+    for (const f of loose) collected.push(Object.assign({}, f, { exist: state.docs.some((x) => x.path === f.path) }));
+    if (!collected.length) { toast('拖进来的东西里没有可导入的文档', true); return; }
+    openImportDlg({
+      files: collected,
+      root: dirs.length === 1 ? root : '',
+      from: '拖进来的 ' + (dirs.length ? dirs.length + ' 个文件夹' : '') + (loose.length ? ' ' + loose.length + ' 个文件' : ''),
+      skipped: null
+    });
+  });
+
+  /* ---------------- 其它 ---------------- */
+  $('#docFilter').addEventListener('input', () => renderDocs());
+  $('#closeBtn').onclick = () => window.close();
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { $('#libMask').classList.remove('on'); $('#impMask').classList.remove('on'); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); if (state.view === 'search') $('#qInput').focus(); }
+  });
+
+  load();
+  window.__fdeKb = () => ({ libs: state.libs, docs: state.docs, libId: state.libId, docId: state.docId, view: state.view, pending: state.pending ? (state.pending.files || []).length : 0, groups: state.pending ? groupsOf(state.pending).map((g) => g.name + ':' + g.files.length) : [] });
+})();
+</script>
+</body>
+</html>

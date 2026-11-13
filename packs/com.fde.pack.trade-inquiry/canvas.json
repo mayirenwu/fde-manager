@@ -1,0 +1,15 @@
+{
+  "nodes": [
+    { "type": "project", "title": "外贸 · {{product}}", "note": "本项目桌面：进入后自动打开国际站、WhatsApp、领英与邮箱" },
+    { "type": "note", "title": "询盘分级标准", "note": "A 级：明确产品型号 + 数量 + 目的港 → 当天回报价\nB 级：只问价格 → 回区间价 + 引导给规格\nC 级：群发广告 / 索要目录 → 归档，不投入时间" },
+    { "type": "url", "title": "客户背调", "note": "查公司规模、主营、采购记录，判断是不是真买家", "ref": { "url": "https://www.linkedin.com/" } },
+    { "type": "script", "title": "今日询盘汇总", "note": "统计待回询盘、超时未回、跟进到期", "ref": { "path": "scripts/inquiry-summary.ps1" } },
+    { "type": "ai", "title": "开发信上下文", "note": "汇总产品参数、MOQ、市场口径，生成可直接发给客户的开发信" }
+  ],
+  "edges": [
+    { "from": 0, "to": 1, "label": "开工" },
+    { "from": 1, "to": 2, "label": "分级后背调" },
+    { "from": 2, "to": 3, "label": "汇总" },
+    { "from": 3, "to": 4, "label": "写开发信" }
+  ]
+}

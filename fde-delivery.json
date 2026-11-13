@@ -1,0 +1,20 @@
+{
+  "label": "灵克算力渠道",
+  "baseUrl": "https://api.lk888.ai/v1",
+  "model": "gem-3.8-flash",
+  "models": [
+    "gem-3.8-flash",
+    "deepseek-v4.1-flash",
+    "deepseek-v4-flash",
+    "glm-5.3-flash",
+    "qwen3.8-flash",
+    "kimi-k3",
+    "gem-3.1-pro",
+    "glm-5.3",
+    "deepseek-v4-pro",
+    "qwen3.8-max"
+  ],
+  "protocol": "openai",
+  "shareKey": false,
+  "note": "只预置接口地址和模型清单，不预置密钥；每台电脑各填自己的 key（模型设置里填）。要让整团队共用一把 key，才把 shareKey 改成 true 并写上 apiKey。"
+}

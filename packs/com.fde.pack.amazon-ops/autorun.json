@@ -1,0 +1,7 @@
+[
+  { "type": "url", "url": "https://sellercentral.amazon.com/", "name": "亚马逊卖家后台" },
+  { "type": "url", "url": "https://www.sellersprite.com/", "name": "卖家精灵（选品）", "delay": 2 },
+  { "type": "url", "url": "https://www.1688.com/", "name": "1688 找货源", "delay": 4 },
+  { "type": "url", "url": "https://www.boc.cn/sourcedb/whpj/", "name": "外汇牌价", "delay": 6 },
+  { "type": "app", "path": "C:\\Program Files (x86)\\WXWork\\WXWork.exe", "name": "企业微信", "optional": true, "delay": 8 }
+]

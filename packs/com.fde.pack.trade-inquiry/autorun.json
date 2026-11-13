@@ -1,0 +1,7 @@
+[
+  { "type": "url", "url": "https://www.alibaba.com/", "name": "阿里国际站" },
+  { "type": "url", "url": "https://web.whatsapp.com/", "name": "WhatsApp Web", "delay": 2 },
+  { "type": "url", "url": "https://www.linkedin.com/", "name": "领英（找采购负责人）", "delay": 4 },
+  { "type": "url", "url": "https://mail.163.com/", "name": "企业邮箱", "delay": 6 },
+  { "type": "app", "path": "C:\\Program Files (x86)\\WXWork\\WXWork.exe", "name": "企业微信", "optional": true, "delay": 8 }
+]

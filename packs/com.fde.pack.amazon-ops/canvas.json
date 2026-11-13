@@ -1,0 +1,15 @@
+{
+  "nodes": [
+    { "type": "project", "title": "{{shop}} · {{site}}", "note": "本项目桌面：进入后自动打开卖家后台、选品工具与汇率页" },
+    { "type": "url", "title": "卖家后台巡查", "note": "订单 / 库存 / 绩效通知 / 差评", "ref": { "url": "https://sellercentral.amazon.com/" } },
+    { "type": "note", "title": "今日必查清单", "note": "1) 库存低于 30 天的 SKU\n2) 新增差评与退货原因\n3) 广告 ACOS 是否超过 {{acos}}%\n4) 竞品价格与 BSR 变动" },
+    { "type": "script", "title": "广告花费日报", "note": "算当日花费、ACOS 与超支 SKU", "ref": { "path": "scripts/ad-report.ps1" } },
+    { "type": "ai", "title": "今日运营上下文", "note": "汇总上游节点与项目上下文，生成可直接粘贴给 AI 的提示词" }
+  ],
+  "edges": [
+    { "from": 0, "to": 1, "label": "开工" },
+    { "from": 1, "to": 2, "label": "巡查" },
+    { "from": 2, "to": 3, "label": "算账" },
+    { "from": 3, "to": 4, "label": "汇总" }
+  ]
+}
