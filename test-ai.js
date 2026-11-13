@@ -271,6 +271,22 @@ t('供应商：模型列表钳到 100', ai.sanitizeProviders([{ name: 'x', baseU
   t('分发前清洗：shareKey:true 时保留', ai.sanitizeDelivery(dShare).apiKey === dNoKey.apiKey);
   t('分发前清洗不动其它字段', ai.sanitizeDelivery(dNoKey).model === 'gem-3.8-flash');
 
+  // mergeModels：老机器只存了 10 个预置 → 自动并集补齐（渠道在前，用户加的排后面）
+  const cat = ["a", "b", "c", "d"].map(x => ({ id: x, name: x }));
+  const m1 = ai.mergeModels(["b", "x-user"], cat);
+  t("mergeModels：缺的补进来", m1.added === 3 && m1.models.length === 5, JSON.stringify(m1.models.map(m => m.id)));
+  t("mergeModels：渠道清单在前", m1.models[0].id === "a" && m1.models[1].id === "b");
+  t("mergeModels：用户自己加的保留在后面", m1.models[4].id === "x-user");
+  const m2 = ai.mergeModels([{ id: "a" }, { id: "c", name: "C-renamed" }], cat);
+  t("mergeModels：已有的不重复", m2.added === 2 && m2.models.length === 4);
+  const m3 = ai.mergeModels([{ id: "a" }, { id: "z-only" }], []);
+  t("mergeModels：空渠道清单原样返回", m3.added === 0 && m3.models.length === 2);
+  const m4 = ai.mergeModels("a, b", cat);
+  t("mergeModels：逗号串也能解析", m4.models.length === 4 && m4.models.some(m => m.id === "b"));
+  const real = JSON.parse(require("fs").readFileSync(require("path").join(__dirname, "fde-delivery.json"), "utf8")).models;
+  const old10 = ["deepseek-v4.1-flash", "gem-3.8-flash", "deepseek-v4-flash", "glm-5.3-flash", "qwen3.8-flash", "kimi-k3", "gem-3.1-pro", "glm-5.3", "deepseek-v4-pro", "qwen3.8-max"];
+  const m5 = ai.mergeModels(old10, real);
+  t("mergeModels：真清单 10 补到 " + real.length, m5.added === real.length - 10 && m5.models.length >= real.length, "added=" + m5.added);
   // 仓库里这份交付文件本身也不能带 key
   const deliv = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, 'fde-delivery.json'), 'utf8'));
   t('仓库里的 fde-delivery.json 不含 apiKey', !('apiKey' in deliv), Object.keys(deliv).join(','));

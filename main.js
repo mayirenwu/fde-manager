@@ -3957,6 +3957,46 @@ async function modelDetailOf(cfg, name) {
 
 function aiFilePath() { return path.join(app.getPath('userData'), 'ai.json'); }
 
+/**
+ * 内置渠道的模型清单（fde-delivery.json）。
+ * 老版本这里只写了 10 个"预置"，且 seedDelivery 不覆盖已保存的配置 ——
+ * 于是老机器 ai.json 里永远停在 10 个，界面上就是"聊天模型只有这几个"。
+ * 所以：内置渠道的清单以渠道文件为准，aiConfig 时自动并集补回（用户自己加的排后面保留）。
+ */
+let deliveryCatalogCache = null;
+function deliveryCatalog() {
+  if (deliveryCatalogCache) return deliveryCatalogCache;
+  let out = [];
+  for (const p of deliveryFilePaths()) {
+    try {
+      const j = JSON.parse(fs.readFileSync(p, 'utf8')) || {};
+      const list = Array.isArray(j.models) ? j.models : [];
+      if (!list.length) continue;
+      const norm = list.map((m) => {
+        if (typeof m === 'string') return m.trim() ? { id: m.trim(), name: m.trim() } : null;
+        if (m && m.id) return { id: String(m.id), name: String(m.name || m.id) };
+        return null;
+      }).filter(Boolean);
+      if (norm.length) { out = norm; break; }
+    } catch (e) {}
+  }
+  deliveryCatalogCache = out;
+  return out;
+}
+
+function hostOfBase(baseUrl) {
+  try { return new URL(String(baseUrl || '')).hostname.toLowerCase(); } catch (e) { return ''; }
+}
+
+/** 是不是内置渠道（灵克算力 / 蚂蚁任务 AI）——是的话模型清单跟着渠道文件升级 */
+function isBuiltinBase(baseUrl) {
+  const h = hostOfBase(baseUrl);
+  if (!h) return false;
+  if (/(^|\.)lk888\.ai$/.test(h)) return true;
+  if (/(^|\.)my10086\.cn$/.test(h)) return true;
+  return h === hostOfBase(aiClient.DEFAULT_BASE);
+}
+
 function aiConfig() {
   let saved = {};
   try { saved = JSON.parse(fs.readFileSync(aiFilePath(), 'utf8')) || {}; } catch (e) { saved = {}; }
@@ -3964,11 +4004,24 @@ function aiConfig() {
   // models 统一归一成 {id,name} 对象：渠道预置(seedDelivery)存的是字符串数组，
   // 直接透传给界面会渲染出一排"空白选项"，看起来就是"其它模型不显示、选不了"
   const modelsRaw = Array.isArray(saved.models) ? saved.models.slice(0, 300) : [];
-  const models = modelsRaw.map((m) => {
+  let models = modelsRaw.map((m) => {
     if (typeof m === 'string') return m.trim() ? { id: m.trim(), name: m.trim() } : null;
     if (m && m.id) return { id: String(m.id), name: String(m.name || m.id) };
     return null;
   }).filter(Boolean);
+  // 内置渠道：把渠道清单里缺的模型补回来（老机器只存了 10 个预置，靠这一步自动升级，
+  // 不用用户再点「拉模型」）。用户自己加过的模型一项都不删，只是排到后面。
+  if (isBuiltinBase(baseUrl) || saved.delivered) {
+    const merged = aiClient.mergeModels(models, deliveryCatalog());
+    models = merged.models;
+    if (merged.added > 0) {
+      try {
+        saved.models = models;
+        fs.mkdirSync(path.dirname(aiFilePath()), { recursive: true });
+        fs.writeFileSync(aiFilePath(), JSON.stringify(saved, null, 2), 'utf8');
+      } catch (e) {}
+    }
+  }
   return {
     baseUrl,
     apiKey: String(saved.apiKey || ''),
@@ -4121,6 +4174,10 @@ async function aiChatCounted(cfg, payload, opts) {
 /** 给界面看的配置：密钥打码，不原样回传 */
 function aiPublic() {
   const c = aiConfig();
+  // 聊天下拉只放聊天类：全量（含视频/生图/音乐）照样在 models 里给画布用，
+  // 但不能一股脑塞进「聊天模型」，否则 80+ 个里一半选了就跑偏
+  let chatModels = c.models.filter(m => modelsLib.inferType(m.id) === 'chat');
+  if (!chatModels.length) chatModels = c.models;
   return {
     ok: true,
     baseUrl: c.baseUrl,
@@ -4129,6 +4186,7 @@ function aiPublic() {
     hasKey: !!c.apiKey,
     model: c.model,
     models: c.models,
+    chatModels,
     protocol: c.protocol,
     autoSwitch: c.autoSwitch,
     autoModel: router.isAuto(c.model),

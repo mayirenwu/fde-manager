@@ -708,10 +708,31 @@ function status(cfg) {
   return { level: 'on', text: '已接上 ' + model + tag };
 }
 
+/**
+ * 把渠道清单并进已存清单（老机器只存了 10 个预置时靠这一步自动补齐）。
+ * 规则：渠道清单在前（顺序稳定、新模型一眼能看到），用户自己加的排后面，按 id 去重。
+ * 返回 { models, added }：added > 0 说明缺项，调用方可顺手写回一次。
+ */
+function mergeModels(saved, catalog) {
+  const norm = (arr) => (Array.isArray(arr) ? arr : []).map((m) => {
+    if (typeof m === 'string') return m.trim() ? { id: m.trim(), name: m.trim() } : null;
+    if (m && m.id) return { id: String(m.id), name: String(m.name || m.id) };
+    return null;
+  }).filter(Boolean);
+  const own = norm(saved);
+  const cat = norm(catalog);
+  if (!cat.length) return { models: own, added: 0 };
+  const catIds = new Set(cat.map(m => m.id));
+  const ownIds = new Set(own.map(m => m.id));
+  const ownExtra = own.filter(m => !catIds.has(m.id));
+  const added = cat.filter(m => !ownIds.has(m.id)).length;
+  return { models: cat.concat(ownExtra).slice(0, 300), added };
+}
+
 module.exports = {
   DEFAULT_BASE, CONSOLE, CANDIDATES,
   normalizeBase, endpoints, maskKey, looksLikeKey,
-  requestJson, parseModels, parseChat,
+  requestJson, parseModels, parseChat, mergeModels,
   encryptToken, decryptToken, siteSecret,
   siteModels, siteChat, siteResume, sseDelta,
   listModels, chat, detect, status, seedDelivery, sanitizeDelivery, sanitizeProviders,
