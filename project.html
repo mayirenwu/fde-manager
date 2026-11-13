@@ -398,7 +398,8 @@ function renderHeader() {
 async function loadWindows() {
   try {
     const r = await window.fde.listWindows(myId);
-    if (r && r.ok) winList = { mine: r.mine, others: r.others };
+    // mine/others 缺失时给空数组：宁可显示"还没有窗口"，也别整块渲染炸掉
+    if (r && r.ok) winList = { mine: r.mine || [], others: r.others || [] };
   } catch (e) { winList = { mine: [], others: [] }; }
   renderWindows();
 }
