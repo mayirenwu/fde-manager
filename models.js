@@ -21,12 +21,19 @@ const TYPE_META = {
   audio: { key: 'audio', name: '音乐 / 语音', icon: '🎵', color: '#a855f7', verb: '音乐 / 配音 / 音色克隆' }
 };
 
-/** 认不出的模型按名字前缀兜底分类（老接口只给 name 时也能分对） */
+/**
+ * 认不出的模型按名字兜底分类（老接口只给 name 时也能分对）。
+ * 顺序有意为 audio → image → video：
+ *  - wan2.6-image 这类"视频家族里的图像模型"必须先被 image 拦住，不能落进 wan 的 video 规则；
+ *  - omni 系列两类都有（omni-1.1 是聊天、omni_flash-10s 是 10 秒视频），不设 'omni' 裸词，
+ *    视频变种靠 omni_/10s/i2v 这些后缀识别，聊天变种走兜底 chat。
+ * 分类核对过平台目录 192 个模型（scripts/cat-raw.json 的 type 字段）。
+ */
 const NAME_HINTS = [
   [/^(suno|udio|music|ace-?step|diffrhythm|mureka)/i, 'audio'],
   [/(tts|speech|voice|audio|sound|whisper|asr)/i, 'audio'],
-  [/(seedance|kling|vidu|sora|veo|runway|hailuo|luma|wan2|omni|video|mv)/i, 'video'],
-  [/(image|flux|mj_|midjourney|dall-?e|stable-?diffusion|sd[-_]?xl|seedream|tt-image|qwen-image|kolors|ideogram|recraft)/i, 'image']
+  [/(image|flux|mj_|midjourney|dall-?e|stable-?diffusion|sd[-_]?xl|seedream|tt-image|qwen-image|kolors|ideogram|recraft|banana|gk-image|minimax-h\d+-image|wan\d+(\.\d+)?-image)/i, 'image'],
+  [/(seedance|kling|vidu|sora|veo|runway|hailuo|luma|wan\d|video|mv|kwvideo|pixverse|happyhorse|muse|cankaosheng|shouweizhen|quannengcankao|zaishengcheng|shouzheng|xuxie|i2v|t2v|r2v|videoref|omni_|omni_flash|10s)/i, 'video']
 ];
 
 function inferType(name) {

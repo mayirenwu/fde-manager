@@ -1369,7 +1369,7 @@ async function aiDetect() {
   $('#aiBase').value = r.baseUrl;
   AI = await window.fde.aiGet();
   fillModelSelect($('#aiModel'), r.models, AI.model || (r.models[0] || {}).id);
-  aiSay('ok', '找到了：' + r.baseUrl + (r.protocol === 'site' ? '（站点原生 · 统一入口）' : '') + ' · ' + r.count + ' 个模型可用。选一个模型后点「保存」。');
+  aiSay('ok', '找到了：' + r.baseUrl + (r.protocol === 'site' ? '（站点原生 · 统一入口）' : '') + ' · ' + r.count + ' 个聊天模型可用' + (r.total ? '（平台共 ' + r.total + ' 个，图/视频/音频在下方「模型库」）' : '') + '。选一个模型后点「保存」。');
   renderAiPill();
 }
 
@@ -1383,7 +1383,7 @@ async function aiModels() {
   if (!r.ok) return aiSay('err', r.error || '拉不到模型列表');
   AI = await window.fde.aiGet();
   fillModelSelect($('#aiModel'), r.models, AI.model || (r.models[0] || {}).id);
-  aiSay('ok', '拉到 ' + r.models.length + ' 个模型（' + r.baseUrl + (r.protocol === 'site' ? ' · 站点原生' : '') + '）。选一个再保存。');
+  aiSay('ok', '拉到 ' + r.models.length + ' 个聊天模型' + (r.total ? '（平台共 ' + r.total + ' 个，图 / 视频 / 音频在下方「模型库」按类查看）' : '') + '（' + r.baseUrl + (r.protocol === 'site' ? ' · 站点原生' : '') + '）。选一个再保存。');
 }
 
 function pickedModel() {

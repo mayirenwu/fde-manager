@@ -5599,7 +5599,9 @@ function registerIpc() {
     const r = await aiClient.detect({ baseUrl, apiKey: key });
     if (!r.ok) return { ok: false, error: r.error, tries: r.tries || [] };
     aiSave({ baseUrl: r.base, apiKey: key, models: r.models, protocol: r.protocol });
-    return { ok: true, baseUrl: r.base, models: r.models, count: r.models.length, protocol: r.protocol };
+    // 聊天下拉只放聊天类：平台目录 191 个模型里一大半是图/视频/音频，全塞进来只会选错
+    const chatModels = r.models.filter((m) => modelsLib.inferType(m.id || m.name || m) === 'chat');
+    return { ok: true, baseUrl: r.base, models: chatModels, count: chatModels.length, total: r.models.length, protocol: r.protocol };
   });
   ipcMain.handle('ai:models', async (e, patch) => {
     const cur = aiConfig();
@@ -5612,7 +5614,9 @@ function registerIpc() {
     if (!r.ok) return { ok: false, error: r.error, kind: r.kind };
     // noSave：给自定义/本地供应商「拉模型」用，不动当前启用的配置
     if (!(patch && patch.noSave)) aiSave({ baseUrl: r.base, models: r.models, protocol: r.protocol || cfg.protocol });
-    return { ok: true, models: r.models, baseUrl: r.base, protocol: r.protocol || cfg.protocol };
+    // 全量照存（生成节点 / 模型库要按类型分四类），但回给聊天下拉的只留聊天类
+    const chatModels = r.models.filter((m) => modelsLib.inferType(m.id || m.name || m) === 'chat');
+    return { ok: true, models: chatModels, total: r.models.length, baseUrl: r.base, protocol: r.protocol || cfg.protocol };
   });
   ipcMain.handle('ai:test', async (e, patch) => {
     const cur = aiConfig();
