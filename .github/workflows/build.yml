@@ -109,12 +109,21 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           TAG="${{ github.ref_name }}"
+          # 未签名软件最需要的校验值文件
+          ( cd dist && sha256sum * > checksums.txt )
+          cat dist/checksums.txt
+          # Release 正文：docs/release/<tag>.md 存在则用，否则回退自动生成
+          NOTES="docs/release/$TAG.md"
+          if [ -f "$NOTES" ]; then NOTE_ARGS=(--notes-file "$NOTES"); else NOTE_ARGS=(--generate-notes); fi
           if gh release view "$TAG" >/dev/null 2>&1; then
+            # 命名规则变更后旧资产会残留，先清掉再重传
+            gh release view "$TAG" --json assets --jq '.assets[].name' | \
+              xargs -r -n1 -I'{}' gh release delete-asset "$TAG" '{}' --yes
             gh release upload "$TAG" dist/* --clobber
+            gh release edit "$TAG" --title "FDE Manager $TAG" "${NOTE_ARGS[@]}"
           else
             gh release create "$TAG" dist/* \
-              --title "FDE Manager $TAG" \
-              --generate-notes
+              --title "FDE Manager $TAG" "${NOTE_ARGS[@]}"
           fi 2>&1 | tee release-log.txt
           exit ${PIPESTATUS[0]}
 

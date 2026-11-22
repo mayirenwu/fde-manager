@@ -1,17 +1,9 @@
-# FDE Manager（FDE 智能体 控制台）  可随意修改成为你自己的智能体控制台。
+# FDE Manager（FDE 智能体 控制台）
 
 > **公司里最值钱的软件，恰恰是 AI 摸不到的那批。**
->
-> 工厂的 ERP / MES、金蝶、用友、SAP 客户端、政务系统、二十年的 C/S 老软件——没有 API、不给开放接口、厂商也早不更新了。
-> 智能体再聪明，也只能站在屏幕外看着：**想得到，碰不到**。
->
-> FDE 不截屏、不猜坐标——**直接调度你电脑上的原生窗口**，让 AI 的活落进这些"碰不到"的真软件里。
-
-你已经有 WorkBuddy、Codex、Claude、豆包、Cursor 了。它们很会「想」。
-但 ERP 的录单界面、MES 的工单系统、供应商的 B2B 后台，它们一个都打不开。
-
-FDE Manager 就是那个工位：**一台电脑 = N 张互不干扰的原生桌面**，一个客户 / 一条业务线 / 一套老系统一个工位，
-模型随便换、流程可导出、数据全在本机。
+> 工厂的 ERP / MES、金蝶、用友、政务系统、二十年的 C/S 老软件——没有 API、不给接口、厂商早不更新，智能体想得到、碰不到。
+> FDE 不截屏、不猜坐标——**直接调度你电脑上的原生窗口**，让 AI 的活落进这些「碰不到」的真软件里：
+> **一台电脑 = N 张互不干扰的原生桌面**，模型随便换、流程可导出、数据全在本机。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20Intel%2BM%20%7C%20Linux-blue.svg)](#平台支持)
@@ -19,9 +11,9 @@ FDE Manager 就是那个工位：**一台电脑 = N 张互不干扰的原生桌�
 [![Tests](https://img.shields.io/badge/tests-17%20files%20passing-brightgreen.svg)](#测试)
 [![PRs](https://img.shields.io/badge/PRs-welcome-orange.svg)](#参与贡献)
 
-**English**: The workspace layer for computer-use agents — native window isolation, per-project desktops, and a visual canvas that chains windows, scripts, knowledge and LLM calls into one runnable flow. Built for the software AI could never touch: legacy ERPs, MES, C/S clients with no API. No screenshots, no coordinate guessing — FDE drives real windows via OS APIs. Works with any OpenAI-compatible model.
+**English**: The workspace layer for computer-use agents — built for the software AI could never touch: legacy ERPs, MES, C/S clients with no API. Native window isolation, per-project desktops, a visual canvas that chains windows / scripts / knowledge / LLM calls into one runnable flow. No screenshots, no coordinate guessing.
 
-📥 **直接下载安装包**：前往 [Releases](https://github.com/mayirenwu/fde-manager/releases) 页下载 **v7.26.3**：Windows（setup 安装器 / 绿色便携版）、macOS（Intel x64 与 Apple M 系列 arm64 的 dmg/zip）、Linux（AppImage / deb），共 8 个文件，全部由三平台 CI 自动构建，Release 附件即装即用。
+📥 **下载 v7.26.3**：[Releases](https://github.com/mayirenwu/fde-manager/releases) 共 8 个安装包——Windows（安装器 / 便携版）、macOS（Intel + M 系列）、Linux（AppImage / deb），附 `checksums.txt` SHA256 校验。
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/mayirenwu/fde-manager/master/docs/demo.gif" alt="FDE Manager：一键切桌面（窗口收起/原位恢复+换壁纸），画布把脚本、知识库、AI、生成节点连成一条线跑完" width="640">
@@ -246,7 +238,7 @@ npm run dist:mac    # macOS: dmg + zip（x64 + arm64）
 npm run dist:linux  # Linux: AppImage + deb（x64）
 ```
 
-也可以直接推一个 `v*` 标签，GitHub Actions 会在三个系统上各出一份安装包（见 `.github/workflows/build.yml`），到 Actions 页面的 Artifacts 下载。
+也可以直接推一个 `v*` 标签，GitHub Actions 会在三个系统上各出一份安装包并自动提成正式 Release（见 `.github/workflows/build.yml`），带上 SHA256 校验值。
 
 ## 权限与隐私（请务必读这一节）
 

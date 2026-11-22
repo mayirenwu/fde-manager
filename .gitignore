@@ -1,7 +1,7 @@
 # 依赖与构建产物
 node_modules/
-release/
-release2/
+/release/
+/release2/
 dist/
 
 # 安装包与更新描述文件（CI 产物，不进仓库）

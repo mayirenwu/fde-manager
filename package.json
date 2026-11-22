@@ -38,7 +38,7 @@
     "appId": "com.fde.manager",
     "productName": "FDE Manager",
     "copyright": "Copyright © 2026 FDE",
-    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "artifactName": "FDE-Manager-${version}-${os}-${arch}.${ext}",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -101,10 +101,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "shortcutName": "FDE 工作台",
-      "artifactName": "FDE-Manager-${version}-setup-${arch}.${ext}"
+      "artifactName": "FDE-Manager-${version}-windows-${arch}-setup.${ext}"
     },
     "portable": {
-      "artifactName": "FDE-Manager-${version}-portable-${arch}.${ext}"
+      "artifactName": "FDE-Manager-${version}-windows-${arch}-portable.${ext}"
     },
     "mac": {
       "icon": "build/icon.icns",
@@ -133,7 +133,7 @@
     },
     "dmg": {
       "title": "FDE Manager ${version}",
-      "artifactName": "FDE-Manager-${version}-${arch}.${ext}"
+      "artifactName": "FDE-Manager-${version}-mac-${arch}.${ext}"
     },
     "linux": {
       "icon": "build/icons",
@@ -156,10 +156,10 @@
       ]
     },
     "appImage": {
-      "artifactName": "FDE-Manager-${version}-${arch}.AppImage"
+      "artifactName": "FDE-Manager-${version}-linux-${arch}.AppImage"
     },
     "deb": {
-      "artifactName": "FDE-Manager-${version}-${arch}.deb",
+      "artifactName": "FDE-Manager-${version}-linux-${arch}.deb",
       "maintainer": "FDE"
     }
   }
