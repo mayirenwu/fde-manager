@@ -21,7 +21,7 @@ FDE Manager 就是那个工位：**一台电脑 = N 张互不干扰的原生桌�
 
 **English**: The workspace layer for computer-use agents — native window isolation, per-project desktops, and a visual canvas that chains windows, scripts, knowledge and LLM calls into one runnable flow. Built for the software AI could never touch: legacy ERPs, MES, C/S clients with no API. No screenshots, no coordinate guessing — FDE drives real windows via OS APIs. Works with any OpenAI-compatible model.
 
-📥 **直接下载安装包**：前往 [Releases](https://github.com/mayirenwu/fde-manager/releases) 页，Windows（NSIS 安装器 / 绿色便携版）、macOS（Intel + M 系列 dmg/zip）、Linux（AppImage / deb）都有三平台 CI 自动构建的产物。
+📥 **直接下载安装包**：前往 [Releases](https://github.com/mayirenwu/fde-manager/releases) 页下载 **v7.26.3**：Windows（setup 安装器 / 绿色便携版）、macOS（Intel x64 与 Apple M 系列 arm64 的 dmg/zip）、Linux（AppImage / deb），共 8 个文件，全部由三平台 CI 自动构建，Release 附件即装即用。
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/mayirenwu/fde-manager/master/docs/demo.gif" alt="FDE Manager：一键切桌面（窗口收起/原位恢复+换壁纸），画布把脚本、知识库、AI、生成节点连成一条线跑完" width="640">
@@ -337,7 +337,7 @@ Dify（含 Dify-Sandbox）解决 AI 应用怎么跑：工作流、RAG、沙箱�
 
   - [x] README 顶部 GIF 演示（模拟界面：切桌面 + 画布跑一条线，docs/demo.gif，scripts/make-demo-gif.js 可再生）
 - [ ] 英文版 README（README.en.md），面向海外 computer-use 社区
-- [ ] v7.26.3 提成正式 Release，安装包直链下载
+- [x] v7.26.3 提成正式 Release，安装包直链下载（推 tag 自动出 Release，见 `.github/workflows/build.yml`）
 - [ ] 开源证书签名（SignPath / Apple Developer ID），去掉 SmartScreen / Gatekeeper 拦截
 - [ ] 脚本节点可选沙箱化（参考 Dify-Sandbox 的 Seccomp 思路），为「把桌面分给团队用」铺路
 - [ ] 场景市场扩充：欢迎提交你的行业工作台（n8n 模板库模式）
