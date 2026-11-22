@@ -23,6 +23,10 @@ jobs:
         os: [windows-latest, macos-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
+    # Windows 默认用 PowerShell，统一成 bash，方便 tee 日志
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
@@ -32,7 +36,9 @@ jobs:
 
       # 图标已随仓库提交（build/icon.* 与 build/icons/），CI 无需再生成
       - name: 安装依赖
-        run: npm ci --no-audit --no-fund
+        run: |
+          set -o pipefail
+          npm ci --no-audit --no-fund 2>&1 | tee ci-log-npm.txt
 
       # 国内网络/CI 偶发下载慢：走 npmmirror（国际 CI 也能访问）
       - name: 打包
@@ -40,12 +46,13 @@ jobs:
           ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
           ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
         run: |
+          set -o pipefail
           if [ "${{ runner.os }}" = "macOS" ]; then
-            npx electron-builder --mac dmg zip --x64 --arm64 --publish never
+            npx electron-builder --mac dmg zip --x64 --arm64 --publish never 2>&1 | tee ci-log-build.txt
           elif [ "${{ runner.os }}" = "Linux" ]; then
-            npx electron-builder --linux AppImage deb --x64 --publish never
+            npx electron-builder --linux AppImage deb --x64 --publish never 2>&1 | tee ci-log-build.txt
           else
-            npx electron-builder --win nsis portable --x64 --publish never
+            npx electron-builder --win nsis portable --x64 --publish never 2>&1 | tee ci-log-build.txt
           fi
 
       - name: 上传安装包
@@ -59,3 +66,12 @@ jobs:
             release/*.AppImage
             release/*.deb
           if-no-files-found: error
+
+      # 失败时日志以 Artifact 公开可下载（匿名 API 拉不了 job 日志，但能拉公开 Artifact）
+      - name: 上传日志（失败排查用）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FDE-Manager-logs-${{ matrix.os }}
+          path: ci-log-*.txt
+          if-no-files-found: ignore
