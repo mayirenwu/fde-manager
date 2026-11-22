@@ -22,7 +22,7 @@ FDE Manager 就是那个工位：**一台电脑 = N 张互不干扰的原生桌�
 📥 **直接下载安装包**：前往 [Releases](https://github.com/mayirenwu/fde-manager/releases) 页，Windows（NSIS 安装器 / 绿色便携版）、macOS（Intel + M 系列 dmg/zip）、Linux（AppImage / deb）都有三平台 CI 自动构建的产物。
 
 <p align="center">
-  <img src="docs/demo.gif" alt="FDE Manager：一键切桌面（窗口收起/原位恢复+换壁纸），画布把脚本、知识库、AI、生成节点连成一条线跑完" width="640">
+  <img src="https://raw.githubusercontent.com/mayirenwu/fde-manager/master/docs/demo.gif" alt="FDE Manager：一键切桌面（窗口收起/原位恢复+换壁纸），画布把脚本、知识库、AI、生成节点连成一条线跑完" width="640">
 </p>
 <p align="center"><sub>上：项目 A 的窗口整体收起、项目 B 原位归位+换壁纸 · 下：画布一条线跑完，结果落盘</sub></p>
 
@@ -336,4 +336,4 @@ Issue / PR 都欢迎。改完代码请跑 `npm test` 和 `node scripts/check-syn
 
 左侧一条 280px 常驻侧栏，就是全部操作入口——右边仍是你的真实桌面。最重要的是，你可自由修改成你想要的：
 
-![FDE 智能体 控制台：左侧常驻侧栏 + 项目桌面](docs/panel.png)
+![FDE 智能体 控制台：左侧常驻侧栏 + 项目桌面](https://raw.githubusercontent.com/mayirenwu/fde-manager/master/docs/panel.png)
