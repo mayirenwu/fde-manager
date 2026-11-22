@@ -1,6 +1,9 @@
 # FDE Manager（FDE 智能体 控制台）  可随意修改成为你自己的智能体控制台。
 
 > **智能体给的是答案，不是工位。**
+>
+> 别的 "computer use agent" 让 AI 看屏幕、猜坐标、点鼠标；
+> FDE 不截屏、不猜坐标——**直接调度你电脑上的原生窗口**，让 AI 干的活落在真软件里。
 
 你已经有 WorkBuddy、Codex、Claude、豆包、Cursor 了。它们很会「想」。
 但没人替你「摆窗口、串流程、管客户、搬电脑」。
@@ -14,7 +17,11 @@ FDE Manager 就是那个工位：**一台电脑 = N 张互不干扰的原生桌�
 [![Tests](https://img.shields.io/badge/tests-17%20files%20passing-brightgreen.svg)](#测试)
 [![PRs](https://img.shields.io/badge/PRs-welcome-orange.svg)](#参与贡献)
 
-[30 秒看懂](#30-秒看懂) · [你可能正卡在这里](#你可能正卡在这里) · [五个卖点](#五个让人回不去的地方) · [真实的一天](#真实的一天两个场景) · [对比](#和常见的几种做法比) · [它不是什么](#它不是什么) · [快速开始](#快速开始)
+**English**: The workspace layer for computer-use agents — native window isolation, per-project desktops, and a visual canvas that chains windows, scripts, knowledge and LLM calls into one runnable flow. No screenshots, no coordinate guessing: FDE drives real windows via OS APIs. Works with any OpenAI-compatible model.
+
+📥 **直接下载安装包**：前往 [Releases](https://github.com/mayirenwu/fde-manager/releases) 页，Windows（NSIS 安装器 / 绿色便携版）、macOS（Intel + M 系列 dmg/zip）、Linux（AppImage / deb）都有三平台 CI 自动构建的产物。
+
+[30 秒看懂](#30-秒看懂) · [你可能正卡在这里](#你可能正卡在这里) · [五个卖点](#五个让人回不去的地方) · [真实的一天](#真实的一天两个场景) · [对比](#和常见的几种做法比) · [同类项目](#同类开源项目怎么比) · [它不是什么](#它不是什么) · [快速开始](#快速开始)
 
 ## 30 秒看懂
 
@@ -141,6 +148,20 @@ FDE 不绑定任何一家模型或智能体，它的业务能力全是**可编�
 | 换电脑 | 重新聊一遍 | 重新配一遍 | 重装镜像 | 一个快照 / 便携包 |
 | 数据在哪 | 厂商云 | 本机 | 云或本机 | **本机**（含密钥） |
 | 钱花在哪 | 按 token | 授权费 | 一台机器一份系统 | MIT 免费，只付你自己的模型钱 |
+
+## 同类开源项目怎么比
+
+这个赛道正在爆发（OpenInterpreter 68.9k★、Skyvern 23.5k★、Agent-S 13k★、self-operating-computer 10.3k★、microsoft/UFO 10.2k★），但各家管的是不同的层：
+
+| 项目 | 管哪一层 | 和 FDE 的关系 |
+| --- | --- | --- |
+| Skyvern / Agent-S / UFO / self-operating-computer | **AI 看屏幕**：截图 → 视觉模型 → 模拟点击鼠标键盘 | 互为上下游：它们负责「操作」，FDE 负责「工位」——窗口怎么摆、任务怎么切、结果落在哪。AI 点错一步不会毁掉你的桌面布局，因为布局归 FDE 管 |
+| OpenInterpreter | **本地跑代码**：让模型在本机执行命令 | 同上，FDE 给它的执行结果一个能天天用的家 |
+| n8n / Dify | **服务端工作流**：跑在 Docker / 云上，操作 API 和数据 | 它们跑不到你桌面上——最后一步「在客户电脑上打开 ERP 把结果填进去」，正好是 FDE 的地盘 |
+| Dify-Sandbox | **代码沙箱**：Seccomp 隔离不可信代码 | 解决「代码敢不敢跑」，不解决「跑完谁来干活」；做交付把桌面分给团队用时会需要它这类隔离 |
+| PowerToys / OpenRPA | **窗口管理 / RPA**：无 AI 或录制回放 | PowerToys 管单个窗口的布局，FDE 管「一个项目一整套窗口」的聚散；OpenRPA 靠录制坐标，FDE 靠真实窗口句柄 + 可读的画布 |
+
+**一句话：这个赛道人人都教 AI「怎么干活」，只有 FDE 先给 AI 一张「干活的桌子」。**
 
 ## 它不是什么
 
@@ -275,11 +296,26 @@ npx electron scripts/check-kb-apps.js     # 沙箱/CI 里若设了 ELECTRON_RUN_
 **换模型要重做流程吗？**
 不用。画布节点引用的是「模型能力」而不是具体型号，换渠道后在「模型设置」里重选即可。
 
+**会截屏吗？和 Skyvern 这类"看屏幕"的智能体什么区别？**
+FDE 默认不截屏。看屏幕的智能体（截图→视觉模型→模拟鼠标键盘）每一步都花 token、都可能是 80% 的正确率；FDE 直接用系统 API 管真实窗口——切换、归位、隐藏是确定性的，一步都不会错，也不花一分钱。两者可以搭配：让 Skyvern/UFO 负责单步操作，FDE 负责整个工位的秩序。
+
+**和 Dify 什么关系？**
+Dify（含 Dify-Sandbox）解决 AI 应用怎么跑：工作流、RAG、沙箱。FDE 解决跑完之后的事：窗口就位、流程落地、交付交接。你完全可以在 Dify 里跑模型链，把 FDE 当成它的"桌面执行器"。
+
 **Apple M 系列、Intel Mac、Linux 都能用吗？**
 能，三平台各有 CI 构建产物；窗口管理按平台分别实现（PowerShell / JXA / xdotool）。
 
 **能团队一起用吗？**
 当前是「一人一机一套工位」的设计，团队协作通过**导出场景包 / 快照**交接；多人共享同一套数据目录不在范围内。
+
+## 路线图（欢迎在 issue 里催更/插队）
+
+- [ ] README 顶部加 15 秒 GIF 演示（一键切桌面 + 画布跑一条线）
+- [ ] 英文版 README（README.en.md），面向海外 computer-use 社区
+- [ ] v7.26.3 提成正式 Release，安装包直链下载
+- [ ] 开源证书签名（SignPath / Apple Developer ID），去掉 SmartScreen / Gatekeeper 拦截
+- [ ] 脚本节点可选沙箱化（参考 Dify-Sandbox 的 Seccomp 思路），为「把桌面分给团队用」铺路
+- [ ] 场景市场扩充：欢迎提交你的行业工作台（n8n 模板库模式）
 
 ## 参与贡献
 
