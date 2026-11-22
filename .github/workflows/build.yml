@@ -106,7 +106,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${{ github.ref_name }}" dist/* \
-            --title "FDE Manager ${{ github.ref_name }}" \
-            --generate-notes \
-            --clobber || gh release upload "${{ github.ref_name }}" dist/* --clobber
+          TAG="${{ github.ref_name }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* \
+              --title "FDE Manager $TAG" \
+              --generate-notes
+          fi
