@@ -105,6 +105,8 @@ jobs:
       - name: 创建/更新 GitHub Release 并上传安装包
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 本 job 没有 checkout（不需要源码），gh 靠 GH_REPO 定位仓库
+          GH_REPO: ${{ github.repository }}
         run: |
           TAG="${{ github.ref_name }}"
           if gh release view "$TAG" >/dev/null 2>&1; then
@@ -113,4 +115,14 @@ jobs:
             gh release create "$TAG" dist/* \
               --title "FDE Manager $TAG" \
               --generate-notes
-          fi
+          fi 2>&1 | tee release-log.txt
+          exit ${PIPESTATUS[0]}
+
+      # release 步骤的输出存成公开 Artifact，匿名可查（job 日志需要 admin 权限）
+      - name: 上传 release 日志（排查用）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FDE-Manager-release-log
+          path: release-log.txt
+          if-no-files-found: ignore
