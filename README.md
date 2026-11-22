@@ -21,6 +21,11 @@ FDE Manager 就是那个工位：**一台电脑 = N 张互不干扰的原生桌�
 
 📥 **直接下载安装包**：前往 [Releases](https://github.com/mayirenwu/fde-manager/releases) 页，Windows（NSIS 安装器 / 绿色便携版）、macOS（Intel + M 系列 dmg/zip）、Linux（AppImage / deb）都有三平台 CI 自动构建的产物。
 
+<p align="center">
+  <img src="docs/demo.gif" alt="FDE Manager：一键切桌面（窗口收起/原位恢复+换壁纸），画布把脚本、知识库、AI、生成节点连成一条线跑完" width="640">
+</p>
+<p align="center"><sub>上：项目 A 的窗口整体收起、项目 B 原位归位+换壁纸 · 下：画布一条线跑完，结果落盘</sub></p>
+
 [30 秒看懂](#30-秒看懂) · [你可能正卡在这里](#你可能正卡在这里) · [五个卖点](#五个让人回不去的地方) · [真实的一天](#真实的一天两个场景) · [对比](#和常见的几种做法比) · [同类项目](#同类开源项目怎么比) · [它不是什么](#它不是什么) · [快速开始](#快速开始)
 
 ## 30 秒看懂
@@ -310,7 +315,7 @@ Dify（含 Dify-Sandbox）解决 AI 应用怎么跑：工作流、RAG、沙箱�
 
 ## 路线图（欢迎在 issue 里催更/插队）
 
-- [ ] README 顶部加 15 秒 GIF 演示（一键切桌面 + 画布跑一条线）
+  - [x] README 顶部 GIF 演示（模拟界面：切桌面 + 画布跑一条线，docs/demo.gif，scripts/make-demo-gif.js 可再生）
 - [ ] 英文版 README（README.en.md），面向海外 computer-use 社区
 - [ ] v7.26.3 提成正式 Release，安装包直链下载
 - [ ] 开源证书签名（SignPath / Apple Developer ID），去掉 SmartScreen / Gatekeeper 拦截
